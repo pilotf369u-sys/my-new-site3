@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تسوق من Meshwar</title>
+    <style>
+    /* خلفية متجر حديثة ومعاصرة بتدرج لوني */
+    body { 
+        font-family: 'Segoe UI', Tahoma, sans-serif; 
+        background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); 
+        margin: 0; 
+        padding-bottom: 50px; 
+        min-height: 100vh;
+    }
+
+    /* حقل البحث بتصميم عصري */
+    .search-container { text-align: center; margin: 30px 0; }
+    .search-container input { 
+        padding: 15px 25px; 
+        width: 85%; 
+        max-width: 450px; 
+        border-radius: 50px; 
+        border: none; 
+        outline: none; 
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15); 
+        background-color: rgba(255, 255, 255, 0.9);
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+    .search-container input:focus { 
+        box-shadow: 0 15px 25px rgba(0,0,0,0.2);
+        transform: translateY(-2px);
+    }
+    
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, 200px); justify-content: center; gap: 35px; padding: 20px; }
+    
+    .product-card { 
+        width: 200px; border-radius: 20px; padding: 15px; text-align: center; 
+        background: white; transition: transform 0.3s ease;
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    .product-card:hover { transform: translateY(-10px); }
+    
+    .product-card img { width: 100%; height: 150px; object-fit: contain; border-radius: 15px; margin-bottom: 10px; }
+    .product-info { margin: 10px 0; }
+    .product-code { display: block; font-weight: bold; color: #777; font-size: 0.9em; }
+    .product-price { display: block; color: #e63946; font-weight: bold; font-size: 1.1em; }
+    
+    .whatsapp-btn { 
+        background: linear-gradient(to right, #25D366, #128C7E); 
+        color: white; padding: 12px; border: none; border-radius: 10px; 
+        cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px;
+        transition: opacity 0.3s;
+    }
+    .whatsapp-btn:hover { opacity: 0.9; }
+
+    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; backdrop-filter: blur(5px); }
+    .modal-content { background:white; width:90%; max-width:350px; margin:50px auto; padding:25px; border-radius:20px; text-align: right; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+    
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold; color: #444; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+    <h1 style="text-align: center;">مرحباً بك في متجر Meshwar</h1>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" onkeyup="renderProducts()" placeholder="🔍 ابحث عن منتج بالاسم أو الكود...">
+    </div>
+
+    <div class="product-grid" id="product-container"></div>
+
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <h3 style="text-align:center;">إرسال تفاصيل الطلب</h3>
+            <div class="form-group"><label>الاسم الكريم:</label><input type="text" id="pName"></div>
+            <div class="form-group"><label>رقم الهاتف:</label><input type="tel" id="pPhone"></div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="form-group">
+                    <label>الدولة:</label>
+                    <select id="pCountry">
+                        <option value="">اختر..</option>
+                        <option value="العراق">العراق</option>
+                        <option value="سوريا">سوريا</option>
+                        <option value="تركيا">تركيا</option>
+                        <option value="السعودية">السعودية</option>
+                        <option value="مصر">مصر</option>
+                        <option value="الإمارات">الإمارات</option>
+                        <option value="الأردن">الأردن</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>العنوان:</label><input type="text" id="pAddress" placeholder="محافظة/منطقة"></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="form-group"><label>العدد:</label><input type="number" id="pQuantity"></div>
+                <div class="form-group"><label>اللون:</label><input type="text" id="pColor"></div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="form-group"><label>الحجم/المقاس:</label><input type="text" id="pSize"></div>
+                <div class="form-group"><label>الوزن:</label><input type="text" id="pWeight"></div>
+            </div>
+
+            <button onclick="submitOrder()" class="whatsapp-btn">إرسال الطلب عبر الواتساب</button>
+            <button onclick="document.getElementById('orderModal').style.display='none'" style="margin-top:10px; border:none; background:none; cursor:pointer; width:100%; color:#666;">إغلاق</button>
+        </div>
+    </div>
+
+    <script src="products.js"></script>
+    <script>
+        let currentProduct = {};
+        const container = document.getElementById('product-container');
+        
+        // دالة عرض المنتجات مع خاصية البحث
+       function renderProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            container.innerHTML = '';
+            
+            const filtered = products.filter(p => 
+                p.name.toLowerCase().includes(searchTerm) || 
+                p.code.toLowerCase().includes(searchTerm)
+            );
+
+            filtered.forEach(product => {
+                // منطق السعر: إذا وجدنا oldPrice نظهره، وإلا نظهر السعر العادي فقط
+                const priceDisplay = product.oldPrice 
+                    ? `<span style="text-decoration:line-through; color:#888; font-size:0.85em; margin-left:8px;">${product.oldPrice}</span>
+                       <span class="product-price" style="display:inline-block;">${product.price}</span>` 
+                    : `<span class="product-price">${product.price}</span>`;
+
+                container.innerHTML += `
+                    <div class="product-card">
+                        <img src="${product.image}" alt="${product.name}">
+                        <h3>${product.name}</h3>
+                        <div class="product-info">
+                            <span class="product-code">الكود: ${product.code}</span>
+                            <div style="margin-top:5px;">${priceDisplay}</div>
+                        </div>
+                        <button class="whatsapp-btn" onclick="openModal('${product.name}', '${product.code}')">اطلب الآن</button>
+                    </div>
+                `;
+            });
+        }
+
+        function openModal(name, code) {
+            currentProduct = { name, code };
+            document.getElementById('orderModal').style.display = 'block';
+        }
+
+        function submitOrder() {
+            const name = document.getElementById('pName').value.trim();
+            const phone = document.getElementById('pPhone').value.trim();
+            const country = document.getElementById('pCountry').value;
+            const address = document.getElementById('pAddress').value.trim();
+            const qty = document.getElementById('pQuantity').value.trim();
+            const color = document.getElementById('pColor').value.trim();
+            const size = document.getElementById('pSize').value.trim();
+            const weight = document.getElementById('pWeight').value.trim();
+
+            if(!name || !phone || !country || !address || !qty || !color) {
+                alert("يرجى تعبئة جميع الحقول المطلوبة (الاسم، الهاتف، الدولة، العنوان، العدد، اللون)!");
+                return;
+            }
+            
+            const msg = `طلب جديد:%0A` +
+                        `--------------------------%0A` +
+                        `المنتج: ${currentProduct.name}%0A` +
+                        `الكود: ${currentProduct.code}%0A` +
+                        `الاسم: ${name}%0A` +
+                        `الهاتف: ${phone}%0A` +
+                        `الدولة: ${country}%0A` +
+                        `العنوان: ${address}%0A` +
+                        `العدد: ${qty}%0A` +
+                        `اللون: ${color}%0A` +
+                        `الحجم: ${size}%0A` +
+                        `الوزن: ${weight}%0A` +
+                        `--------------------------%0A` +
+                        `بانتظار تزويدي بالسعر الكامل مع تكلفة الشحن لباب البيت، شكراً لكم.`;
+
+            window.open(`https://wa.me/905521855554?text=${msg}`, '_blank');
+            document.getElementById('orderModal').style.display = 'none';
+        }
+
+        // عرض المنتجات عند أول تحميل
+        renderProducts();
+    </script>
+</body>
+</html>
