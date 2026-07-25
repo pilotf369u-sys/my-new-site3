@@ -116,13 +116,13 @@
             </table>
         </div>
 
-        <!-- 5. إدارة المتاجر الجديدة (المحدثة بجميع الأقسام) -->
+        <!-- 5. إدارة المتاجر -->
         <div class="card" id="stores">
             <h3>إدارة المتاجر</h3>
             <div>
                 <input type="text" id="storeName" placeholder="اسم المتجر (مثال: Trendyol)">
                 <input type="text" id="storeUrl" placeholder="رابط المتجر أو صفحة الدخول">
-                <input type="text" id="storeImg" placeholder="مسار الصورة (مثال: images/trendyol.png)">
+                <input type="text" id="storeImg" placeholder="مسار الصورة">
                 <select id="storeCategory">
                     <option value="comprehensive">المتاجر الشاملة</option>
                     <option value="fashion">الأزياء والملابس</option>
@@ -146,40 +146,34 @@
             </table>
         </div>
 
-        <!-- 6. إدارة العملاء المحدثة -->
+        <!-- 6. إدارة العملاء المتكاملة -->
         <div class="card" id="customers">
             <h3>إدارة العملاء</h3>
             <div style="background: #fdfdfd; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
                 <h4 id="customerFormTitle" style="margin-top: 0; color: #2c3e50;">إضافة عميل جديد</h4>
                 
-                <!-- حقل خفي لتخزين مؤشر التعديل الحالي -->
                 <input type="hidden" id="editCustomerIndex" value="-1">
 
                 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                     <input type="text" id="custName" placeholder="اسم العميل الكامل" style="flex: 1; min-width: 200px;">
-                    <input type="text" id="custCode" placeholder="كود العميل (مثال: CUS-1001)" style="flex: 1; min-width: 150px;">
+                    <input type="text" id="custCode" placeholder="كود العميل (اختياري)" style="flex: 1; min-width: 150px;">
                     <input type="email" id="custEmail" placeholder="البريد الإلكتروني" style="flex: 1; min-width: 200px;">
                     <input type="password" id="custPass" placeholder="كلمة المرور" style="flex: 1; min-width: 150px;">
                     
-                    <!-- قائمة الدول المنسدلة -->
                     <select id="custCountry" onchange="updateCountryCode()" style="flex: 1; min-width: 180px;">
                         <option value="" disabled selected>اختر الدولة</option>
                         <option value="تركيا" data-code="+90">تركيا (+90)</option>
+                        <option value="سوريا" data-code="+963">سوريا (+963)</option>
                         <option value="المملكة العربية السعودية" data-code="+966">المملكة العربية السعودية (+966)</option>
                         <option value="الإمارات العربية المتحدة" data-code="+971">الإمارات العربية المتحدة (+971)</option>
                         <option value="مصر" data-code="+20">مصر (+20)</option>
                         <option value="الأردن" data-code="+962">الأردن (+962)</option>
                         <option value="العراق" data-code="+964">العراق (+964)</option>
-                        <option value="سوريا" data-code="+963">سوريا (+963)</option>
                         <option value="الولايات المتحدة" data-code="+1">الولايات المتحدة (+1)</option>
                     </select>
 
-                    <!-- رقم الهاتف (إلزامي) -->
                     <input type="text" id="custPhone" placeholder="رقم الهاتف (إلزامي)" style="flex: 1; min-width: 220px;" dir="ltr">
-                    
                     <input type="text" id="custState" placeholder="المحافظة / المدينة" style="flex: 1; min-width: 150px;">
-                    
-                    <!-- العنوان التفصيلي (إلزامي) -->
                     <input type="text" id="custAddress" placeholder="العنوان التفصيلي (إلزامي)" style="flex: 2; min-width: 250px;">
                 </div>
                 
@@ -194,10 +188,10 @@
                     <tr>
                         <th>الكود</th>
                         <th>اسم العميل</th>
-                        <th>البريد الإلكتروني</th>
+                        <th>الهاتف</th>
                         <th>الدولة والمنطقة</th>
-                        <th>رقم الهاتف</th>
                         <th>العنوان</th>
+                        <th>الطلبات</th>
                         <th>الإجراءات</th>
                     </tr>
                 </thead>
@@ -218,6 +212,63 @@
             sections.forEach(sec => sec.classList.remove('active-section'));
             let target = document.getElementById(sectionId);
             if(target) { target.classList.add('active-section'); }
+        }
+
+        // تهيئة قاعدة بيانات العملاء الافتراضية إذا كانت فارغة لأول مرة
+        function initDefaultCustomers() {
+            if (!localStorage.getItem('adminCustomersList')) {
+                const defaultCustomers = [
+                    { 
+                        code: "CUS-9014",
+                        name: "Omar al Jammas", 
+                        phone: "905378240430", 
+                        password: "1234",
+                        country: "العراق",
+                        state: "بغداد",
+                        address: "بغداد، حي المنصور، شارع 14 رمضان",
+                        orders: [
+                            { id: "#MW-9014", status: "في انتظار الدفع", price: "$85.50" },
+                            { id: "#MW-8821", status: "قيد المعالجة", price: "$120.00" }
+                        ]
+                    },
+                    { 
+                        code: "CUS-5520",
+                        name: "عبد العزيز", 
+                        phone: "9647772279773", 
+                        password: "123",
+                        country: "العراق",
+                        state: "بغداد",
+                        address: "بغداد، حي العدل، شارع 14",
+                        orders: [
+                            { id: "#MW-5520", status: "تم التوصيل", price: "$200.00" },
+                            { id: "#MW-8821", status: "قيد المعالجة", price: "$120.00" }
+                        ]
+                    },
+                    { 
+                        code: "CUS-4366",
+                        name: "عمار الحمداني", 
+                        phone: "9647774366640", 
+                        password: "123",
+                        country: "العراق",
+                        state: "اربيل",
+                        address: "اربيل، سوق، شارع",
+                        orders: [] 
+                    },
+                    { 
+                        code: "CUS-3312",
+                        name: "اسيل", 
+                        phone: "9647718303382", 
+                        password: "123",
+                        country: "تركيا",
+                        state: "انقرة",
+                        address: "تركيا، انقرة، كيجوران",
+                        orders: [
+                            { id: "#MW-3312", status: "قيد الشحن", price: "$45.00" }
+                        ]
+                    }
+                ];
+                localStorage.setItem('adminCustomersList', JSON.stringify(defaultCustomers));
+            }
         }
 
         // --- إدارة الموظفين ---
@@ -283,26 +334,19 @@
             loadCurrencies();
             alert('تم حفظ العملة المرجعية بنجاح');
         }
-
         function loadBaseCurrency() {
             let base = localStorage.getItem('siteBaseCurrency') || 'دولار';
             document.getElementById('displayBaseCurrency').innerText = base;
         }
-
         function loadCurrencies() {
             let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
             let base = localStorage.getItem('siteBaseCurrency') || 'دولار';
             let tbody = document.getElementById('currencyTableBody');
             tbody.innerHTML = '';
             currencies.forEach((cur, index) => {
-                tbody.innerHTML += `<tr>
-                    <td>1 ${base}</td>
-                    <td>يساوي ${cur.rate} ${cur.name}</td>
-                    <td><button class="btn-red" onclick="deleteCurrency(${index})">حذف</button></td>
-                </tr>`;
+                tbody.innerHTML += `<tr><td>1 ${base}</td><td>يساوي ${cur.rate} ${cur.name}</td><td><button class="btn-red" onclick="deleteCurrency(${index})">حذف</button></td></tr>`;
             });
         }
-
         function addCurrency() {
             let name = document.getElementById('currencyName').value;
             let rate = document.getElementById('currencyRate').value;
@@ -314,7 +358,6 @@
             document.getElementById('currencyRate').value = '';
             loadCurrencies();
         }
-
         function deleteCurrency(index) {
             let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
             currencies.splice(index, 1);
@@ -322,7 +365,7 @@
             loadCurrencies();
         }
 
-        // --- إدارة المتاجر (محدثة لتطابق أسماء الأقسام) ---
+        // --- إدارة المتاجر ---
         const categoryNamesMap = {
             'comprehensive': 'المتاجر الشاملة',
             'fashion': 'الأزياء والملابس',
@@ -331,41 +374,30 @@
             'home': 'المنزل والأطفال والسوبر ماركت',
             'local': 'المتاجر الشخصية والمحلية'
         };
-
         function loadStoresAdmin() {
             let stores = JSON.parse(localStorage.getItem('dynamicStoresList')) || [];
             let tbody = document.getElementById('storesTableBody');
             tbody.innerHTML = '';
             stores.forEach((st, index) => {
                 let readableCategory = categoryNamesMap[st.category] || 'المتاجر الشاملة';
-                tbody.innerHTML += `<tr>
-                    <td>${st.name}</td>
-                    <td>${readableCategory}</td>
-                    <td>${st.url}</td>
-                    <td><button class="btn-red" onclick="deleteStore(${index})">حذف</button></td>
-                </tr>`;
+                tbody.innerHTML += `<tr><td>${st.name}</td><td>${readableCategory}</td><td>${st.url}</td><td><button class="btn-red" onclick="deleteStore(${index})">حذف</button></td></tr>`;
             });
         }
-
         function addStore() {
             let name = document.getElementById('storeName').value;
             let url = document.getElementById('storeUrl').value;
             let img = document.getElementById('storeImg').value || 'images/default.png';
             let category = document.getElementById('storeCategory').value;
-
             if(!name || !url) { alert('الرجاء إدخال اسم المتجر والرابط'); return; }
-
             let stores = JSON.parse(localStorage.getItem('dynamicStoresList')) || [];
             stores.push({name, url, img, category});
             localStorage.setItem('dynamicStoresList', JSON.stringify(stores));
-
             document.getElementById('storeName').value = '';
             document.getElementById('storeUrl').value = '';
             document.getElementById('storeImg').value = '';
             loadStoresAdmin();
             alert('تم إضافة المتجر بنجاح');
         }
-
         function deleteStore(index) {
             let stores = JSON.parse(localStorage.getItem('dynamicStoresList')) || [];
             stores.splice(index, 1);
@@ -373,15 +405,14 @@
             loadStoresAdmin();
         }
 
-        // --- إدارة العملاء المحسنة ---
+        // --- إدارة العملاء المربوطة بنظام التسجيل والطلبات ---
         function updateCountryCode() {
             let countrySelect = document.getElementById('custCountry');
             let selectedOption = countrySelect.options[countrySelect.selectedIndex];
             let dialCode = selectedOption.getAttribute('data-code');
             let phoneInput = document.getElementById('custPhone');
-            
             if (dialCode && !phoneInput.value.startsWith(dialCode)) {
-                phoneInput.value = dialCode + " ";
+                phoneInput.value = dialCode.replace('+', '') + ""; // إزالة علامة الزائد لتتوافق مع الأرقام المرسلة
                 phoneInput.focus();
             }
         }
@@ -391,13 +422,14 @@
             let tbody = document.getElementById('custTableBody');
             tbody.innerHTML = '';
             customers.forEach((cust, index) => {
+                let ordersCount = cust.orders ? cust.orders.length : 0;
                 tbody.innerHTML += `<tr>
                     <td><b style="color: #2980b9;">${cust.code || '---'}</b></td>
                     <td>${cust.name}</td>
-                    <td>${cust.email || 'غير متوفر'}</td>
-                    <td>${cust.country || '---'} / ${cust.state || '---'}</td>
                     <td dir="ltr" style="text-align: right;">${cust.phone}</td>
+                    <td>${cust.country || '---'} / ${cust.state || '---'}</td>
                     <td>${cust.address || '---'}</td>
+                    <td><span style="background: #e1f5fe; color: #0288d1; padding: 3px 8px; border-radius: 4px; font-weight: bold;">${ordersCount} طلبات</span></td>
                     <td>
                         <button class="btn-blue" onclick="editCustomer(${index})" style="margin-left: 5px;">تعديل</button>
                         <button class="btn-red" onclick="deleteCustomer(${index})">حذف</button>
@@ -417,7 +449,6 @@
             let address = document.getElementById('custAddress').value.trim();
             let editIndex = parseInt(document.getElementById('editCustomerIndex').value);
 
-            // التحقق من الحقول الإلزامية (الاسم، كلمة المرور، الدولة، رقم الهاتف، العنوان التفصيلي)
             if(!name || !password || !country || !phone || !address) { 
                 alert('الرجاء إدخال الحقول الإلزامية: الاسم، كلمة المرور، الدولة، رقم الهاتف، والعنوان التفصيلي'); 
                 return; 
@@ -426,7 +457,7 @@
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
 
             if (editIndex === -1) {
-                // إضافة جديدة
+                // عميل جديد
                 customers.push({
                     code: code || ('CUS-' + Math.floor(1000 + Math.random() * 9000)),
                     name, 
@@ -436,11 +467,11 @@
                     phone, 
                     state, 
                     address,
-                    createdAt: new Date().toISOString()
+                    orders: [] // مصفوفة طلبات فارغة مبدئياً لتستوعب طلبات العميل لاحقاً
                 });
-                alert('تم إضافة العميل بنجاح');
+                alert('تم إضافة العميل بنجاح وأصبح بإمكانه تسجيل الدخول');
             } else {
-                // تعديل عميل موجود
+                // تحديث عميل موجود مع الاحتفاظ بطلباته السابقة
                 customers[editIndex] = {
                     ...customers[editIndex],
                     code: code || customers[editIndex].code,
@@ -452,7 +483,7 @@
                     state, 
                     address
                 };
-                alert('تم تعديل بيانات العميل بنجاح');
+                alert('تم تحديث بيانات العميل بنجاح');
             }
 
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
@@ -508,6 +539,7 @@
         }
 
         window.onload = function() {
+            initDefaultCustomers(); // حقن بيانات العملاء الأربعة الافتراضية إذا كانت فارغة
             loadEmployees();
             loadDelivery();
             loadBaseCurrency();
