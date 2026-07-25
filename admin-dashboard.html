@@ -18,6 +18,7 @@
         button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
         .btn-green { background: #27ae60; }
         .btn-red { background: #c0392b; }
+        .btn-blue { background: #2980b9; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; color: #333; }
@@ -145,21 +146,58 @@
             </table>
         </div>
 
-        <!-- 6. إدارة العملاء -->
+        <!-- 6. إدارة العملاء المحدثة -->
         <div class="card" id="customers">
             <h3>إدارة العملاء</h3>
-            <div>
-                <input type="text" id="custName" placeholder="اسم العميل">
-                <input type="text" id="custPhone" placeholder="رقم الهاتف">
-                <input type="password" id="custPass" placeholder="كلمة المرور">
-                <button class="btn-green" onclick="addCustomer()">+ إضافة عميل</button>
+            <div style="background: #fdfdfd; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
+                <h4 id="customerFormTitle" style="margin-top: 0; color: #2c3e50;">إضافة عميل جديد</h4>
+                
+                <!-- حقل خفي لتخزين مؤشر التعديل الحالي -->
+                <input type="hidden" id="editCustomerIndex" value="-1">
+
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <input type="text" id="custName" placeholder="اسم العميل الكامل" style="flex: 1; min-width: 200px;">
+                    <input type="text" id="custCode" placeholder="كود العميل (مثال: CUS-1001)" style="flex: 1; min-width: 150px;">
+                    <input type="email" id="custEmail" placeholder="البريد الإلكتروني" style="flex: 1; min-width: 200px;">
+                    <input type="password" id="custPass" placeholder="كلمة المرور" style="flex: 1; min-width: 150px;">
+                    
+                    <!-- قائمة الدول المنسدلة -->
+                    <select id="custCountry" onchange="updateCountryCode()" style="flex: 1; min-width: 180px;">
+                        <option value="" disabled selected>اختر الدولة</option>
+                        <option value="تركيا" data-code="+90">تركيا (+90)</option>
+                        <option value="المملكة العربية السعودية" data-code="+966">المملكة العربية السعودية (+966)</option>
+                        <option value="الإمارات العربية المتحدة" data-code="+971">الإمارات العربية المتحدة (+971)</option>
+                        <option value="مصر" data-code="+20">مصر (+20)</option>
+                        <option value="الأردن" data-code="+962">الأردن (+962)</option>
+                        <option value="العراق" data-code="+964">العراق (+964)</option>
+                        <option value="الولايات المتحدة" data-code="+1">الولايات المتحدة (+1)</option>
+                    </select>
+
+                    <!-- رقم الهاتف (إلزامي) -->
+                    <input type="text" id="custPhone" placeholder="رقم الهاتف (إلزامي)" style="flex: 1; min-width: 220px;" dir="ltr">
+                    
+                    <input type="text" id="custState" placeholder="المحافظة / المدينة" style="flex: 1; min-width: 150px;">
+                    
+                    <!-- العنوان التفصيلي (إلزامي) -->
+                    <input type="text" id="custAddress" placeholder="العنوان التفصيلي (إلزامي)" style="flex: 2; min-width: 250px;">
+                </div>
+                
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button class="btn-green" id="saveCustomerBtn" onclick="saveCustomerData()">+ حفظ وإضافة العميل</button>
+                    <button class="btn-red" id="cancelEditBtn" onclick="resetCustomerForm()" style="display: none;">إلغاء التعديل</button>
+                </div>
             </div>
+
             <table>
                 <thead>
                     <tr>
+                        <th>الكود</th>
                         <th>اسم العميل</th>
+                        <th>البريد الإلكتروني</th>
+                        <th>الدولة والمنطقة</th>
                         <th>رقم الهاتف</th>
-                        <th>الإجراء</th>
+                        <th>العنوان</th>
+                        <th>الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody id="custTableBody"></tbody>
@@ -334,33 +372,138 @@
             loadStoresAdmin();
         }
 
-        // --- إدارة العملاء ---
+        // --- إدارة العملاء المحسنة ---
+        function updateCountryCode() {
+            let countrySelect = document.getElementById('custCountry');
+            let selectedOption = countrySelect.options[countrySelect.selectedIndex];
+            let dialCode = selectedOption.getAttribute('data-code');
+            let phoneInput = document.getElementById('custPhone');
+            
+            if (dialCode && !phoneInput.value.startsWith(dialCode)) {
+                phoneInput.value = dialCode + " ";
+                phoneInput.focus();
+            }
+        }
+
         function loadCustomers() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('custTableBody');
             tbody.innerHTML = '';
             customers.forEach((cust, index) => {
-                tbody.innerHTML += `<tr><td>${cust.name}</td><td>${cust.phone}</td><td><button class="btn-red" onclick="deleteCustomer(${index})">حذف</button></td></tr>`;
+                tbody.innerHTML += `<tr>
+                    <td><b style="color: #2980b9;">${cust.code || '---'}</b></td>
+                    <td>${cust.name}</td>
+                    <td>${cust.email || 'غير متوفر'}</td>
+                    <td>${cust.country || '---'} / ${cust.state || '---'}</td>
+                    <td dir="ltr" style="text-align: right;">${cust.phone}</td>
+                    <td>${cust.address || '---'}</td>
+                    <td>
+                        <button class="btn-blue" onclick="editCustomer(${index})" style="margin-left: 5px;">تعديل</button>
+                        <button class="btn-red" onclick="deleteCustomer(${index})">حذف</button>
+                    </td>
+                </tr>`;
             });
         }
-        function addCustomer() {
-            let name = document.getElementById('custName').value;
-            let phone = document.getElementById('custPhone').value;
-            let password = document.getElementById('custPass').value;
-            if(!name || !phone || !password) { alert('الرجاء إدخال جميع بيانات العميل'); return; }
+
+        function saveCustomerData() {
+            let name = document.getElementById('custName').value.trim();
+            let code = document.getElementById('custCode').value.trim();
+            let email = document.getElementById('custEmail').value.trim();
+            let password = document.getElementById('custPass').value.trim();
+            let country = document.getElementById('custCountry').value;
+            let phone = document.getElementById('custPhone').value.trim();
+            let state = document.getElementById('custState').value.trim();
+            let address = document.getElementById('custAddress').value.trim();
+            let editIndex = parseInt(document.getElementById('editCustomerIndex').value);
+
+            // التحقق من الحقول الإلزامية (الاسم، كلمة المرور، الدولة، رقم الهاتف، العنوان التفصيلي)
+            if(!name || !password || !country || !phone || !address) { 
+                alert('الرجاء إدخال الحقول الإلزامية: الاسم، كلمة المرور، الدولة، رقم الهاتف، والعنوان التفصيلي'); 
+                return; 
+            }
+
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers.push({name, phone, password});
+
+            if (editIndex === -1) {
+                // إضافة جديدة
+                customers.push({
+                    code: code || ('CUS-' + Math.floor(1000 + Math.random() * 9000)),
+                    name, 
+                    email, 
+                    password, 
+                    country, 
+                    phone, 
+                    state, 
+                    address,
+                    createdAt: new Date().toISOString()
+                });
+                alert('تم إضافة العميل بنجاح');
+            } else {
+                // تعديل عميل موجود
+                customers[editIndex] = {
+                    ...customers[editIndex],
+                    code: code || customers[editIndex].code,
+                    name, 
+                    email, 
+                    password, 
+                    country, 
+                    phone, 
+                    state, 
+                    address
+                };
+                alert('تم تعديل بيانات العميل بنجاح');
+            }
+
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            document.getElementById('custName').value = '';
-            document.getElementById('custPhone').value = '';
-            document.getElementById('custPass').value = '';
+            resetCustomerForm();
             loadCustomers();
         }
-        function deleteCustomer(index) {
+
+        function editCustomer(index) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers.splice(index, 1);
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            loadCustomers();
+            let cust = customers[index];
+
+            document.getElementById('custName').value = cust.name || '';
+            document.getElementById('custCode').value = cust.code || '';
+            document.getElementById('custEmail').value = cust.email || '';
+            document.getElementById('custPass').value = cust.password || '';
+            document.getElementById('custCountry').value = cust.country || '';
+            document.getElementById('custPhone').value = cust.phone || '';
+            document.getElementById('custState').value = cust.state || '';
+            document.getElementById('custAddress').value = cust.address || '';
+            
+            document.getElementById('editCustomerIndex').value = index;
+            document.getElementById('customerFormTitle').innerText = 'تعديل بيانات العميل';
+            document.getElementById('saveCustomerBtn').innerText = 'حفظ التعديلات';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetCustomerForm() {
+            document.getElementById('custName').value = '';
+            document.getElementById('custCode').value = '';
+            document.getElementById('custEmail').value = '';
+            document.getElementById('custPass').value = '';
+            document.getElementById('custCountry').selectedIndex = 0;
+            document.getElementById('custPhone').value = '';
+            document.getElementById('custState').value = '';
+            document.getElementById('custAddress').value = '';
+            document.getElementById('editCustomerIndex').value = '-1';
+            
+            document.getElementById('customerFormTitle').innerText = 'إضافة عميل جديد';
+            document.getElementById('saveCustomerBtn').innerText = '+ حفظ وإضافة العميل';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+        }
+
+        function deleteCustomer(index) {
+            if(confirm('هل أنت متأكد من حذف هذا العميل؟')) {
+                let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+                customers.splice(index, 1);
+                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+                resetCustomerForm();
+                loadCustomers();
+            }
         }
 
         window.onload = function() {
