@@ -55,6 +55,7 @@
             <div>
                 <input type="text" id="empName" placeholder="اسم الموظف">
                 <input type="text" id="empPhone" placeholder="رقم الهاتف">
+                <input type="password" id="empPass" placeholder="كلمة المرور الخاصة">
                 <button class="btn-green" onclick="addEmployee()">+ إضافة موظف</button>
             </div>
             <table>
@@ -62,6 +63,7 @@
                     <tr>
                         <th>الاسم</th>
                         <th>رقم الهاتف</th>
+                        <th>كلمة المرور</th>
                         <th>الإجراء</th>
                     </tr>
                 </thead>
@@ -75,6 +77,7 @@
             <div>
                 <input type="text" id="delName" placeholder="اسم المندوب">
                 <input type="text" id="delPhone" placeholder="رقم الهاتف">
+                <input type="password" id="delPass" placeholder="كلمة المرور الخاصة">
                 <button class="btn-green" onclick="addDelivery()">+ إضافة مندوب</button>
             </div>
             <table>
@@ -82,6 +85,7 @@
                     <tr>
                         <th>اسم المندوب</th>
                         <th>رقم الهاتف</th>
+                        <th>كلمة المرور</th>
                         <th>الإجراء</th>
                     </tr>
                 </thead>
@@ -277,18 +281,20 @@
             let tbody = document.getElementById('empTableBody');
             tbody.innerHTML = '';
             employees.forEach((emp, index) => {
-                tbody.innerHTML += `<tr><td>${emp.name}</td><td>${emp.phone}</td><td><button class="btn-red" onclick="deleteEmployee(${index})">حذف</button></td></tr>`;
+                tbody.innerHTML += `<tr><td>${emp.name}</td><td>${emp.phone}</td><td>${emp.password || '123'}</td><td><button class="btn-red" onclick="deleteEmployee(${index})">حذف</button></td></tr>`;
             });
         }
         function addEmployee() {
             let name = document.getElementById('empName').value;
             let phone = document.getElementById('empPhone').value;
+            let password = document.getElementById('empPass').value || '123';
             if(!name || !phone) { alert('الرجاء إدخال الاسم ورقم الهاتف'); return; }
             let employees = JSON.parse(localStorage.getItem('employeesList')) || [];
-            employees.push({name, phone});
+            employees.push({name, phone, password});
             localStorage.setItem('employeesList', JSON.stringify(employees));
             document.getElementById('empName').value = '';
             document.getElementById('empPhone').value = '';
+            document.getElementById('empPass').value = '';
             loadEmployees();
         }
         function deleteEmployee(index) {
@@ -304,18 +310,20 @@
             let tbody = document.getElementById('delTableBody');
             tbody.innerHTML = '';
             deliveryList.forEach((del, index) => {
-                tbody.innerHTML += `<tr><td>${del.name}</td><td>${del.phone}</td><td><button class="btn-red" onclick="deleteDelivery(${index})">حذف</button></td></tr>`;
+                tbody.innerHTML += `<tr><td>${del.name}</td><td>${del.phone}</td><td>${del.password || '123'}</td><td><button class="btn-red" onclick="deleteDelivery(${index})">حذف</button></td></tr>`;
             });
         }
         function addDelivery() {
             let name = document.getElementById('delName').value;
             let phone = document.getElementById('delPhone').value;
+            let password = document.getElementById('delPass').value || '123';
             if(!name || !phone) { alert('الرجاء إدخال اسم المندوب ورقم هاتفه'); return; }
             let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
-            deliveryList.push({name, phone});
+            deliveryList.push({name, phone, password});
             localStorage.setItem('deliveryList', JSON.stringify(deliveryList));
             document.getElementById('delName').value = '';
             document.getElementById('delPhone').value = '';
+            document.getElementById('delPass').value = '';
             loadDelivery();
         }
         function deleteDelivery(index) {
@@ -412,7 +420,7 @@
             let dialCode = selectedOption.getAttribute('data-code');
             let phoneInput = document.getElementById('custPhone');
             if (dialCode && !phoneInput.value.startsWith(dialCode)) {
-                phoneInput.value = dialCode.replace('+', '') + ""; // إزالة علامة الزائد لتتوافق مع الأرقام المرسلة
+                phoneInput.value = dialCode.replace('+', '') + ""; 
                 phoneInput.focus();
             }
         }
@@ -457,7 +465,6 @@
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
 
             if (editIndex === -1) {
-                // عميل جديد
                 customers.push({
                     code: code || ('CUS-' + Math.floor(1000 + Math.random() * 9000)),
                     name, 
@@ -467,11 +474,10 @@
                     phone, 
                     state, 
                     address,
-                    orders: [] // مصفوفة طلبات فارغة مبدئياً لتستوعب طلبات العميل لاحقاً
+                    orders: [] 
                 });
                 alert('تم إضافة العميل بنجاح وأصبح بإمكانه تسجيل الدخول');
             } else {
-                // تحديث عميل موجود مع الاحتفاظ بطلباته السابقة
                 customers[editIndex] = {
                     ...customers[editIndex],
                     code: code || customers[editIndex].code,
@@ -539,7 +545,7 @@
         }
 
         window.onload = function() {
-            initDefaultCustomers(); // حقن بيانات العملاء الأربعة الافتراضية إذا كانت فارغة
+            initDefaultCustomers(); 
             loadEmployees();
             loadDelivery();
             loadBaseCurrency();
