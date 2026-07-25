@@ -74,49 +74,48 @@
             <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
         `;
 
-        // دتهيئة البيانات الافتراضية للعملاء والطلبات والمندوبين إذا لم تكن موجودة
-        function initDefaultData() {
-            if (!localStorage.getItem('deliveryList')) {
-                const defaultDelivery = [
-                    { name: "محمد أحمد", phone: "05311111111", password: "123" },
-                    { name: "خالد محمود", phone: "05322222222", password: "123" }
-                ];
-                localStorage.setItem('deliveryList', JSON.stringify(defaultDelivery));
-            }
+        // فرض إدخال بيانات افتراضية فورية لضمان ظهور الطلبات والمندوبين مباشرة
+        function forceInitDefaultData() {
+            const defaultDelivery = [
+                { name: "محمد أحمد", phone: "05311111111", password: "123" },
+                { name: "خالد محمود", phone: "05322222222", password: "123" },
+                { name: "علي حسن", phone: "05333333333", password: "123" }
+            ];
+            localStorage.setItem('deliveryList', JSON.stringify(defaultDelivery));
 
-            if (!localStorage.getItem('adminCustomersList')) {
-                const defaultCustomers = [
-                    { 
-                        code: "CUS-9014",
-                        name: "عمر الجماس", 
-                        phone: "905378240430", 
-                        password: "123",
-                        country: "تركيا",
-                        state: "إسطنبول",
-                        address: "إسطنبول، الفاتح، شارع الأنس",
-                        orders: [
-                            { id: "#MW-9014", status: "توزيع داخلي", price: "$85.50", assignedDelivery: "محمد أحمد", reason: "" },
-                            { id: "#MW-8821", status: "قيد المعالجة", price: "$120.00", assignedDelivery: "", reason: "" }
-                        ]
-                    },
-                    { 
-                        code: "CUS-5520",
-                        name: "عبد العزيز", 
-                        phone: "9647772279773", 
-                        password: "123",
-                        country: "العراق",
-                        state: "بغداد",
-                        address: "بغداد، حي المنصور",
-                        orders: [
-                            { id: "#MW-5520", status: "جاهز للشحن", price: "$200.00", assignedDelivery: "خالد محمود", reason: "" }
-                        ]
-                    }
-                ];
-                localStorage.setItem('adminCustomersList', JSON.stringify(defaultCustomers));
-            }
+            const defaultCustomers = [
+                { 
+                    code: "CUS-9014",
+                    name: "عمر الجماس", 
+                    phone: "905378240430", 
+                    password: "123",
+                    country: "تركيا",
+                    state: "إسطنبول",
+                    address: "إسطنبول، الفاتح، شارع الأنس",
+                    orders: [
+                        { id: "#MW-9014", status: "توزيع داخلي", price: "$85.50", assignedDelivery: "محمد أحمد", reason: "" },
+                        { id: "#MW-8821", status: "قيد المعالجة", price: "$120.00", assignedDelivery: "", reason: "" }
+                    ]
+                },
+                { 
+                    code: "CUS-5520",
+                    name: "عبد العزيز", 
+                    phone: "9647772279773", 
+                    password: "123",
+                    country: "العراق",
+                    state: "بغداد",
+                    address: "بغداد، حي المنصور",
+                    orders: [
+                        { id: "#MW-5520", status: "جاهز للشحن", price: "$200.00", assignedDelivery: "خالد محمود", reason: "" }
+                    ]
+                }
+            ];
+            localStorage.setItem('adminCustomersList', JSON.stringify(defaultCustomers));
         }
 
         function loadEmployeeOrders() {
+            forceInitDefaultData(); // ضمان توفر البيانات دائماً
+
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
             let tbody = document.getElementById('empOrdersBody');
@@ -129,7 +128,7 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         hasOrders = true;
 
-                        // تعبئة قائمة المندوبين من النظام المسجل
+                        // تعبئة قائمة المندوبين بدقة من قائمة النظام المسجلة
                         let deliveryOptions = `<option value="">اختر المندوب</option>`;
                         deliveryList.forEach(del => {
                             let selected = (ord.assignedDelivery === del.name) ? 'selected' : '';
@@ -137,8 +136,6 @@
                         });
 
                         let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
-
-                        // توليد خيارات الحالات مع تحديد الحالة الحالية
                         let currentOptionsHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
 
                         tbody.innerHTML += `
@@ -248,7 +245,6 @@
         }
 
         window.onload = function() {
-            initDefaultData();
             loadEmployeeOrders();
         }
     </script>
