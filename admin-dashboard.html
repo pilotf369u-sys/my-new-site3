@@ -87,19 +87,30 @@
             </table>
         </div>
 
-        <!-- 4. إدارة أسعار صرف العملات (متعددة) -->
+        <!-- 4. إدارة أسعار صرف العملات المحدثة -->
         <div class="card" id="exchange">
             <h3>إدارة أسعار صرف العملات</h3>
+            
+            <!-- تحديد العملة الأساسية للموقع -->
+            <div style="background: #eef2f3; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                <label><b>العملة الأساسية للموقع (مثال: ريال, جنيه): </b></label>
+                <input type="text" id="baseCurrency" placeholder="العملة الأساسية">
+                <button class="btn-green" onclick="saveBaseCurrency()">حفظ العملة الأساسية</button>
+                <p style="margin-top: 5px; color: #555;">العملة الأساسية الحالية: <span id="displayBaseCurrency" style="color: #27ae60; font-weight: bold;">لم تُحدد</span></p>
+            </div>
+
+            <!-- إضافة العملات وتحويلها مقابل الأساسية -->
             <div>
+                <h4>إضافة سعر صرف عملة جديدة مقابل العملة الأساسية</h4>
                 <input type="text" id="currencyName" placeholder="اسم العملة (مثال: دولار)">
-                <input type="number" id="currencyRate" placeholder="السعر">
-                <button class="btn-green" onclick="addCurrency()">+ إضافة / تحديث عملة</button>
+                <input type="number" id="currencyRate" placeholder="كم تساوي بالعملة الأساسية؟">
+                <button class="btn-green" onclick="addCurrency()">+ إضافة العملة</button>
             </div>
             <table>
                 <thead>
                     <tr>
-                        <th>اسم العملة</th>
-                        <th>السعر</th>
+                        <th>العملة</th>
+                        <th>سعر الصرف</th>
                         <th>الإجراء</th>
                     </tr>
                 </thead>
@@ -107,7 +118,7 @@
             </table>
         </div>
 
-        <!-- 5. إدارة العملاء (إضافة وحذف) -->
+        <!-- 5. إدارة العملاء -->
         <div class="card" id="customers">
             <h3>إدارة العملاء</h3>
             <div>
@@ -197,26 +208,49 @@
             loadDelivery();
         }
 
-        // --- إدارة أسعار الصرف (عملات متعددة) ---
+        // --- إدارة أسعار الصرف والعملة الأساسية ---
+        function saveBaseCurrency() {
+            let base = document.getElementById('baseCurrency').value;
+            if(!base) { alert('الرجاء كتابة اسم العملة الأساسية'); return; }
+            localStorage.setItem('siteBaseCurrency', base);
+            loadBaseCurrency();
+            alert('تم حفظ العملة الأساسية بنجاح');
+        }
+
+        function loadBaseCurrency() {
+            let base = localStorage.getItem('siteBaseCurrency');
+            if(base) {
+                document.getElementById('displayBaseCurrency').innerText = base;
+            }
+        }
+
         function loadCurrencies() {
             let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
+            let base = localStorage.getItem('siteBaseCurrency') || 'العملة الأساسية';
             let tbody = document.getElementById('currencyTableBody');
             tbody.innerHTML = '';
             currencies.forEach((cur, index) => {
-                tbody.innerHTML += `<tr><td>${cur.name}</td><td>${cur.rate}</td><td><button class="btn-red" onclick="deleteCurrency(${index})">حذف</button></td></tr>`;
+                tbody.innerHTML += `<tr><td>1 ${cur.name}</td><td>يساوي ${cur.rate} ${base}</td><td><button class="btn-red" onclick="deleteCurrency(${index})">حذف</button></td></tr>`;
             });
         }
+
         function addCurrency() {
             let name = document.getElementById('currencyName').value;
             let rate = document.getElementById('currencyRate').value;
-            if(!name || !rate) { alert('الرجاء إدخال اسم العملة والسعر'); return; }
+            let base = localStorage.getItem('siteBaseCurrency');
+            
+            if(!base) { alert('الرجاء حفظ العملة الأساسية للموقع أولاً أعلى الصفحة'); return; }
+            if(!name || !rate) { alert('الرجاء إدخال اسم العملة وسعرها'); return; }
+
             let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
             currencies.push({name, rate});
             localStorage.setItem('currenciesList', JSON.stringify(currencies));
+            
             document.getElementById('currencyName').value = '';
             document.getElementById('currencyRate').value = '';
             loadCurrencies();
         }
+
         function deleteCurrency(index) {
             let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
             currencies.splice(index, 1);
@@ -224,9 +258,8 @@
             loadCurrencies();
         }
 
-        // --- إدارة العملاء (إضافة يدوية) ---
+        // --- إدارة العملاء ---
         function loadCustomers() {
-            // نقرأ من customersDB أو من التخزين المحلي للوحة الأدمن
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('custTableBody');
             tbody.innerHTML = '';
@@ -256,10 +289,10 @@
             loadCustomers();
         }
 
-        // تشغيل كل الدوال عند تحميل الصفحة
         window.onload = function() {
             loadEmployees();
             loadDelivery();
+            loadBaseCurrency();
             loadCurrencies();
             loadCustomers();
         }
