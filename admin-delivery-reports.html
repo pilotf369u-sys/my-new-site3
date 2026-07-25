@@ -7,7 +7,7 @@
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; display: flex; }
         
-        /* تنسيق القائمة الجانبية المطابق للصورة الرابعة الأصلية والواضحة */
+        /* تنسيق القائمة الجانبية الأصلي والواضح */
         .sidebar { width: 250px; background: #2c3e50; color: white; min-height: 100vh; padding: 20px; box-sizing: border-box; position: fixed; right: 0; top: 0; }
         .sidebar h2 { font-size: 18px; border-bottom: 1px solid #4e6d8d; padding-bottom: 10px; margin-bottom: 20px; text-align: center; color: #fff; }
         .sidebar a { display: block; color: #ecf0f1; text-decoration: none; padding: 10px 15px; margin-bottom: 8px; border-radius: 4px; transition: 0.2s; font-size: 14px; background: #34495e; border-right: 4px solid #1abc9c; }
@@ -22,7 +22,8 @@
         h2, h3 { color: #2c3e50; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background: #f2f2f2; font-size: 14px; }
+        th { background: #f2f2f2; font-size: 13px; }
+        td { font-size: 13px; }
         
         .btn-view { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-collect { background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
@@ -32,14 +33,13 @@
         .summary-box { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
         .card { background: #fff; padding: 15px; border-radius: 5px; border: 1px solid #ccc; flex: 1; min-width: 200px; text-align: center; }
 
-        /* تنسيقات الطباعة (PDF) المتقدمة للفصل بين السجل العام وتقرير المندوب */
+        /* تنسيقات الطباعة (PDF) */
         @media print {
             body { background: white; display: block; }
             .sidebar, .btn-print, .btn-view, .btn-collect, button { display: none !important; }
             .main-content { margin-right: 0; width: 100%; padding: 0; }
             .container { box-shadow: none; padding: 0; }
             
-            /* حالات الطباعة بناءً على نوع الزر المضغط */
             body.print-general #deliveryReportSection { display: none !important; }
             body.print-general #generalReportArea { display: block !important; }
 
@@ -50,7 +50,7 @@
 </head>
 <body>
 
-    <!-- القائمة الجانبية الثابتة الواضحة والمنسقة -->
+    <!-- القائمة الجانبية الثابتة -->
     <div class="sidebar">
         <h2>لوحة الإدارة</h2>
         <a href="admin-dashboard.html">إدارة الطلبات</a>
@@ -70,18 +70,22 @@
             <h2>لوحة الأدمن - السجل المحاسبي ومتابعة المندوبين</h2>
             <p>متابعة حركة المندوبين، المبالغ المحصلة، وما تبقى في ذمتهم المالية مع التواريخ:</p>
             
-            <!-- جدول قائمة المندوبين المسجلين (السجل العام) -->
+            <!-- جدول السجل العام المالي الشامل للمندوبين -->
             <div id="generalReportArea">
                 <table>
                     <thead>
                         <tr>
                             <th>اسم المندوب</th>
                             <th>رقم الهاتف</th>
+                            <th>إجمالي الشحنات</th>
+                            <th>إجمالي المبالغ</th>
+                            <th>المبالغ المسلمة (المحصلة)</th>
+                            <th>المتبقي في الذمة</th>
                             <th>إجراء السجل المحاسبي</th>
                         </tr>
                     </thead>
                     <tbody id="adminDeliveryTable">
-                        <tr><td colspan="3">جاري التحميل...</td></tr>
+                        <tr><td colspan="7">جاري التحميل...</td></tr>
                     </tbody>
                 </table>
                 <div style="margin-top: 20px; overflow: hidden;">
@@ -89,7 +93,7 @@
                 </div>
             </div>
 
-            <!-- قسم عرض السجل المالي وحركة المندوب المحدد -->
+            <!-- قسم عرض السجل المالي التفصيلي للمندوب المحدد -->
             <div id="deliveryReportSection" class="report-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                     <h3 id="reportTitle" style="margin: 0;">السجل المالي وحركات المندوب: <span></span></h3>
@@ -142,19 +146,46 @@
 
         function loadAdminDeliveryList() {
             let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('adminDeliveryTable');
             tbody.innerHTML = '';
 
             if (deliveryList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3">لا توجد مندوبين مسجلين في النظام حالياً</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7">لا توجد مندوبين مسجلين في النظام حالياً</td></tr>`;
                 return;
             }
 
             deliveryList.forEach((del) => {
+                let dShipments = 0;
+                let dTotal = 0;
+                let dCollected = 0;
+
+                // حساب الأموال والشحنات لكل مندوب تلقائياً من قائمة العملاء والطلبات
+                customers.forEach(cust => {
+                    if (cust.orders && cust.orders.length > 0) {
+                        cust.orders.forEach(ord => {
+                            if (ord.assignedDelivery === del.name) {
+                                dShipments++;
+                                let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
+                                dTotal += rawPrice;
+                                if (ord.financialStatus === "تم التوريد للخزينة") {
+                                    dCollected += rawPrice;
+                                }
+                            }
+                        });
+                    }
+                });
+
+                let dRemaining = dTotal - dCollected;
+
                 tbody.innerHTML += `
                     <tr>
                         <td><b>${del.name}</b></td>
                         <td dir="ltr">${del.phone}</td>
+                        <td><b>${dShipments}</b></td>
+                        <td><b style="color: #e67e22;">$${dTotal.toFixed(2)}</b></td>
+                        <td><b style="color: #27ae60;">$${dCollected.toFixed(2)}</b></td>
+                        <td><b style="color: #c0392b;">$${dRemaining.toFixed(2)}</b></td>
                         <td>
                             <button class="btn-view" onclick="viewDeliveryReport('${del.name}')">عرض السجل المحاسبي والمبالغ</button>
                         </td>
@@ -244,6 +275,7 @@
 
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             alert('تم تسجيل توريد المبلغ بنجاح وتحديث الذمة المالية للمندوب');
+            loadAdminDeliveryList();
             viewDeliveryReport(activeDeliveryName);
         }
 
@@ -254,10 +286,10 @@
 
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             alert('تم إلغاء توريد المبلغ وإعادته لذمة المندوب');
+            loadAdminDeliveryList();
             viewDeliveryReport(activeDeliveryName);
         }
 
-        // دوال الطباعة الذكية والمفصولة
         function printGeneralReport() {
             document.body.className = "print-general";
             window.print();
