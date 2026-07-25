@@ -87,30 +87,30 @@
             </table>
         </div>
 
-        <!-- 4. إدارة أسعار صرف العملات المحدثة -->
+        <!-- 4. إدارة أسعار صرف العملات الاحترافية -->
         <div class="card" id="exchange">
             <h3>إدارة أسعار صرف العملات</h3>
             
-            <!-- تحديد العملة الأساسية للموقع -->
+            <!-- تحديد العملة الأساسية (المرجع الثابت مثل USD) -->
             <div style="background: #eef2f3; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-                <label><b>العملة الأساسية للموقع (مثال: ريال, جنيه): </b></label>
-                <input type="text" id="baseCurrency" placeholder="العملة الأساسية">
-                <button class="btn-green" onclick="saveBaseCurrency()">حفظ العملة الأساسية</button>
-                <p style="margin-top: 5px; color: #555;">العملة الأساسية الحالية: <span id="displayBaseCurrency" style="color: #27ae60; font-weight: bold;">لم تُحدد</span></p>
+                <label><b>العملة المرجعية الأساسية (مثال: دولار): </b></label>
+                <input type="text" id="baseCurrency" placeholder="مثال: دولار">
+                <button class="btn-green" onclick="saveBaseCurrency()">حفظ العملة المرجعية</button>
+                <p style="margin-top: 5px; color: #555;">المرجع الأساسي الحالي: <span id="displayBaseCurrency" style="color: #27ae60; font-weight: bold;">دولار (افتراضي)</span></p>
             </div>
 
-            <!-- إضافة العملات وتحويلها مقابل الأساسية -->
+            <!-- إضافة العملات الفرعية وسعرها مقابل (1 وحدة من المرجع) -->
             <div>
-                <h4>إضافة سعر صرف عملة جديدة مقابل العملة الأساسية</h4>
-                <input type="text" id="currencyName" placeholder="اسم العملة (مثال: دولار)">
-                <input type="number" id="currencyRate" placeholder="كم تساوي بالعملة الأساسية؟">
+                <h4>إضافة عملة محلية جديدة</h4>
+                <input type="text" id="currencyName" placeholder="اسم العملة (مثال: ليرة تركية)">
+                <input type="number" id="currencyRate" placeholder="كم تساوي أمام 1 دولار؟">
                 <button class="btn-green" onclick="addCurrency()">+ إضافة العملة</button>
             </div>
             <table>
                 <thead>
                     <tr>
-                        <th>العملة</th>
-                        <th>سعر الصرف</th>
+                        <th>العملة الأساسية (1 وحدة)</th>
+                        <th>سعر الصرف المقابل</th>
                         <th>الإجراء</th>
                     </tr>
                 </thead>
@@ -208,39 +208,42 @@
             loadDelivery();
         }
 
-        // --- إدارة أسعار الصرف والعملة الأساسية ---
+        // --- إدارة أسعار الصرف (منظومة صحيحة ومحترفة) ---
         function saveBaseCurrency() {
             let base = document.getElementById('baseCurrency').value;
-            if(!base) { alert('الرجاء كتابة اسم العملة الأساسية'); return; }
+            if(!base) { alert('الرجاء كتابة اسم العملة المرجعية'); return; }
             localStorage.setItem('siteBaseCurrency', base);
             loadBaseCurrency();
-            alert('تم حفظ العملة الأساسية بنجاح');
+            loadCurrencies();
+            alert('تم حفظ العملة المرجعية بنجاح');
         }
 
         function loadBaseCurrency() {
-            let base = localStorage.getItem('siteBaseCurrency');
-            if(base) {
-                document.getElementById('displayBaseCurrency').innerText = base;
-            }
+            let base = localStorage.getItem('siteBaseCurrency') || 'دولار';
+            document.getElementById('displayBaseCurrency').innerText = base;
         }
 
         function loadCurrencies() {
             let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
-            let base = localStorage.getItem('siteBaseCurrency') || 'العملة الأساسية';
+            let base = localStorage.getItem('siteBaseCurrency') || 'دولار';
             let tbody = document.getElementById('currencyTableBody');
             tbody.innerHTML = '';
+            
             currencies.forEach((cur, index) => {
-                tbody.innerHTML += `<tr><td>1 ${cur.name}</td><td>يساوي ${cur.rate} ${base}</td><td><button class="btn-red" onclick="deleteCurrency(${index})">حذف</button></td></tr>`;
+                tbody.innerHTML += `<tr>
+                    <td>1 ${base}</td>
+                    <td>يساوي ${cur.rate} ${cur.name}</td>
+                    <td><button class="btn-red" onclick="deleteCurrency(${index})">حذف</button></td>
+                </tr>`;
             });
         }
 
         function addCurrency() {
             let name = document.getElementById('currencyName').value;
             let rate = document.getElementById('currencyRate').value;
-            let base = localStorage.getItem('siteBaseCurrency');
+            let base = localStorage.getItem('siteBaseCurrency') || 'دولار';
             
-            if(!base) { alert('الرجاء حفظ العملة الأساسية للموقع أولاً أعلى الصفحة'); return; }
-            if(!name || !rate) { alert('الرجاء إدخال اسم العملة وسعرها'); return; }
+            if(!name || !rate) { alert('الرجاء إدخال اسم العملة والسعر'); return; }
 
             let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
             currencies.push({name, rate});
@@ -269,7 +272,7 @@
         }
         function addCustomer() {
             let name = document.getElementById('custName').value;
-            let phone = document.getElementById('custPhone').value;
+            let phone = document.getElementById('custPhone, phone').value || document.getElementById('custPhone').value;
             let password = document.getElementById('custPass').value;
             if(!name || !phone || !password) { alert('الرجاء إدخال جميع بيانات العميل'); return; }
             
