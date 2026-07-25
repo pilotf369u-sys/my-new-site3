@@ -6,46 +6,204 @@
     <title>لوحة تحكم الأدمن</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
-        .sidebar { width: 250px; background: #2c3e50; color: white; position: fixed; height: 100%; padding: 20px; }
+        .sidebar { width: 260px; background: #2c3e50; color: white; position: fixed; height: 100%; padding: 20px; overflow-y: auto; }
         .sidebar h2 { font-size: 20px; text-align: center; margin-bottom: 30px; }
         .sidebar a { display: block; color: white; text-decoration: none; padding: 12px; margin-bottom: 10px; border-radius: 5px; background: #34495e; transition: 0.3s; }
         .sidebar a:hover { background: #1abc9c; }
-        .main-content { margin-right: 270px; padding: 30px; }
-        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .main-content { margin-right: 300px; padding: 30px; }
+        .card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         h1 { color: #333; }
+        input, select { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 5px; width: 200px; }
+        button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-green { background: #27ae60; }
+        .btn-red { background: #c0392b; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #f2f2f2; color: #333; }
     </style>
 </head>
 <body>
 
-    <!-- القائمة الجانبية للأدمن -->
+    <!-- القائمة الجانبية -->
     <div class="sidebar">
         <h2>لوحة الإدارة</h2>
         <a href="#orders">إدارة الطلبات</a>
         <a href="#employees">إدارة الموظفين</a>
-        <a href="#content">إدارة الصفحة والموقع</a>
+        <a href="#delivery">إدارة المندوبين</a>
+        <a href="#exchange">أسعار صرف العملة</a>
         <a href="#customers">إدارة العملاء</a>
-        <a href="index.html" style="background: #c0392b; margin-top: 50px;">تسجيل الخروج</a>
+        <a href="#content">إدارة المحتوى</a>
+        <a href="login.html" class="btn-red" style="text-align:center; margin-top: 30px;">تسجيل الخروج</a>
     </div>
 
     <!-- المحتوى الرئيسي -->
     <div class="main-content">
         <h1>مرحباً بك يا أدمن</h1>
         
-        <div class="card" id="orders">
-            <h3>إدارة الطلبات</h3>
-            <p>هنا سظهر جدول الطلبات الخاصة بالعملاء مع إمكانية تعديل حالتها.</p>
-        </div>
-
+        <!-- 1. إدارة الموظفين -->
         <div class="card" id="employees">
             <h3>إدارة الموظفين</h3>
-            <p><button style="background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;">+ إضافة موظف جديد</button></p>
+            <div>
+                <input type="text" id="empName" placeholder="اسم الموظف">
+                <input type="text" id="empPhone" placeholder="رقم الهاتف">
+                <button class="btn-green" onclick="addEmployee()">+ إضافة موظف</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>رقم الهاتف</th>
+                        <th>الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="empTableBody">
+                    <!-- سيتم تعبئتها تلقائياً -->
+                </tbody>
+            </table>
         </div>
 
-        <div class="card" id="content">
-            <h3>إدارة المحتوى</h3>
-            <p>تعديل نصوص وأقسام الموقع الرئيسية.</p>
+        <!-- 2. إدارة المندوبين -->
+        <div class="card" id="delivery">
+            <h3>إدارة المندوبين</h3>
+            <div>
+                <input type="text" id="delName" placeholder="اسم المندوب">
+                <input type="text" id="delPhone" placeholder="رقم الهاتف">
+                <button class="btn-green" onclick="addDelivery()">+ إضافة مندوب</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم المندوب</th>
+                        <th>رقم الهاتف</th>
+                        <th>الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="delTableBody">
+                    <!-- سيتم تعبئتها تلقائياً -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 3. إدارة أسعار صرف العملة -->
+        <div class="card" id="exchange">
+            <h3>إدارة أسعار صرف العملة</h3>
+            <div>
+                <input type="text" id="currencyName" placeholder="اسم العملة (مثال: دولار)">
+                <input type="number" id="currencyRate" placeholder="السعر مقابل العملة الأساسية">
+                <button class="btn-green" onclick="saveExchangeRate()">حفظ / تحديث السعر</button>
+            </div>
+            <p style="margin-top: 15px; font-size: 16px;">السعر الحالي المخزن: <span id="currentRate" style="color: #27ae60; font-weight: bold;">لم يُحدد بعد</span></p>
+        </div>
+
+        <!-- 4. إدارة الطلبات -->
+        <div class="card" id="orders">
+            <h3>إدارة الطلبات</h3>
+            <p>هنا تظهر طلبات العملاء (قريباً سنربطها بصفحة الطلبات).</p>
+        </div>
+
+        <!-- 5. إدارة العملاء -->
+        <div class="card" id="customers">
+            <h3>إدارة العملاء</h3>
+            <p>قائمة العملاء المسجلين في النظام.</p>
         </div>
     </div>
 
+    <script>
+        // --- إدارة الموظفين ---
+        function loadEmployees() {
+            let employees = JSON.parse(localStorage.getItem('employeesList')) || [];
+            let tbody = document.getElementById('empTableBody');
+            tbody.innerHTML = '';
+            employees.forEach((emp, index) => {
+                tbody.innerHTML += `<tr>
+                    <td>${emp.name}</td>
+                    <td>${emp.phone}</td>
+                    <td><button class="btn-red" onclick="deleteEmployee(${index})">حذف</button></td>
+                `;
+            });
+        }
+
+        function addEmployee() {
+            let name = document.getElementById('empName').value;
+            let phone = document.getElementById('empPhone').value;
+            if(!name || !phone) { alert('الرجاء إدخال الاسم ورقم الهاتف'); return; }
+            
+            let employees = JSON.parse(localStorage.getItem('employeesList')) || [];
+            employees.push({name, phone});
+            localStorage.setItem('employeesList', JSON.stringify(employees));
+            
+            document.getElementById('empName').value = '';
+            document.getElementById('empPhone').value = '';
+            loadEmployees();
+        }
+
+        function deleteEmployee(index) {
+            let employees = JSON.parse(localStorage.getItem('employeesList')) || [];
+            employees.splice(index, 1);
+            localStorage.setItem('employeesList', JSON.stringify(employees));
+            loadEmployees();
+        }
+
+        // --- إدارة المندوبين ---
+        function loadDelivery() {
+            let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
+            let tbody = document.getElementById('delTableBody');
+            tbody.innerHTML = '';
+            deliveryList.forEach((del, index) => {
+                tbody.innerHTML += `<tr>
+                    <td>${del.name}</td>
+                    <td>${del.phone}</td>
+                    <td><button class="btn-red" onclick="deleteDelivery(${index})">حذف</button></td>
+                `;
+            });
+        }
+
+        function addDelivery() {
+            let name = document.getElementById('delName').value;
+            let phone = document.getElementById('delPhone').value;
+            if(!name || !phone) { alert('الرجاء إدخال اسم المندوب ورقم هاتفه'); return; }
+            
+            let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
+            deliveryList.push({name, phone});
+            localStorage.setItem('deliveryList', JSON.stringify(deliveryList));
+            
+            document.getElementById('delName').value = '';
+            document.getElementById('delPhone').value = '';
+            loadDelivery();
+        }
+
+        function deleteDelivery(index) {
+            let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
+            deliveryList.splice(index, 1);
+            localStorage.setItem('deliveryList', JSON.stringify(deliveryList));
+            loadDelivery();
+        }
+
+        // --- أسعار الصرف ---
+        function saveExchangeRate() {
+            let name = document.getElementById('currencyName').value;
+            let rate = document.getElementById('currencyRate').value;
+            if(!name || !rate) { alert('الرجاء إدخال اسم العملة والسعر'); return; }
+            
+            let exchangeData = { name, rate };
+            localStorage.setItem('exchangeRateData', JSON.stringify(exchangeData));
+            loadExchangeRate();
+            alert('تم حفظ سعر الصرف بنجاح');
+        }
+
+        function loadExchangeRate() {
+            let data = JSON.parse(localStorage.getItem('exchangeRateData'));
+            if(data) {
+                document.getElementById('currentRate').innerText = `${data.name} = ${data.rate}`;
+            }
+        }
+
+        // تشغيل الدوال عند فتح الصفحة
+        window.onload = function() {
+            loadEmployees();
+            loadDelivery();
+            loadExchangeRate();
+        }
+    </script>
 </body>
 </html>
