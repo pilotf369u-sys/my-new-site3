@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة متابعة المندوبين والموظفين - الأدمن</title>
+    <title>السجل المحاسبي وحركة المندوبين - الأدمن</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -13,16 +13,17 @@
         th { background: #f2f2f2; font-size: 14px; }
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
         .btn-view { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-collect { background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .report-section { margin-top: 30px; background: #f9f9f9; padding: 20px; border-radius: 6px; border: 1px solid #ddd; display: none; }
-        .summary-box { display: flex; gap: 20px; margin-bottom: 15px; }
-        .card { background: #fff; padding: 15px; border-radius: 5px; border: 1px solid #ccc; flex: 1; text-align: center; }
+        .summary-box { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .card { background: #fff; padding: 15px; border-radius: 5px; border: 1px solid #ccc; flex: 1; min-width: 200px; text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
-        <a href="login.html" class="btn-red">تسجيل الخروج</a>
-        <h2>لوحة الأدمن - متابعة المندوبين وحركة العمل</h2>
-        <p>انقر على زر "سجل الحركة والمبالغ" لأي مندوب للاطلاع على تفاصيل عمله وما في ذمته المالية:</p>
+        <a href="admin-dashboard.html" class="btn-red">العودة للوحة الأدمن</a>
+        <h2>لوحة الأدمن - السجل المحاسبي ومتابعة المندوبين</h2>
+        <p>متابعة حركة المندوبين، المبالغ المحصلة، وما تبقى في ذمتهم المالية مع التواريخ:</p>
         
         <!-- جدول قائمة المندوبين المسجلين -->
         <table>
@@ -30,7 +31,7 @@
                 <tr>
                     <th>اسم المندوب</th>
                     <th>رقم الهاتف</th>
-                    <th>إجراء المتابعة</th>
+                    <th>إجراء السجل المحاسبي</th>
                 </tr>
             </thead>
             <tbody id="adminDeliveryTable">
@@ -38,21 +39,30 @@
             </tbody>
         </table>
 
-        <!-- قسم عرض تقرير وسجل المندوب المحدد -->
+        <!-- قسم عرض السجل المالي وحركة المندوب المحدد -->
         <div id="deliveryReportSection" class="report-section">
-            <h3 id="reportTitle">سجل حركات المندوب: <span></span></h3>
+            <h3 id="reportTitle">السجل المالي وحركات المندوب: <span></span></h3>
+            
             <div class="summary-box">
                 <div class="card">
-                    <h4>إجمالي الشحنات المسندة</h4>
+                    <h4>إجمالي الشحنات</h4>
                     <p id="repTotalShipments" style="font-size: 18px; font-weight: bold; color: #2c3e50;">0</p>
                 </div>
                 <div class="card">
-                    <h4>إجمالي المبالغ المطلوبة تحصيلها</h4>
+                    <h4>إجمالي المبالغ المطلوبة</h4>
                     <p id="repTotalAmount" style="font-size: 18px; font-weight: bold; color: #e67e22;">$0.00</p>
+                </div>
+                <div class="card">
+                    <h4>المبالغ المسلمة (المحصلة)</h4>
+                    <p id="repCollectedAmount" style="font-size: 18px; font-weight: bold; color: #27ae60;">$0.00</p>
+                </div>
+                <div class="card" style="background: #fadbd8;">
+                    <h4 style="color: #c0392b;">المتبقي في ذمة المندوب</h4>
+                    <p id="repRemainingAmount" style="font-size: 18px; font-weight: bold; color: #c0392b;">$0.00</p>
                 </div>
             </div>
 
-            <h4>تفاصيل الشحنات الخاصة به:</h4>
+            <h4>تفاصيل الشحنات وحالة التحصيل المالي:</h4>
             <table>
                 <thead>
                     <tr>
@@ -60,18 +70,22 @@
                         <th>اسم العميل</th>
                         <th>الهاتف والعنوان</th>
                         <th>المبلغ</th>
-                        <th>الحالة</th>
-                        <th>السبب (إن وجد)</th>
+                        <th>حالة الطلب</th>
+                        <th>الحالة المالية (الذمة)</th>
+                        <th>تاريخ ووقت التحصيل</th>
+                        <th>إجراء التسجيل المحاسبي</th>
                     </tr>
-                ></thead>
+                </thead>
                 <tbody id="repOrdersBody">
-                    <tr><td colspan="6">اختر مندوباً لعرض السجل...</td></tr>
+                    <tr><td colspan="8">اختر مندوباً لعرض السجل...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <script>
+        let activeDeliveryName = "";
+
         function loadAdminDeliveryList() {
             let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
             let tbody = document.getElementById('adminDeliveryTable');
@@ -82,13 +96,13 @@
                 return;
             }
 
-            deliveryList.forEach((del, index) => {
+            deliveryList.forEach((del) => {
                 tbody.innerHTML += `
                     <tr>
                         <td><b>${del.name}</b></td>
                         <td dir="ltr">${del.phone}</td>
                         <td>
-                            <button class="btn-view" onclick="viewDeliveryReport('${del.name}')">سجل الحركة والمبالغ</button>
+                            <button class="btn-view" onclick="viewDeliveryReport('${del.name}')">عرض السجل المحاسبي والمبالغ</button>
                         </td>
                     </tr>
                 `;
@@ -96,6 +110,7 @@
         }
 
         function viewDeliveryReport(deliveryName) {
+            activeDeliveryName = deliveryName;
             document.getElementById('deliveryReportSection').style.display = 'block';
             document.getElementById('reportTitle').querySelector('span').innerText = deliveryName;
 
@@ -105,12 +120,12 @@
 
             let totalShipmentsCount = 0;
             let totalAmountSum = 0;
+            let collectedAmountSum = 0;
             let hasRecords = false;
 
-            customers.forEach(cust => {
+            customers.forEach((cust, cIdx) => {
                 if (cust.orders && cust.orders.length > 0) {
-                    cust.orders.forEach(ord => {
-                        // إذا كانت الشحنة مسندة لهذا المندوب بالذات
+                    cust.orders.forEach((ord, oIdx) => {
                         if (ord.assignedDelivery === deliveryName) {
                             hasRecords = true;
                             totalShipmentsCount++;
@@ -118,7 +133,20 @@
                             let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
                             totalAmountSum += rawPrice;
 
-                            let reasonText = ord.reason ? `<span style="color: #c0392b;">${ord.reason}</span>` : '---';
+                            let isCollected = ord.financialStatus === "تم التوريد للخزينة";
+                            if (isCollected) {
+                                collectedAmountSum += rawPrice;
+                            }
+
+                            let financialBadge = isCollected ? 
+                                `<span style="color: #27ae60; font-weight: bold;">تم توريده للخزينة</span>` : 
+                                `<span style="color: #c0392b; font-weight: bold;">بذمة المندوب (معلق)</span>`;
+
+                            let collectDateText = ord.collectDate ? `<span dir="ltr" style="font-size: 11px;">${ord.collectDate}</span>` : '---';
+
+                            let actionBtn = !isCollected ? 
+                                `<button class="btn-collect" onclick="markAsCollected(${cIdx}, ${oIdx})">استلام وتوريد المبلغ</button>` : 
+                                `<button style="background: #95a5a6; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;" onclick="cancelCollection(${cIdx}, ${oIdx})">إلغاء التوريد</button>`;
 
                             repOrdersBody.innerHTML += `
                                 <tr>
@@ -126,8 +154,10 @@
                                     <td>${cust.name}</td>
                                     <td style="text-align: right;"><span dir="ltr">${cust.phone}</span><br><small>${cust.address || ''}</small></td>
                                     <td><b style="color: #2980b9;">${ord.price || '$0.00'}</b></td>
-                                    <td><span style="padding: 3px 8px; background: #e2f0d9; border-radius: 4px; font-weight: bold;">${ord.status}</span></td>
-                                    <td>${reasonText}</td>
+                                    <td><span style="padding: 3px 6px; background: #e2f0d9; border-radius: 4px; font-size: 12px; font-weight: bold;">${ord.status}</span></td>
+                                    <td>${financialBadge}</td>
+                                    <td>${collectDateText}</td>
+                                    <td>${actionBtn}</td>
                                 </tr>
                             `;
                         }
@@ -135,12 +165,42 @@
                 }
             });
 
+            let remainingAmount = totalAmountSum - collectedAmountSum;
+
             document.getElementById('repTotalShipments').innerText = totalShipmentsCount;
             document.getElementById('repTotalAmount').innerText = `$${totalAmountSum.toFixed(2)}`;
+            document.getElementById('repCollectedAmount').innerText = `$${collectedAmountSum.toFixed(2)}`;
+            document.getElementById('repRemainingAmount').innerText = `$${remainingAmount.toFixed(2)}`;
 
             if (!hasRecords) {
-                repOrdersBody.innerHTML = `<tr><td colspan="6">لا توجد طلبات أو شحنات مسندة لهذا المندوب حتى الآن</td></tr>`;
+                repOrdersBody.innerHTML = `<tr><td colspan="8">لا توجد شحنات مسندة لهذا المندوب حتى الآن</td></tr>`;
             }
+        }
+
+        function markAsCollected(cIdx, oIdx) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            
+            // تسجيل حالة التوريد وتثبيت التاريخ والوقت الحالي بدقة
+            let now = new Date();
+            let dateStr = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            customers[cIdx].orders[oIdx].financialStatus = "تم التوريد للخزينة";
+            customers[cIdx].orders[oIdx].collectDate = dateStr;
+
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            alert('تم تسجيل توريد المبلغ بنجاح وتحديث الذمة المالية للمندوب');
+            viewDeliveryReport(activeDeliveryName); // تحديث العرض فوراً
+        }
+
+        function cancelCollection(cIdx, oIdx) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            
+            customers[cIdx].orders[oIdx].financialStatus = "معلق";
+            customers[cIdx].orders[oIdx].collectDate = "";
+
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            alert('تم إلغاء توريد المبلغ وإعادته لذمة المندوب');
+            viewDeliveryReport(activeDeliveryName);
         }
 
         window.onload = function() {
