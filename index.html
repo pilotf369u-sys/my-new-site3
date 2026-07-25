@@ -330,5 +330,41 @@
         <button onclick="document.getElementById('orderModal').style.display='none'" style="margin-top:10px; background:none; border:none; color:#666; cursor:pointer; width:100%;">إغلاق</button>
     </div>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dynamicStores = JSON.parse(localStorage.getItem('dynamicStoresList')) || [];
 
+        dynamicStores.forEach(store => {
+            const card = document.createElement('div');
+            card.className = 'store-card';
+
+            const isLocal = store.category === 'local';
+            const btnText = isLocal ? 'دخول' : 'تصفح';
+            const linkClass = isLocal ? 'store-link local-link' : 'store-link';
+
+            card.innerHTML = `
+                <div class="logo-container">
+                    <img class="store-logo" src="${store.img || 'images/meshwar-logo.png'}" alt="${store.name}">
+                </div>
+                <h3>${store.name}</h3>
+                <a class="${linkClass}" href="${store.url}" target="_blank" rel="noopener noreferrer">${btnText}</a>
+            `;
+
+            let targetContainer = null;
+
+            if (isLocal) {
+                const localTitle = Array.from(document.querySelectorAll('.section-title')).find(el => el.innerText.includes('المتاجر الشخصية والمحلية'));
+                if (localTitle) {
+                    targetContainer = localTitle.nextElementSibling;
+                }
+            } else {
+                targetContainer = document.querySelector('.grid-container');
+            }
+
+            if (targetContainer && targetContainer.classList.contains('grid-container')) {
+                targetContainer.appendChild(card);
+            }
+        });
+    });
+</script>
 <script src="meshwar-app.js"></script>
