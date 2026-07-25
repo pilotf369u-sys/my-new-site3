@@ -6,34 +6,116 @@
     <title>لوحة تحكم الموظف</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { color: #2c3e50; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; display: inline-block; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; }
-        .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; }
+        .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
+        select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
+        button.action-btn { background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
         <h2>مرحباً بك عزيزي الموظف</h2>
-        <p>من هذه اللوحة يمكنك متابعة الطلبات والمهام المسندة إليك.</p>
+        <p>من هذه اللوحة يمكنك متابعة طلبات العملاء، تحديث حالتها، وتوجيهها للمندوبين.</p>
         
-        <h3>الطلبات الواردة</h3>
+        <h3>الطلبات الواردة من العملاء</h3>
         <table>
             <thead>
                 <tr>
                     <th>رقم الطلب</th>
-                    <th>اسم العميل</th>
-                    <th>الحالة</th>
-                    <th>الإجراء</th>
+                    <th>اسم العميل ورقم الهاتف</th>
+                    <th>السعر والتفاصيل</th>
+                    <th>الحالة الحالية</th>
+                    <th>إسناد لمندوب</th>
+                    <th>تحديث الحالة والإجراء</th>
                 </tr>
             </thead>
             <tbody id="empOrdersBody">
-                <tr><td colspan="4">لا توجد طلبات حالياً</td></tr>
+                <tr><td colspan="6">جاري تحميل الطلبات...</td></tr>
             </tbody>
         </table>
     </div>
+
+    <script>
+        function loadEmployeeOrders() {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
+            let tbody = document.getElementById('empOrdersBody');
+            tbody.innerHTML = '';
+
+            let hasOrders = false;
+
+            customers.forEach((cust, custIndex) => {
+                if (cust.orders && cust.orders.length > 0) {
+                    cust.orders.forEach((ord, ordIndex) => {
+                        hasOrders = true;
+
+                        // قائمة المندوبين للاختيار من بينها
+                        let deliveryOptions = `<option value="">اختر المندوب</option>`;
+                        deliveryList.forEach(del => {
+                            let selected = (ord.assignedDelivery === del.name) ? 'selected' : '';
+                            deliveryOptions += `<option value="${del.name}" ${selected}>${del.name}</option>`;
+                        });
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><b>${ord.id}</b></td>
+                                text-align: right;><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;" dir="ltr">${cust.phone}</span></td>
+                                <td>${ord.price || '---'}</td>
+                                <td><span style="padding: 3px 8px; background: #fff3cd; border-radius: 4px; font-weight: bold;">${ord.status}</span></td>
+                                <td>
+                                    <select id="del_${custIndex}_${ordIndex}" onchange="assignDelivery(${custIndex}, ${ordIndex})">
+                                        ${deliveryOptions}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select id="status_${custIndex}_${ordIndex}">
+                                        <option value="قيد المعالجة" ${ord.status === 'قيد المعالجة' ? 'selected' : ''}>قيد المعالجة</option>
+                                        <option value="قيد الشحن" ${ord.status === 'قيد الشحن' ? 'selected' : ''}>قيد الشحن</option>
+                                        <option value="تم التوصيل" ${ord.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
+                                        <option value="ملغي" ${ord.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
+                                    </select>
+                                    <button class="action-btn" onclick="updateOrderStatus(${custIndex}, ${ordIndex})">حفظ</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+
+            if (!hasOrders) {
+                tbody.innerHTML = `<tr><td colspan="6">لا توجد طلبات واردة حالياً</td></tr>`;
+            }
+        }
+
+        function assignDelivery(custIndex, ordIndex) {
+            let selectElem = document.getElementById(`del_${custIndex}_${ordIndex}`);
+            let selectedDelivery = selectElem.value;
+
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+        }
+
+        function updateOrderStatus(custIndex, ordIndex) {
+            let statusElem = document.getElementById(`status_${custIndex}_${ordIndex}`);
+            let newStatus = statusElem.value;
+
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            customers[custIndex].orders[ordIndex].status = newStatus;
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            
+            alert('تم تحديث حالة الطلب بنجاح');
+            loadEmployeeOrders();
+        }
+
+        window.onload = function() {
+            loadEmployeeOrders();
+        }
+    </script>
 </body>
 </html>
