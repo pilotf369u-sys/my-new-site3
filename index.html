@@ -334,6 +334,16 @@
     document.addEventListener("DOMContentLoaded", function() {
         const dynamicStores = JSON.parse(localStorage.getItem('dynamicStoresList')) || [];
 
+        // خريطة تربط بين قيمة التصنيف في لوحة التحكم وعنوان القسم في صفحة العرض
+        const categoryMap = {
+            'comprehensive': 'المتاجر الشاملة',
+            'fashion': 'الأزياء والملابس',
+            'sports': 'الرياضة والأحذية',
+            'beauty': 'التجميل والعناية',
+            'home': 'المنزل والأطفال والسوبر ماركت',
+            'local': 'المتاجر الشخصية والمحلية'
+        };
+
         dynamicStores.forEach(store => {
             const card = document.createElement('div');
             card.className = 'store-card';
@@ -350,18 +360,23 @@
                 <a class="${linkClass}" href="${store.url}" target="_blank" rel="noopener noreferrer">${btnText}</a>
             `;
 
+            // البحث عن القسم المطابق في الصفحة الرئيسية
             let targetContainer = null;
+            const targetSectionName = categoryMap[store.category];
 
-            if (isLocal) {
-                const localTitle = Array.from(document.querySelectorAll('.section-title')).find(el => el.innerText.includes('المتاجر الشخصية والمحلية'));
-                if (localTitle) {
-                    targetContainer = localTitle.nextElementSibling;
+            if (targetSectionName) {
+                const sectionTitle = Array.from(document.querySelectorAll('.section-title')).find(el => el.innerText.includes(targetSectionName));
+                if (sectionTitle) {
+                    targetContainer = sectionTitle.nextElementSibling;
                 }
-            } else {
+            }
+
+            // إذا لم يتم العثور على القسم، يتم وضعه افتراضياً في أول حاوية
+            if (!targetContainer || !targetContainer.classList.contains('grid-container')) {
                 targetContainer = document.querySelector('.grid-container');
             }
 
-            if (targetContainer && targetContainer.classList.contains('grid-container')) {
+            if (targetContainer) {
                 targetContainer.appendChild(card);
             }
         });
