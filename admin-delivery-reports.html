@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>السجل المحاسبي وحركة المندوبين</title>
+    <title>السجل المحاسبي وحركة المندوبين</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -180,7 +180,6 @@
         function markAsCollected(cIdx, oIdx) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             
-            // تسجيل حالة التوريد وتثبيت التاريخ والوقت الحالي بدقة
             let now = new Date();
             let dateStr = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -189,7 +188,7 @@
 
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             alert('تم تسجيل توريد المبلغ بنجاح وتحديث الذمة المالية للمندوب');
-            viewDeliveryReport(activeDeliveryName); // تحديث العرض فوراً
+            viewDeliveryReport(activeDeliveryName);
         }
 
         function cancelCollection(cIdx, oIdx) {
