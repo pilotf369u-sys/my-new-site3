@@ -22,7 +22,7 @@
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
         <h2>لوحة تحكم الموظف - إدارة الطلبات</h2>
-        <p>متابعة الطلبات، إسنادها للمندوبين، وتحديث حالتها فردياً أو جماعياً.</p>
+        <p>متابعة الطلبات، إسنادها للمندوبين المسجلين، وتحديث حالتها فردياً أو جماعياً.</p>
 
         <!-- شريط التحديث الجماعي -->
         <div class="action-bar">
@@ -51,7 +51,7 @@
                     <th>العميل ورقم الهاتف</th>
                     <th>التفاصيل والمبلغ</th>
                     <th>الحالة الحالية والسبب</th>
-                    <th>إسناد لمندوب</th>
+                    <th>إسناد لمندوب (من النظام)</th>
                     <th>تحديث الحالة الفردية</th>
                 </tr>
             </thead>
@@ -74,49 +74,9 @@
             <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
         `;
 
-        // فرض إدخال بيانات افتراضية فورية لضمان ظهور الطلبات والمندوبين مباشرة
-        function forceInitDefaultData() {
-            const defaultDelivery = [
-                { name: "محمد أحمد", phone: "05311111111", password: "123" },
-                { name: "خالد محمود", phone: "05322222222", password: "123" },
-                { name: "علي حسن", phone: "05333333333", password: "123" }
-            ];
-            localStorage.setItem('deliveryList', JSON.stringify(defaultDelivery));
-
-            const defaultCustomers = [
-                { 
-                    code: "CUS-9014",
-                    name: "عمر الجماس", 
-                    phone: "905378240430", 
-                    password: "123",
-                    country: "تركيا",
-                    state: "إسطنبول",
-                    address: "إسطنبول، الفاتح، شارع الأنس",
-                    orders: [
-                        { id: "#MW-9014", status: "توزيع داخلي", price: "$85.50", assignedDelivery: "محمد أحمد", reason: "" },
-                        { id: "#MW-8821", status: "قيد المعالجة", price: "$120.00", assignedDelivery: "", reason: "" }
-                    ]
-                },
-                { 
-                    code: "CUS-5520",
-                    name: "عبد العزيز", 
-                    phone: "9647772279773", 
-                    password: "123",
-                    country: "العراق",
-                    state: "بغداد",
-                    address: "بغداد، حي المنصور",
-                    orders: [
-                        { id: "#MW-5520", status: "جاهز للشحن", price: "$200.00", assignedDelivery: "خالد محمود", reason: "" }
-                    ]
-                }
-            ];
-            localStorage.setItem('adminCustomersList', JSON.stringify(defaultCustomers));
-        }
-
         function loadEmployeeOrders() {
-            forceInitDefaultData(); // ضمان توفر البيانات دائماً
-
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            // جلب المندوبين المسجلين في النظام فعلياً
             let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
             let tbody = document.getElementById('empOrdersBody');
             tbody.innerHTML = '';
@@ -128,7 +88,7 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         hasOrders = true;
 
-                        // تعبئة قائمة المندوبين بدقة من قائمة النظام المسجلة
+                        // تعبئة القائمة بجميع المندوبين المسجلين في النظام
                         let deliveryOptions = `<option value="">اختر المندوب</option>`;
                         deliveryList.forEach(del => {
                             let selected = (ord.assignedDelivery === del.name) ? 'selected' : '';
@@ -217,7 +177,7 @@
 
         function applyBulkUpdate() {
             let selectedStatus = document.getElementById('bulkStatusSelect').value;
-            let bulkReason = document.getElementById('bulkReasonInput').value;
+            let bulkReason = document.getElementById('bulkReasonInput5').value || document.getElementById('bulkReasonInput').value;
 
             if (!selectedStatus) {
                 alert('الرجاء اختيار الحالة المراد تطبيقها أولاً');
