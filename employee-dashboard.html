@@ -49,7 +49,7 @@
                     <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"> تحديد الكل</th>
                     <th>رقم الطلب</th>
                     <th>العميل ورقم الهاتف</th>
-                    <th>التفاصيل والسعر</th>
+                    <th>التفاصيل والمبلغ</th>
                     <th>الحالة الحالية والسبب</th>
                     <th>إسناد لمندوب</th>
                     <th>تحديث الحالة الفردية</th>
@@ -74,6 +74,48 @@
             <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
         `;
 
+        // دتهيئة البيانات الافتراضية للعملاء والطلبات والمندوبين إذا لم تكن موجودة
+        function initDefaultData() {
+            if (!localStorage.getItem('deliveryList')) {
+                const defaultDelivery = [
+                    { name: "محمد أحمد", phone: "05311111111", password: "123" },
+                    { name: "خالد محمود", phone: "05322222222", password: "123" }
+                ];
+                localStorage.setItem('deliveryList', JSON.stringify(defaultDelivery));
+            }
+
+            if (!localStorage.getItem('adminCustomersList')) {
+                const defaultCustomers = [
+                    { 
+                        code: "CUS-9014",
+                        name: "عمر الجماس", 
+                        phone: "905378240430", 
+                        password: "123",
+                        country: "تركيا",
+                        state: "إسطنبول",
+                        address: "إسطنبول، الفاتح، شارع الأنس",
+                        orders: [
+                            { id: "#MW-9014", status: "توزيع داخلي", price: "$85.50", assignedDelivery: "محمد أحمد", reason: "" },
+                            { id: "#MW-8821", status: "قيد المعالجة", price: "$120.00", assignedDelivery: "", reason: "" }
+                        ]
+                    },
+                    { 
+                        code: "CUS-5520",
+                        name: "عبد العزيز", 
+                        phone: "9647772279773", 
+                        password: "123",
+                        country: "العراق",
+                        state: "بغداد",
+                        address: "بغداد، حي المنصور",
+                        orders: [
+                            { id: "#MW-5520", status: "جاهز للشحن", price: "$200.00", assignedDelivery: "خالد محمود", reason: "" }
+                        ]
+                    }
+                ];
+                localStorage.setItem('adminCustomersList', JSON.stringify(defaultCustomers));
+            }
+        }
+
         function loadEmployeeOrders() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
@@ -87,6 +129,7 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         hasOrders = true;
 
+                        // تعبئة قائمة المندوبين من النظام المسجل
                         let deliveryOptions = `<option value="">اختر المندوب</option>`;
                         deliveryList.forEach(del => {
                             let selected = (ord.assignedDelivery === del.name) ? 'selected' : '';
@@ -95,12 +138,15 @@
 
                         let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
 
+                        // توليد خيارات الحالات مع تحديد الحالة الحالية
+                        let currentOptionsHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
+
                         tbody.innerHTML += `
                             <tr>
                                 <td><input type="checkbox" class="order-checkbox" data-cust="${custIndex}" data-ord="${ordIndex}"></td>
                                 <td><b>${ord.id}</b></td>
                                 <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;" dir="ltr">${cust.phone}</span></td>
-                                <td>${ord.price || '---'}</td>
+                                <td><b style="color: #2980b9;">${ord.price || '$0.00'}</b></td>
                                 <td><span style="padding: 3px 8px; background: #fff3cd; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span>${reasonDisplay}</td>
                                 <td>
                                     <select id="del_${custIndex}_${ordIndex}" onchange="assignDelivery(${custIndex}, ${ordIndex})">
@@ -109,7 +155,7 @@
                                 </td>
                                 <td>
                                     <select id="status_${custIndex}_${ordIndex}" onchange="checkIndividualReason(${custIndex}, ${ordIndex})">
-                                        ${statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`)}
+                                        ${currentOptionsHtml}
                                     </select>
                                     <input type="text" id="reason_${custIndex}_${ordIndex}" placeholder="سبب الرفض/عدم التسليم" style="display: ${ord.status === 'تم رفض الطلب أو عدم التسليم' ? 'block' : 'none'}; margin-top: 5px; width: 100%;" value="${ord.reason || ''}">
                                     <button class="action-btn" onclick="updateOrderStatus(${custIndex}, ${ordIndex})" style="margin-top: 5px;">حفظ</button>
@@ -202,6 +248,7 @@
         }
 
         window.onload = function() {
+            initDefaultData();
             loadEmployeeOrders();
         }
     </script>
