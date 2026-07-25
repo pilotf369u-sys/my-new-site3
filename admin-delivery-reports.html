@@ -5,81 +5,129 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>السجل المحاسبي وحركة المندوبين</title>
     <style>
-        body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; display: flex; }
+        
+        /* تنسيق القائمة الجانبية الثابتة */
+        .sidebar { width: 250px; background: #2c3e50; color: white; min-height: 100vh; padding: 20px; box-sizing: border-box; position: fixed; right: 0; top: 0; }
+        .sidebar h2 { font-size: 18px; border-bottom: 1px solid #4e6d8d; padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
+        .sidebar a { display: block; color: ecf0f1; text-decoration: none; padding: 10px 15px; margin-bottom: 8px; border-radius: 4px; transition: 0.2s; font-size: 14px; }
+        .sidebar a:hover, .sidebar a.active { background: #34495e; color: #fff; }
+        .btn-red-logout { background: #c0392b !important; text-align: center; margin-top: 30px; }
+
+        /* محتوى الصفحة الرئيسي */
+        .main-content { margin-right: 250px; padding: 30px; width: calc(100% - 250px); box-sizing: border-box; }
+        .container { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
         h2, h3 { color: #2c3e50; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; font-size: 14px; }
-        .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
+        
         .btn-view { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-collect { background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-print { background: #8e44ad; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; float: left; margin-left: 10px; }
+        
         .report-section { margin-top: 30px; background: #f9f9f9; padding: 20px; border-radius: 6px; border: 1px solid #ddd; display: none; }
         .summary-box { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
         .card { background: #fff; padding: 15px; border-radius: 5px; border: 1px solid #ccc; flex: 1; min-width: 200px; text-align: center; }
+
+        /* تنسيقات خاصة عند طباعة الصفحة (PDF) */
+        @media print {
+            body { background: white; display: block; }
+            .sidebar, .btn-print, .btn-view, .btn-collect, button { display: none !important; }
+            .main-content { margin-right: 0; width: 100%; padding: 0; }
+            .container { box-shadow: none; padding: 0; }
+            .report-section { display: block !important; border: none; background: white; padding: 0; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="admin-dashboard.html" class="btn-red">العودة للوحة الأدمن</a>
-        <h2>لوحة الأدمن - السجل المحاسبي ومتابعة المندوبين</h2>
-        <p>متابعة حركة المندوبين، المبالغ المحصلة، وما تبقى في ذمتهم المالية مع التواريخ:</p>
-        
-        <!-- جدول قائمة المندوبين المسجلين -->
-        <table>
-            <thead>
-                <tr>
-                    <th>اسم المندوب</th>
-                    <th>رقم الهاتف</th>
-                    <th>إجراء السجل المحاسبي</th>
-                </tr>
-            </thead>
-            <tbody id="adminDeliveryTable">
-                <tr><td colspan="3">جاري التحميل...</td></tr>
-            </tbody>
-        </table>
 
-        <!-- قسم عرض السجل المالي وحركة المندوب المحدد -->
-        <div id="deliveryReportSection" class="report-section">
-            <h3 id="reportTitle">السجل المالي وحركات المندوب: <span></span></h3>
+    <!-- القائمة الجانبية الثابتة -->
+    <div class="sidebar">
+        <h2>لوحة الإدارة</h2>
+        <a href="admin-dashboard.html">إدارة الطلبات</a>
+        <a href="admin-dashboard.html">إدارة الموظفين</a>
+        <a href="admin-dashboard.html">إدارة المندوبين</a>
+        <a href="admin-delivery-reports.html" class="active">تقرير ومتابعة المندوبين</a>
+        <a href="admin-dashboard.html">أسعار صرف العملات</a>
+        <a href="admin-dashboard.html">إدارة المتاجر</a>
+        <a href="admin-dashboard.html">إدارة العملاء</a>
+        <a href="admin-dashboard.html">إدارة المحتوى</a>
+        <a href="login.html" class="btn-red-logout">تسجيل الخروج</a>
+    </div>
+
+    <!-- المحتوى الرئيسي -->
+    <div class="main-content">
+        <div class="container">
+            <h2>لوحة الأدمن - السجل المحاسبي ومتابعة المندوبين</h2>
+            <p>متابعة حركة المندوبين، المبالغ المحصلة، وما تبقى في ذمتهم المالية مع التواريخ:</p>
             
-            <div class="summary-box">
-                <div class="card">
-                    <h4>إجمالي الشحنات</h4>
-                    <p id="repTotalShipments" style="font-size: 18px; font-weight: bold; color: #2c3e50;">0</p>
-                </div>
-                <div class="card">
-                    <h4>إجمالي المبالغ المطلوبة</h4>
-                    <p id="repTotalAmount" style="font-size: 18px; font-weight: bold; color: #e67e22;">$0.00</p>
-                </div>
-                <div class="card">
-                    <h4>المبالغ المسلمة (المحصلة)</h4>
-                    <p id="repCollectedAmount" style="font-size: 18px; font-weight: bold; color: #27ae60;">$0.00</p>
-                </div>
-                <div class="card" style="background: #fadbd8;">
-                    <h4 style="color: #c0392b;">المتبقي في ذمة المندوب</h4>
-                    <p id="repRemainingAmount" style="font-size: 18px; font-weight: bold; color: #c0392b;">$0.00</p>
-                </div>
+            <!-- جدول قائمة المندوبين المسجلين -->
+            <div id="generalReportArea">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>اسم المندوب</th>
+                            <th>رقم الهاتف</th>
+                            <th>إجراء السجل المحاسبي</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminDeliveryTable">
+                        <tr><td colspan="3">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
             </div>
 
-            <h4>تفاصيل الشحنات وحالة التحصيل المالي:</h4>
-            <table>
-                <thead>
-                    <tr>
-                        <th>رقم الشحنة</th>
-                        <th>اسم العميل</th>
-                        <th>الهاتف والعنوان</th>
-                        <th>المبلغ</th>
-                        <th>حالة الطلب</th>
-                        <th>الحالة المالية (الذمة)</th>
-                        <th>تاريخ ووقت التحصيل</th>
-                        <th>إجراء التسجيل المحاسبي</th>
-                    </tr>
-                </thead>
-                <tbody id="repOrdersBody">
-                    <tr><td colspan="8">اختر مندوباً لعرض السجل...</td></tr>
-                </tbody>
-            </table>
+            <div style="margin-top: 20px; overflow: hidden;">
+                <button class="btn-print" onclick="window.print()">🖨️ طباعة السجل العام (PDF)</button>
+            </div>
+
+            <!-- قسم عرض السجل المالي وحركة المندوب المحدد -->
+            <div id="deliveryReportSection" class="report-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <h3 id="reportTitle" style="margin: 0;">السجل المالي وحركات المندوب: <span></span></h3>
+                    <button class="btn-print" onclick="window.print()" style="float: none;">🖨️ طباعة تقرير المندوب (PDF)</button>
+                </div>
+                
+                <div class="summary-box" style="margin-top: 15px;">
+                    <div class="card">
+                        <h4>إجمالي الشحنات</h4>
+                        <p id="repTotalShipments" style="font-size: 18px; font-weight: bold; color: #2c3e50;">0</p>
+                    </div>
+                    <div class="card">
+                        <h4>إجمالي المبالغ المطلوبة</h4>
+                        <p id="repTotalAmount" style="font-size: 18px; font-weight: bold; color: #e67e22;">$0.00</p>
+                    </div>
+                    <div class="card">
+                        <h4>المبالغ المسلمة (المحصلة)</h4>
+                        <p id="repCollectedAmount" style="font-size: 18px; font-weight: bold; color: #27ae60;">$0.00</p>
+                    </div>
+                    <div class="card" style="background: #fadbd8;">
+                        <h4 style="color: #c0392b;">المتبقي في ذمة المندوب</h4>
+                        <p id="repRemainingAmount" style="font-size: 18px; font-weight: bold; color: #c0392b;">$0.00</p>
+                    </div>
+                </div>
+
+                <h4>تفاصيل الشحنات وحالة التحصيل المالي:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>رقم الشحنة</th>
+                            <th>اسم العميل</th>
+                            <th>الهاتف والعنوان</th>
+                            <th>المبلغ</th>
+                            <th>حالة الطلب</th>
+                            <th>الحالة المالية (الذمة)</th>
+                            <th>تاريخ ووقت التحصيل</th>
+                            <th>إجراء التسجيل المحاسبي</th>
+                        </tr>
+                    </thead>
+                    <tbody id="repOrdersBody">
+                        <tr><td colspan="8">اختر مندوباً لعرض السجل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -111,7 +159,8 @@
 
         function viewDeliveryReport(deliveryName) {
             activeDeliveryName = deliveryName;
-            document.getElementById('deliveryReportSection').style.display = 'block';
+            let reportSec = document.getElementById('deliveryReportSection');
+            reportSec.style.display = 'block';
             document.getElementById('reportTitle').querySelector('span').innerText = deliveryName;
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
@@ -169,12 +218,15 @@
 
             document.getElementById('repTotalShipments').innerText = totalShipmentsCount;
             document.getElementById('repTotalAmount').innerText = `$${totalAmountSum.toFixed(2)}`;
-            document.getElementById('repCollectedAmount').innerText, (document.getElementById('repCollectedAmount').innerText = `$${collectedAmountSum.toFixed(2)}`);
+            document.getElementById('repCollectedAmount').innerText = `$${collectedAmountSum.toFixed(2)}`;
             document.getElementById('repRemainingAmount').innerText = `$${remainingAmount.toFixed(2)}`;
 
             if (!hasRecords) {
                 repOrdersBody.innerHTML = `<tr><td colspan="8">لا توجد شحنات مسندة لهذا المندوب حتى الآن</td></tr>`;
             }
+
+            // التمرير التلقائي البصري إلى قسم التقرير
+            reportSec.scrollIntoView({ behavior: 'smooth' });
         }
 
         function markAsCollected(cIdx, oIdx) {
