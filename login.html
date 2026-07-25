@@ -4,23 +4,21 @@
     <meta charset="UTF-8">
     <title>تسجيل الدخول - MeshWar</title>
     <style>
-        /* نفس تنسيقاتك الجميلة السابقة */
-        body { font-family: sans-serif; background: #f4f6f9; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        body { font-family: Tahoma, sans-serif; background: #f4f6f9; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .box { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #cc0000; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #cc0000; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
         button:hover { background: #a30000; }
         p { text-align: center; margin-top: 15px; }
         a { color: #2980b9; text-decoration: none; }
-        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
 <div class="box">
     <h2>تسجيل الدخول</h2>
-    <input type="text" id="phone" placeholder="رقم الهاتف">
+    <input type="text" id="phone" placeholder="رقم الهاتف أو كود الدخول">
     <input type="password" id="password" placeholder="كلمة المرور">
     <button onclick="login()">دخول</button>
     <p>
@@ -30,44 +28,67 @@
 
 <script>
    function login() {
-        let phoneInput = document.getElementById('phone').value.trim();
+        let inputId = document.getElementById('phone').value.trim();
         const passwordInput = document.getElementById('password').value.trim();
 
-        if (!phoneInput || !passwordInput) {
-            alert('الرجاء إدخال رقم الهاتف وكلمة المرور');
+        if (!inputId || !passwordInput) {
+            alert('الرجاء إدخال رقم الهاتف/الكود وكلمة المرور');
             return;
         }
 
-        // رقم هاتف الأدمن وكلمة المرور الخاصة به
+        // --- الحالة الأولى: دخول الأدمن ---
         const adminPhone = "123456"; 
         const adminPass = "123";     
-
-        if (phoneInput === adminPhone && passwordInput === adminPass) {
-            // إذا كان المستخدم هو الأدمن، وجهه إلى لوحة الإدارة
+        if (inputId === adminPhone && passwordInput === adminPass) {
             window.location.href = 'admin-dashboard.html';
             return;
         }
 
-        // تنظيف رقم الهاتف المدخل من أي رموز أو مسافات (مثل + أو الفراغات) للمقارنة بدقة
-        let cleanInputPhone = phoneInput.replace(/[^0-9]/g, '');
+        let cleanInput = inputId.replace(/[^0-9]/g, '');
 
-        // جلب قائمة العملاء المحدثة من لوحة التحكم (localStorage)
+        // --- الحالة الثانية: دخول الموظف (من قاعدة بيانات الموظفين) ---
+        const employeesList = JSON.parse(localStorage.getItem('employeesList')) || [];
+        const employee = employeesList.find(emp => {
+            let empPhone = (emp.phone || '').toString().replace(/[^0-9]/g, '');
+            // الموظف يمكنه الدخول برقم هاتفه وكلمة المرور الخاصة به (أو الافتراضية 123)
+            let empPass = emp.password || "123";
+            return empPhone === cleanInput && passwordInput === empPass;
+        });
+
+        if (employee) {
+            localStorage.setItem('loggedInEmployee', JSON.stringify(employee));
+            window.location.href = 'employee-dashboard.html'; // لوحة تحكم الموظف
+            return;
+        }
+
+        // --- الحالة الثالثة: دخول المندوب (من قاعدة بيانات المندوبين) ---
+        const deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
+        const deliveryGuy = deliveryList.find(del => {
+            let delPhone = (del.phone || '').toString().replace(/[^0-9]/g, '');
+            let delPass = del.password || "123"; // كلمة مرور المندوب
+            return delPhone === cleanInput && passwordInput === delPass;
+        });
+
+        if (deliveryGuy) {
+            localStorage.setItem('loggedInDelivery', JSON.stringify(deliveryGuy));
+            window.location.href = 'delivery-dashboard.html'; // لوحة المندوب لتغيير حالة الطلب
+            return;
+        }
+
+        // --- الحالة الرابعة: دخول العميل (من قاعدة بيانات العملاء) ---
         const customersDB = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-
-        // البحث في العملاء مع تنظيف رقم الهاتف المخزن أيضاً لضمان المطابقة الفورية
         const user = customersDB.find(c => {
-            let cleanDbPhone = (c.phone || '').toString().replace(/[^0-9]/g, '');
-            return cleanDbPhone === cleanInputPhone && c.password.trim() === passwordInput;
+            let custPhone = (c.phone || '').toString().replace(/[^0-9]/g, '');
+            let custCode = (c.code || '').toString().trim();
+            // العميل يمكنه الدخول برقم هاتفه أو بكود العميل الخاص به مع كلمة المرور
+            return (custPhone === cleanInput || custCode === inputId) && c.password.trim() === passwordInput;
         });
 
         if (user) {
-            // حفظ بيانات المستخدم كاملة في المتصفح لاستخدامها في الداشبورد
             localStorage.setItem('loggedInUser', JSON.stringify(user));
-            
-            // تحويل المستخدم إلى لوحة التحكم الخاصة به
-            window.location.href = 'dashboard.html';  
+            window.location.href = 'dashboard.html'; // لوحة تحكم العميل
         } else {
-            alert('رقم الهاتف أو كلمة المرور غير صحيحة، أو أن الحساب غير مسجل.');
+            alert('بيانات الدخول غير صحيحة، أو أن الحساب غير مسجل في النظام.');
         }
    }
 </script>
