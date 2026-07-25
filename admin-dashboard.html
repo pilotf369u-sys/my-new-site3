@@ -32,6 +32,7 @@
         <a onclick="showSection('employees')">إدارة الموظفين</a>
         <a onclick="showSection('delivery')">إدارة المندوبين</a>
         <a onclick="showSection('exchange')">أسعار صرف العملات</a>
+        <a onclick="showSection('stores')">إدارة المتاجر</a>
         <a onclick="showSection('customers')">إدارة العملاء</a>
         <a onclick="showSection('content')">إدارة المحتوى</a>
         <a href="login.html" class="btn-red" style="text-align:center; margin-top: 30px;">تسجيل الخروج</a>
@@ -118,7 +119,33 @@
             </table>
         </div>
 
-        <!-- 5. إدارة العملاء -->
+        <!-- 5. إدارة المتاجر الجديدة -->
+        <div class="card" id="stores">
+            <h3>إدارة المتاجر</h3>
+            <div>
+                <input type="text" id="storeName" placeholder="اسم المتجر (مثال: Trendyol)">
+                <input type="text" id="storeUrl" placeholder="رابط المتجر أو صفحة الدخول">
+                <input type="text" id="storeImg" placeholder="مسار الصورة (مثال: images/trendyol.png)">
+                <select id="storeCategory">
+                    <option value="global">متاجر عالمية (برابط)</option>
+                    <option value="local">المتاجر الشخصية والمحلية</option>
+                </select>
+                <button class="btn-green" onclick="addStore()">+ إضافة متجر</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم المتجر</th>
+                        <th>النوع</th>
+                        <th>الرابط / المسار</th>
+                        <th>الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="storesTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- 6. إدارة العملاء -->
         <div class="card" id="customers">
             <h3>إدارة العملاء</h3>
             <div>
@@ -139,7 +166,7 @@
             </table>
         </div>
 
-        <!-- 6. إدارة المحتوى -->
+        <!-- 7. إدارة المحتوى -->
         <div class="card" id="content">
             <h3>إدارة المحتوى والموقع</h3>
             <p>تعديل نصوص وأقسام الموقع الرئيسية.</p>
@@ -261,6 +288,47 @@
             loadCurrencies();
         }
 
+        // --- إدارة المتاجر ---
+        function loadStoresAdmin() {
+            let stores = JSON.parse(localStorage.getItem('dynamicStoresList')) || [];
+            let tbody = document.getElementById('storesTableBody');
+            tbody.innerHTML = '';
+            stores.forEach((st, index) => {
+                tbody.innerHTML += `<tr>
+                    <td>${st.name}</td>
+                    <td>${st.category === 'global' ? 'عالمي (برابط)' : 'محلي / خاص'}</td>
+                    <td>${st.url}</td>
+                    <td><button class="btn-red" onclick="deleteStore(${index})">حذف</button></td>
+                </tr>`;
+            });
+        }
+
+        function addStore() {
+            let name = document.getElementById('storeName').value;
+            let url = document.getElementById('storeUrl').value;
+            let img = document.getElementById('storeImg').value || 'images/default.png';
+            let category = document.getElementById('storeCategory').value;
+
+            if(!name || !url) { alert('الرجاء إدخال اسم المتجر والرابط'); return; }
+
+            let stores = JSON.parse(localStorage.getItem('dynamicStoresList')) || [];
+            stores.push({name, url, img, category});
+            localStorage.setItem('dynamicStoresList', JSON.stringify(stores));
+
+            document.getElementById('storeName').value = '';
+            document.getElementById('storeUrl').value = '';
+            document.getElementById('storeImg').value = '';
+            loadStoresAdmin();
+            alert('تم إضافة المتجر بنجاح');
+        }
+
+        function deleteStore(index) {
+            let stores = JSON.parse(localStorage.getItem('dynamicStoresList')) || [];
+            stores.splice(index, 1);
+            localStorage.setItem('dynamicStoresList', JSON.stringify(stores));
+            loadStoresAdmin();
+        }
+
         // --- إدارة العملاء ---
         function loadCustomers() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
@@ -272,7 +340,7 @@
         }
         function addCustomer() {
             let name = document.getElementById('custName').value;
-            let phone = document.getElementById('custPhone, phone').value || document.getElementById('custPhone').value;
+            let phone = document.getElementById('custPhone').value;
             let password = document.getElementById('custPass').value;
             if(!name || !phone || !password) { alert('الرجاء إدخال جميع بيانات العميل'); return; }
             
@@ -297,6 +365,7 @@
             loadDelivery();
             loadBaseCurrency();
             loadCurrencies();
+            loadStoresAdmin();
             loadCustomers();
         }
     </script>
