@@ -6,44 +6,47 @@
     <title>لوحة تحكم المندوب</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         h2 { color: #2c3e50; display: inline-block; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; }
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
-        select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
-        button.action-btn { background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        select, input[type="text"] { padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
+        button.action-btn { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
-        <h2>مرحباً بك عزيزي المندوب</h2>
-        <p>الشحنات المسندة إليك لتوصيلها للعملاء:</p>
+        <h2>لوحة تحكم المندوب - الشحنات</h2>
+        <p>إدارة وتحديث حالات الشحنات المخصصة لك للتوصيل:</p>
         
         <table>
             <thead>
                 <tr>
                     <th>رقم الشحنة</th>
-                    <th>اسم العميل</th>
-                    <th>رقم الهاتف</th>
+                    <th>اسم العميل ورقم الهاتف</th>
                     <th>عنوان التوصيل</th>
-                    <th>الحالة</th>
+                    <th>الحالة والسبب</th>
                     <th>تحديث حالة التوصيل</th>
                 </tr>
             </thead>
             <tbody id="delOrdersBody">
-                <tr><td colspan="6">جاري التحميل...</td></tr>
+                <tr><td colspan="5">جاري التحميل...</td></tr>
             </tbody>
         </table>
     </div>
 
     <script>
-        function loadDeliveryOrders() {
-            // ملاحظة: يمكنك تخزين اسم المندوب الحالي عند تسجيل دخوله في localStorage لتصفية الطلبات الخاصة به فقط
-            let currentDeliveryName = localStorage.getItem('currentLoggedInDelivery') || ''; 
+        const deliveryStatusOptions = `
+            <option value="توزيع داخلي">توزيع داخلي</option>
+            <option value="تم التسليم">تم التسليم</option>
+            <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
+        `;
 
+        function loadDeliveryOrders() {
+            let currentDeliveryName = localStorage.getItem('currentLoggedInDelivery') || ''; 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('delOrdersBody');
             tbody.innerHTML = '';
@@ -53,23 +56,23 @@
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
-                        // إذا تم إسناد الطلب لهذا المندوب (أو سنعرض الكل إذا لم يتم تحديد اسم دقيق لتسهيل الاختبار)
+                        // عرض الطلبات المسندة للمندوب (أو جميعها إذا لم يُحدد لتسهيل التجربة)
                         if (!currentDeliveryName || ord.assignedDelivery === currentDeliveryName) {
                             hasShipments = true;
+                            let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
+
                             tbody.innerHTML += `
                                 <tr>
                                     <td><b>${ord.id}</b></td>
-                                    <td>${cust.name}</td>
-                                    <td dir="ltr">${cust.phone}</td>
+                                    <td style="text-align: right;">${cust.name}<br><span dir="ltr" style="font-size:12px; color:#666;">${cust.phone}</span></td>
                                     <td>${cust.address || '---'}</td>
-                                    <td><span style="padding: 3px 8px; background: #e2f0d9; border-radius: 4px; font-weight: bold;">${ord.status}</span></td>
+                                    <td><span style="padding: 3px 8px; background: #e2f0d9; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span>${reasonDisplay}</td>
                                     <td>
-                                        <select id="del_status_${custIndex}_${ordIndex}">
-                                            <option value="جاري التوصيل" ${ord.status === 'جاري التوصيل' ? 'selected' : ''}>جاري التوصيل</option>
-                                            <option value="تم التوصيل" ${ord.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
-                                            <option value="تعذر التوصيل" ${ord.status === 'تعذر التوصيل' ? 'selected' : ''}>تعذر التوصيل</option>
+                                        <select id="del_status_${custIndex}_${ordIndex}" onchange="checkDelReason(${custIndex}, ${ordIndex})">
+                                            ${deliveryStatusOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`)}
                                         </select>
-                                        <button class="action-btn" onclick="updateDeliveryStatus(${custIndex}, ${ordIndex})">تحديث</button>
+                                        <input type="text" id="del_reason_${custIndex}_${ordIndex}" placeholder="سبب عدم التسليم..." style="display: ${ord.status === 'تم رفض الطلب أو عدم التسليم' ? 'block' : 'none'}; margin-top: 5px; width: 100%;" value="${ord.reason || ''}">
+                                        <button class="action-btn" onclick="updateDeliveryStatus(${custIndex}, ${ordIndex})" style="margin-top: 5px;">تحديث</button>
                                     </td>
                                 </tr>
                             `;
@@ -79,16 +82,29 @@
             });
 
             if (!hasShipments) {
-                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5">لا توجد شحنات مسندة إليك حالياً</td></tr>`;
+            }
+        }
+
+        function checkDelReason(custIndex, ordIndex) {
+            let status = document.getElementById(`del_status_${custIndex}_${ordIndex}`).value;
+            let reasonInput = document.getElementById(`del_reason_${custIndex}_${ordIndex}`);
+            if (status === 'تم رفض الطلب أو عدم التسليم') {
+                reasonInput.style.display = 'block';
+            } else {
+                reasonInput.style.display = 'none';
+                reasonInput.value = '';
             }
         }
 
         function updateDeliveryStatus(custIndex, ordIndex) {
-            let statusElem = document.getElementById(`del_status_${custIndex}_${ordIndex}`);
-            let newStatus = statusElem.value;
+            let newStatus = document.getElementById(`del_status_${custIndex}_${ordIndex}`).value;
+            let reason = document.getElementById(`del_reason_${custIndex}_${ordIndex}`).value;
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].status = newStatus;
+            customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
+            
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
 
             alert('تم تحديث حالة الشحنة بنجاح');
