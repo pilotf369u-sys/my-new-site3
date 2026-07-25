@@ -7,33 +7,97 @@
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { color: #2c3e50; }
+        h2 { color: #2c3e50; display: inline-block; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; }
-        .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; }
+        .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
+        select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
+        button.action-btn { background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
         <h2>مرحباً بك عزيزي المندوب</h2>
-        <p>من هذه اللوحة يمكنك متابعة الشحنات المخصصة للتوصيل.</p>
+        <p>الشحنات المسندة إليك لتوصيلها للعملاء:</p>
         
-        <h3>الشحنات المطلوب توصيلها</h3>
         <table>
             <thead>
                 <tr>
                     <th>رقم الشحنة</th>
-                    <th>عنوان العميل</th>
+                    <th>اسم العميل</th>
                     <th>رقم الهاتف</th>
+                    <th>عنوان التوصيل</th>
                     <th>الحالة</th>
+                    <th>تحديث حالة التوصيل</th>
                 </tr>
             </thead>
             <tbody id="delOrdersBody">
-                <tr><td colspan="4">لا توجد شحنات حالياً</td></tr>
+                <tr><td colspan="6">جاري التحميل...</td></tr>
             </tbody>
         </table>
     </div>
+
+    <script>
+        function loadDeliveryOrders() {
+            // ملاحظة: يمكنك تخزين اسم المندوب الحالي عند تسجيل دخوله في localStorage لتصفية الطلبات الخاصة به فقط
+            let currentDeliveryName = localStorage.getItem('currentLoggedInDelivery') || ''; 
+
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let tbody = document.getElementById('delOrdersBody');
+            tbody.innerHTML = '';
+
+            let hasShipments = false;
+
+            customers.forEach((cust, custIndex) => {
+                if (cust.orders && cust.orders.length > 0) {
+                    cust.orders.forEach((ord, ordIndex) => {
+                        // إذا تم إسناد الطلب لهذا المندوب (أو سنعرض الكل إذا لم يتم تحديد اسم دقيق لتسهيل الاختبار)
+                        if (!currentDeliveryName || ord.assignedDelivery === currentDeliveryName) {
+                            hasShipments = true;
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td><b>${ord.id}</b></td>
+                                    <td>${cust.name}</td>
+                                    <td dir="ltr">${cust.phone}</td>
+                                    <td>${cust.address || '---'}</td>
+                                    <td><span style="padding: 3px 8px; background: #e2f0d9; border-radius: 4px; font-weight: bold;">${ord.status}</span></td>
+                                    <td>
+                                        <select id="del_status_${custIndex}_${ordIndex}">
+                                            <option value="جاري التوصيل" ${ord.status === 'جاري التوصيل' ? 'selected' : ''}>جاري التوصيل</option>
+                                            <option value="تم التوصيل" ${ord.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
+                                            <option value="تعذر التوصيل" ${ord.status === 'تعذر التوصيل' ? 'selected' : ''}>تعذر التوصيل</option>
+                                        </select>
+                                        <button class="action-btn" onclick="updateDeliveryStatus(${custIndex}, ${ordIndex})">تحديث</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    });
+                }
+            });
+
+            if (!hasShipments) {
+                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً</td></tr>`;
+            }
+        }
+
+        function updateDeliveryStatus(custIndex, ordIndex) {
+            let statusElem = document.getElementById(`del_status_${custIndex}_${ordIndex}`);
+            let newStatus = statusElem.value;
+
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            customers[custIndex].orders[ordIndex].status = newStatus;
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+
+            alert('تم تحديث حالة الشحنة بنجاح');
+            loadDeliveryOrders();
+        }
+
+        window.onload = function() {
+            loadDeliveryOrders();
+        }
+    </script>
 </body>
 </html>
