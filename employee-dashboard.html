@@ -3,44 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الموظف</title>
+    <title>لوحة تحكم الموظف الاحترافية</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         h2 { color: #2c3e50; display: inline-block; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background: #f2f2f2; }
+        th { background: #f2f2f2; font-size: 14px; }
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
-        select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
-        button.action-btn { background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        select, input[type="text"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
+        .action-bar { background: #eef2f3; padding: 12px; border-radius: 6px; margin-top: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        button.action-btn { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
-        <h2>مرحباً بك عزيزي الموظف</h2>
-        <p>من هذه اللوحة يمكنك متابعة طلبات العملاء، تحديث حالتها، وتوجيهها للمندوبين.</p>
+        <h2>لوحة تحكم الموظف - إدارة الطلبات</h2>
+        <p>متابعة الطلبات، إسنادها للمندوبين، وتحديث حالتها فردياً أو جماعياً.</p>
+
+        <!-- شريط التحديث الجماعي -->
+        <div class="action-bar">
+            <span><b>الإجراء الجماعي للطلبات المحددة:</b></span>
+            <select id="bulkStatusSelect" onchange="checkBulkReason()">
+                <option value="" disabled selected>اختر الحالة الجماعية...</option>
+                <option value="انتظار الدفع">انتظار الدفع</option>
+                <option value="قيد المعالجة">قيد المعالجة</option>
+                <option value="تم الطلب">تم الطلب</option>
+                <option value="جاهز للشحن">جاهز للشحن</option>
+                <option value="تم الشحن">تم الشحن</option>
+                <option value="مخزن محلي">مخزن محلي</option>
+                <option value="توزيع داخلي">توزيع داخلي</option>
+                <option value="تم التسليم">تم التسليم</option>
+                <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
+            </select>
+            <input type="text" id="bulkReasonInput" placeholder="أدخل سبب الرفض أو عدم التسليم..." style="display: none; flex: 1; min-width: 200px;">
+            <button class="btn-blue" onclick="applyBulkUpdate()">تطبيق على المختار</button>
+        </div>
         
-        <h3>الطلبات الواردة من العملاء</h3>
         <table>
             <thead>
                 <tr>
+                    <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"> تحديد الكل</th>
                     <th>رقم الطلب</th>
-                    <th>اسم العميل ورقم الهاتف</th>
-                    <th>السعر والتفاصيل</th>
-                    <th>الحالة الحالية</th>
+                    <th>العميل ورقم الهاتف</th>
+                    <th>التفاصيل والسعر</th>
+                    <th>الحالة الحالية والسبب</th>
                     <th>إسناد لمندوب</th>
-                    <th>تحديث الحالة والإجراء</th>
+                    <th>تحديث الحالة الفردية</th>
                 </tr>
             </thead>
             <tbody id="empOrdersBody">
-                <tr><td colspan="6">جاري تحميل الطلبات...</td></tr>
+                <tr><td colspan="7">جاري تحميل الطلبات...</td></tr>
             </tbody>
         </table>
     </div>
 
     <script>
+        const statusListOptions = `
+            <option value="انتظار الدفع">انتظار الدفع</option>
+            <option value="قيد المعالجة">قيد المعالجة</option>
+            <option value="تم الطلب">تم الطلب</option>
+            <option value="جاهز للشحن">جاهز للشحن</option>
+            <option value="تم الشحن">تم الشحن</option>
+            <option value="مخزن محلي">مخزن محلي</option>
+            <option value="توزيع داخلي">توزيع داخلي</option>
+            <option value="تم التسليم">تم التسليم</option>
+            <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
+        `;
+
         function loadEmployeeOrders() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
@@ -54,32 +87,32 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         hasOrders = true;
 
-                        // قائمة المندوبين للاختيار من بينها
                         let deliveryOptions = `<option value="">اختر المندوب</option>`;
                         deliveryList.forEach(del => {
                             let selected = (ord.assignedDelivery === del.name) ? 'selected' : '';
                             deliveryOptions += `<option value="${del.name}" ${selected}>${del.name}</option>`;
                         });
 
+                        let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
+
                         tbody.innerHTML += `
                             <tr>
+                                <td><input type="checkbox" class="order-checkbox" data-cust="${custIndex}" data-ord="${ordIndex}"></td>
                                 <td><b>${ord.id}</b></td>
-                                text-align: right;><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;" dir="ltr">${cust.phone}</span></td>
+                                <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;" dir="ltr">${cust.phone}</span></td>
                                 <td>${ord.price || '---'}</td>
-                                <td><span style="padding: 3px 8px; background: #fff3cd; border-radius: 4px; font-weight: bold;">${ord.status}</span></td>
+                                <td><span style="padding: 3px 8px; background: #fff3cd; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span>${reasonDisplay}</td>
                                 <td>
                                     <select id="del_${custIndex}_${ordIndex}" onchange="assignDelivery(${custIndex}, ${ordIndex})">
                                         ${deliveryOptions}
                                     </select>
                                 </td>
                                 <td>
-                                    <select id="status_${custIndex}_${ordIndex}">
-                                        <option value="قيد المعالجة" ${ord.status === 'قيد المعالجة' ? 'selected' : ''}>قيد المعالجة</option>
-                                        <option value="قيد الشحن" ${ord.status === 'قيد الشحن' ? 'selected' : ''}>قيد الشحن</option>
-                                        <option value="تم التوصيل" ${ord.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
-                                        <option value="ملغي" ${ord.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
+                                    <select id="status_${custIndex}_${ordIndex}" onchange="checkIndividualReason(${custIndex}, ${ordIndex})">
+                                        ${statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`)}
                                     </select>
-                                    <button class="action-btn" onclick="updateOrderStatus(${custIndex}, ${ordIndex})">حفظ</button>
+                                    <input type="text" id="reason_${custIndex}_${ordIndex}" placeholder="سبب الرفض/عدم التسليم" style="display: ${ord.status === 'تم رفض الطلب أو عدم التسليم' ? 'block' : 'none'}; margin-top: 5px; width: 100%;" value="${ord.reason || ''}">
+                                    <button class="action-btn" onclick="updateOrderStatus(${custIndex}, ${ordIndex})" style="margin-top: 5px;">حفظ</button>
                                 </td>
                             </tr>
                         `;
@@ -88,28 +121,83 @@
             });
 
             if (!hasOrders) {
-                tbody.innerHTML = `<tr><td colspan="6">لا توجد طلبات واردة حالياً</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7">لا توجد طلبات واردة حالياً</td></tr>`;
+            }
+        }
+
+        function toggleSelectAll(source) {
+            let checkboxes = document.querySelectorAll('.order-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function checkBulkReason() {
+            let status = document.getElementById('bulkStatusSelect').value;
+            let reasonInput = document.getElementById('bulkReasonInput');
+            if (status === 'تم رفض الطلب أو عدم التسليم') {
+                reasonInput.style.display = 'inline-block';
+            } else {
+                reasonInput.style.display = 'none';
+                reasonInput.value = '';
+            }
+        }
+
+        function checkIndividualReason(custIndex, ordIndex) {
+            let status = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
+            let reasonInput = document.getElementById(`reason_${custIndex}_${ordIndex}`);
+            if (status === 'تم رفض الطلب أو عدم التسليم') {
+                reasonInput.style.display = 'block';
+            } else {
+                reasonInput.style.display = 'none';
+                reasonInput.value = '';
             }
         }
 
         function assignDelivery(custIndex, ordIndex) {
-            let selectElem = document.getElementById(`del_${custIndex}_${ordIndex}`);
-            let selectedDelivery = selectElem.value;
-
+            let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
         }
 
         function updateOrderStatus(custIndex, ordIndex) {
-            let statusElem = document.getElementById(`status_${custIndex}_${ordIndex}`);
-            let newStatus = statusElem.value;
+            let newStatus = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
+            let reason = document.getElementById(`reason_${custIndex}_${ordIndex}`).value;
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].status = newStatus;
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
             
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             alert('تم تحديث حالة الطلب بنجاح');
+            loadEmployeeOrders();
+        }
+
+        function applyBulkUpdate() {
+            let selectedStatus = document.getElementById('bulkStatusSelect').value;
+            let bulkReason = document.getElementById('bulkReasonInput').value;
+
+            if (!selectedStatus) {
+                alert('الرجاء اختيار الحالة المراد تطبيقها أولاً');
+                return;
+            }
+
+            let checkboxes = document.querySelectorAll('.order-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('الرجاء تحديد طلب واحد على الأقل من الجدول');
+                return;
+            }
+
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+
+            checkboxes.forEach(cb => {
+                let cIdx = cb.getAttribute('data-cust');
+                let oIdx = cb.getAttribute('data-ord');
+                customers[cIdx].orders[oIdx].status = selectedStatus;
+                customers[cIdx].orders[oIdx].reason = (selectedStatus === 'تم رفض الطلب أو عدم التسليم') ? bulkReason : '';
+            });
+
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            alert('تم تطبيق التحديث الجماعي بنجاح');
             loadEmployeeOrders();
         }
 
