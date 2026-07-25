@@ -12,7 +12,7 @@
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; }
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
-        select, input[type="text"] { padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
+        select, input[type="text"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
         button.action-btn { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
@@ -20,20 +20,21 @@
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
         <h2>لوحة تحكم المندوب - الشحنات</h2>
-        <p>إدارة وتحديث حالات الشحنات المخصصة لك للتوصيل:</p>
+        <p>إدارة وتحديث حالات الشحنات المخصصة لك، مع عرض المبالغ المطلوب تحصيلها:</p>
         
         <table>
             <thead>
                 <tr>
                     <th>رقم الشحنة</th>
-                    <th>اسم العميل ورقم الهاتف</th>
+                    <th>اسم العميل والهاتف</th>
                     <th>عنوان التوصيل</th>
+                    <th>المبلغ المطلوب تحصيله</th>
                     <th>الحالة والسبب</th>
-                    <th>تحديث حالة التوصيل</th>
+                    <th>تحديث حالة التوصيل الفردية</th>
                 </tr>
             </thead>
             <tbody id="delOrdersBody">
-                <tr><td colspan="5">جاري التحميل...</td></tr>
+                <tr><td colspan="6">جاري التحميل...</td></tr>
             </tbody>
         </table>
     </div>
@@ -56,20 +57,22 @@
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
-                        // عرض الطلبات المسندة للمندوب (أو جميعها إذا لم يُحدد لتسهيل التجربة)
+                        // عرض الشحنات المسندة للمندوب أو عرض الكل لتسهيل الفحص والتجربة
                         if (!currentDeliveryName || ord.assignedDelivery === currentDeliveryName) {
                             hasShipments = true;
                             let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
+                            let currentOptionsHtml = deliveryStatusOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
 
                             tbody.innerHTML += `
                                 <tr>
                                     <td><b>${ord.id}</b></td>
-                                    <td style="text-align: right;">${cust.name}<br><span dir="ltr" style="font-size:12px; color:#666;">${cust.phone}</span></td>
+                                    <td style="text-align: right;"><b>${cust.name}</b><br><span dir="ltr" style="font-size:12px; color:#666;">${cust.phone}</span></td>
                                     <td>${cust.address || '---'}</td>
+                                    <td><b style="color: #e67e22; font-size: 15px;">${ord.price || '$0.00'}</b></td>
                                     <td><span style="padding: 3px 8px; background: #e2f0d9; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span>${reasonDisplay}</td>
                                     <td>
                                         <select id="del_status_${custIndex}_${ordIndex}" onchange="checkDelReason(${custIndex}, ${ordIndex})">
-                                            ${deliveryStatusOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`)}
+                                            ${currentOptionsHtml}
                                         </select>
                                         <input type="text" id="del_reason_${custIndex}_${ordIndex}" placeholder="سبب عدم التسليم..." style="display: ${ord.status === 'تم رفض الطلب أو عدم التسليم' ? 'block' : 'none'}; margin-top: 5px; width: 100%;" value="${ord.reason || ''}">
                                         <button class="action-btn" onclick="updateDeliveryStatus(${custIndex}, ${ordIndex})" style="margin-top: 5px;">تحديث</button>
@@ -82,7 +85,7 @@
             });
 
             if (!hasShipments) {
-                tbody.innerHTML = `<tr><td colspan="5">لا توجد شحنات مسندة إليك حالياً</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً</td></tr>`;
             }
         }
 
