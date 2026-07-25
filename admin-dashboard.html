@@ -88,19 +88,15 @@
             </table>
         </div>
 
-        <!-- 4. إدارة أسعار صرف العملات الاحترافية -->
+        <!-- 4. إدارة أسعار صرف العملات -->
         <div class="card" id="exchange">
             <h3>إدارة أسعار صرف العملات</h3>
-            
-            <!-- تحديد العملة الأساسية (المرجع الثابت مثل USD) -->
             <div style="background: #eef2f3; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
                 <label><b>العملة المرجعية الأساسية (مثال: دولار): </b></label>
                 <input type="text" id="baseCurrency" placeholder="مثال: دولار">
                 <button class="btn-green" onclick="saveBaseCurrency()">حفظ العملة المرجعية</button>
                 <p style="margin-top: 5px; color: #555;">المرجع الأساسي الحالي: <span id="displayBaseCurrency" style="color: #27ae60; font-weight: bold;">دولار (افتراضي)</span></p>
             </div>
-
-            <!-- إضافة العملات الفرعية وسعرها مقابل (1 وحدة من المرجع) -->
             <div>
                 <h4>إضافة عملة محلية جديدة</h4>
                 <input type="text" id="currencyName" placeholder="اسم العملة (مثال: ليرة تركية)">
@@ -119,7 +115,7 @@
             </table>
         </div>
 
-        <!-- 5. إدارة المتاجر الجديدة -->
+        <!-- 5. إدارة المتاجر الجديدة (المحدثة بجميع الأقسام) -->
         <div class="card" id="stores">
             <h3>إدارة المتاجر</h3>
             <div>
@@ -127,7 +123,11 @@
                 <input type="text" id="storeUrl" placeholder="رابط المتجر أو صفحة الدخول">
                 <input type="text" id="storeImg" placeholder="مسار الصورة (مثال: images/trendyol.png)">
                 <select id="storeCategory">
-                    <option value="global">متاجر عالمية (برابط)</option>
+                    <option value="comprehensive">المتاجر الشاملة</option>
+                    <option value="fashion">الأزياء والملابس</option>
+                    <option value="sports">الرياضة والأحذية</option>
+                    <option value="beauty">التجميل والعناية</option>
+                    <option value="home">المنزل والأطفال والسوبر ماركت</option>
                     <option value="local">المتاجر الشخصية والمحلية</option>
                 </select>
                 <button class="btn-green" onclick="addStore()">+ إضافة متجر</button>
@@ -136,7 +136,7 @@
                 <thead>
                     <tr>
                         <th>اسم المتجر</th>
-                        <th>النوع</th>
+                        <th>القسم المحدد</th>
                         <th>الرابط / المسار</th>
                         <th>الإجراء</th>
                     </tr>
@@ -235,7 +235,7 @@
             loadDelivery();
         }
 
-        // --- إدارة أسعار الصرف (منظومة صحيحة ومحترفة) ---
+        // --- إدارة أسعار الصرف ---
         function saveBaseCurrency() {
             let base = document.getElementById('baseCurrency').value;
             if(!base) { alert('الرجاء كتابة اسم العملة المرجعية'); return; }
@@ -255,7 +255,6 @@
             let base = localStorage.getItem('siteBaseCurrency') || 'دولار';
             let tbody = document.getElementById('currencyTableBody');
             tbody.innerHTML = '';
-            
             currencies.forEach((cur, index) => {
                 tbody.innerHTML += `<tr>
                     <td>1 ${base}</td>
@@ -268,14 +267,10 @@
         function addCurrency() {
             let name = document.getElementById('currencyName').value;
             let rate = document.getElementById('currencyRate').value;
-            let base = localStorage.getItem('siteBaseCurrency') || 'دولار';
-            
             if(!name || !rate) { alert('الرجاء إدخال اسم العملة والسعر'); return; }
-
             let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
             currencies.push({name, rate});
             localStorage.setItem('currenciesList', JSON.stringify(currencies));
-            
             document.getElementById('currencyName').value = '';
             document.getElementById('currencyRate').value = '';
             loadCurrencies();
@@ -288,15 +283,25 @@
             loadCurrencies();
         }
 
-        // --- إدارة المتاجر ---
+        // --- إدارة المتاجر (محدثة لتطابق أسماء الأقسام) ---
+        const categoryNamesMap = {
+            'comprehensive': 'المتاجر الشاملة',
+            'fashion': 'الأزياء والملابس',
+            'sports': 'الرياضة والأحذية',
+            'beauty': 'التجميل والعناية',
+            'home': 'المنزل والأطفال والسوبر ماركت',
+            'local': 'المتاجر الشخصية والمحلية'
+        };
+
         function loadStoresAdmin() {
             let stores = JSON.parse(localStorage.getItem('dynamicStoresList')) || [];
             let tbody = document.getElementById('storesTableBody');
             tbody.innerHTML = '';
             stores.forEach((st, index) => {
+                let readableCategory = categoryNamesMap[st.category] || 'المتاجر الشاملة';
                 tbody.innerHTML += `<tr>
                     <td>${st.name}</td>
-                    <td>${st.category === 'global' ? 'عالمي (برابط)' : 'محلي / خاص'}</td>
+                    <td>${readableCategory}</td>
                     <td>${st.url}</td>
                     <td><button class="btn-red" onclick="deleteStore(${index})">حذف</button></td>
                 </tr>`;
@@ -343,11 +348,9 @@
             let phone = document.getElementById('custPhone').value;
             let password = document.getElementById('custPass').value;
             if(!name || !phone || !password) { alert('الرجاء إدخال جميع بيانات العميل'); return; }
-            
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers.push({name, phone, password});
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            
             document.getElementById('custName').value = '';
             document.getElementById('custPhone').value = '';
             document.getElementById('custPass').value = '';
