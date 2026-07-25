@@ -11,8 +11,8 @@
         .sidebar a { display: block; color: white; text-decoration: none; padding: 12px; margin-bottom: 10px; border-radius: 5px; background: #34495e; transition: 0.3s; cursor: pointer; text-align: right; }
         .sidebar a:hover { background: #1abc9c; }
         .main-content { margin-right: 300px; padding: 30px; }
-        .card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: none; } /* الأقسام مخفية افتراضياً */
-        .active-section { display: block; } /* القسم النشط يظهر فقط */
+        .card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: none; }
+        .active-section { display: block; }
         h1 { color: #333; }
         input, select { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 5px; width: 200px; }
         button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
@@ -31,7 +31,7 @@
         <a onclick="showSection('orders')">إدارة الطلبات</a>
         <a onclick="showSection('employees')">إدارة الموظفين</a>
         <a onclick="showSection('delivery')">إدارة المندوبين</a>
-        <a onclick="showSection('exchange')">أسعار صرف العملة</a>
+        <a onclick="showSection('exchange')">أسعار صرف العملات</a>
         <a onclick="showSection('customers')">إدارة العملاء</a>
         <a onclick="showSection('content')">إدارة المحتوى</a>
         <a href="login.html" class="btn-red" style="text-align:center; margin-top: 30px;">تسجيل الخروج</a>
@@ -87,21 +87,45 @@
             </table>
         </div>
 
-        <!-- 4. إدارة أسعار صرف العملة -->
+        <!-- 4. إدارة أسعار صرف العملات (متعددة) -->
         <div class="card" id="exchange">
-            <h3>إدارة أسعار صرف العملة</h3>
+            <h3>إدارة أسعار صرف العملات</h3>
             <div>
                 <input type="text" id="currencyName" placeholder="اسم العملة (مثال: دولار)">
                 <input type="number" id="currencyRate" placeholder="السعر">
-                <button class="btn-green" onclick="saveExchangeRate()">حفظ / تحديث السعر</button>
+                <button class="btn-green" onclick="addCurrency()">+ إضافة / تحديث عملة</button>
             </div>
-            <p style="margin-top: 15px; font-size: 16px;">السعر الحالي: <span id="currentRate" style="color: #27ae60; font-weight: bold;">لم يُحدد بعد</span></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم العملة</th>
+                        <th>السعر</th>
+                        <th>الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="currencyTableBody"></tbody>
+            </table>
         </div>
 
-        <!-- 5. إدارة العملاء -->
+        <!-- 5. إدارة العملاء (إضافة وحذف) -->
         <div class="card" id="customers">
             <h3>إدارة العملاء</h3>
-            <p>قائمة العملاء المسجلين في النظام.</p>
+            <div>
+                <input type="text" id="custName" placeholder="اسم العميل">
+                <input type="text" id="custPhone" placeholder="رقم الهاتف">
+                <input type="password" id="custPass" placeholder="كلمة المرور">
+                <button class="btn-green" onclick="addCustomer()">+ إضافة عميل</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم العميل</th>
+                        <th>رقم الهاتف</th>
+                        <th>الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="custTableBody"></tbody>
+            </table>
         </div>
 
         <!-- 6. إدارة المحتوى -->
@@ -112,15 +136,11 @@
     </div>
 
     <script>
-        // دالة لإظهار القسم المطلوب وإخفاء الباقي
         function showSection(sectionId) {
             let sections = document.querySelectorAll('.card');
             sections.forEach(sec => sec.classList.remove('active-section'));
-            
             let target = document.getElementById(sectionId);
-            if(target) {
-                target.classList.add('active-section');
-            }
+            if(target) { target.classList.add('active-section'); }
         }
 
         // --- إدارة الموظفين ---
@@ -129,28 +149,20 @@
             let tbody = document.getElementById('empTableBody');
             tbody.innerHTML = '';
             employees.forEach((emp, index) => {
-                tbody.innerHTML += `<tr>
-                    <td>${emp.name}</td>
-                    <td>${emp.phone}</td>
-                    <td><button class="btn-red" onclick="deleteEmployee(${index})">حذف</button></td>
-                </tr>`;
+                tbody.innerHTML += `<tr><td>${emp.name}</td><td>${emp.phone}</td><td><button class="btn-red" onclick="deleteEmployee(${index})">حذف</button></td></tr>`;
             });
         }
-
         function addEmployee() {
             let name = document.getElementById('empName').value;
             let phone = document.getElementById('empPhone').value;
             if(!name || !phone) { alert('الرجاء إدخال الاسم ورقم الهاتف'); return; }
-            
             let employees = JSON.parse(localStorage.getItem('employeesList')) || [];
             employees.push({name, phone});
             localStorage.setItem('employeesList', JSON.stringify(employees));
-            
             document.getElementById('empName').value = '';
             document.getElementById('empPhone').value = '';
             loadEmployees();
         }
-
         function deleteEmployee(index) {
             let employees = JSON.parse(localStorage.getItem('employeesList')) || [];
             employees.splice(index, 1);
@@ -164,28 +176,20 @@
             let tbody = document.getElementById('delTableBody');
             tbody.innerHTML = '';
             deliveryList.forEach((del, index) => {
-                tbody.innerHTML += `<tr>
-                    <td>${del.name}</td>
-                    <td>${del.phone}</td>
-                    <td><button class="btn-red" onclick="deleteDelivery(${index})">حذف</button></td>
-                </tr>`;
+                tbody.innerHTML += `<tr><td>${del.name}</td><td>${del.phone}</td><td><button class="btn-red" onclick="deleteDelivery(${index})">حذف</button></td></tr>`;
             });
         }
-
         function addDelivery() {
             let name = document.getElementById('delName').value;
             let phone = document.getElementById('delPhone').value;
             if(!name || !phone) { alert('الرجاء إدخال اسم المندوب ورقم هاتفه'); return; }
-            
             let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
             deliveryList.push({name, phone});
             localStorage.setItem('deliveryList', JSON.stringify(deliveryList));
-            
             document.getElementById('delName').value = '';
             document.getElementById('delPhone').value = '';
             loadDelivery();
         }
-
         function deleteDelivery(index) {
             let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
             deliveryList.splice(index, 1);
@@ -193,30 +197,71 @@
             loadDelivery();
         }
 
-        // --- أسعار الصرف ---
-        function saveExchangeRate() {
+        // --- إدارة أسعار الصرف (عملات متعددة) ---
+        function loadCurrencies() {
+            let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
+            let tbody = document.getElementById('currencyTableBody');
+            tbody.innerHTML = '';
+            currencies.forEach((cur, index) => {
+                tbody.innerHTML += `<tr><td>${cur.name}</td><td>${cur.rate}</td><td><button class="btn-red" onclick="deleteCurrency(${index})">حذف</button></td></tr>`;
+            });
+        }
+        function addCurrency() {
             let name = document.getElementById('currencyName').value;
             let rate = document.getElementById('currencyRate').value;
             if(!name || !rate) { alert('الرجاء إدخال اسم العملة والسعر'); return; }
+            let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
+            currencies.push({name, rate});
+            localStorage.setItem('currenciesList', JSON.stringify(currencies));
+            document.getElementById('currencyName').value = '';
+            document.getElementById('currencyRate').value = '';
+            loadCurrencies();
+        }
+        function deleteCurrency(index) {
+            let currencies = JSON.parse(localStorage.getItem('currenciesList')) || [];
+            currencies.splice(index, 1);
+            localStorage.setItem('currenciesList', JSON.stringify(currencies));
+            loadCurrencies();
+        }
+
+        // --- إدارة العملاء (إضافة يدوية) ---
+        function loadCustomers() {
+            // نقرأ من customersDB أو من التخزين المحلي للوحة الأدمن
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let tbody = document.getElementById('custTableBody');
+            tbody.innerHTML = '';
+            customers.forEach((cust, index) => {
+                tbody.innerHTML += `<tr><td>${cust.name}</td><td>${cust.phone}</td><td><button class="btn-red" onclick="deleteCustomer(${index})">حذف</button></td></tr>`;
+            });
+        }
+        function addCustomer() {
+            let name = document.getElementById('custName').value;
+            let phone = document.getElementById('custPhone').value;
+            let password = document.getElementById('custPass').value;
+            if(!name || !phone || !password) { alert('الرجاء إدخال جميع بيانات العميل'); return; }
             
-            let exchangeData = { name, rate };
-            localStorage.setItem('exchangeRateData', JSON.stringify(exchangeData));
-            loadExchangeRate();
-            alert('تم حفظ سعر الصرف بنجاح');
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            customers.push({name, phone, password});
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            
+            document.getElementById('custName').value = '';
+            document.getElementById('custPhone').value = '';
+            document.getElementById('custPass').value = '';
+            loadCustomers();
+        }
+        function deleteCustomer(index) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            customers.splice(index, 1);
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            loadCustomers();
         }
 
-        function loadExchangeRate() {
-            let data = JSON.parse(localStorage.getItem('exchangeRateData'));
-            if(data) {
-                document.getElementById('currentRate').innerText = `${data.name} = ${data.rate}`;
-            }
-        }
-
-        // تشغيل الدوال عند فتح الصفحة
+        // تشغيل كل الدوال عند تحميل الصفحة
         window.onload = function() {
             loadEmployees();
             loadDelivery();
-            loadExchangeRate();
+            loadCurrencies();
+            loadCustomers();
         }
     </script>
 </body>
