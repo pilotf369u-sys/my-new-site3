@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>تسجيل الدخول - MeshWar</title>
-    <!-- هنا سنربط قاعدة البيانات الخاصة بنا -->
-    <script src="customers_db.js"></script>
     <style>
         /* نفس تنسيقاتك الجميلة السابقة */
-        body { font-family: sans-serif; background: #f4f6f9; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { font-family: sans-serif; background: #f4f6f9; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .box { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
         input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #cc0000; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        button { width: 100%; padding: 10px; background: #cc0000; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #a30000; }
+        p { text-align: center; margin-top: 15px; }
+        a { color: #2980b9; text-decoration: none; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -20,37 +23,51 @@
     <input type="text" id="phone" placeholder="رقم الهاتف">
     <input type="password" id="password" placeholder="كلمة المرور">
     <button onclick="login()">دخول</button>
-    <p style="text-align: center; margin-top: 15px;">
+    <p>
         <a href="register.html">ليس لديك حساب؟ سجل الآن</a>
     </p>
 </div>
 
 <script>
    function login() {
-        const phone = document.getElementById('phone').value;
-        const password = document.getElementById('password').value;
+        let phoneInput = document.getElementById('phone').value.trim();
+        const passwordInput = document.getElementById('password').value.trim();
 
-        // ضع هنا رقم هاتف الأدمن الخاص بك وكلمة المرور الخاصة به
-        const adminPhone = "123456"; // استبدله برقم هاتفك للأدمن
-        const adminPass = "123";      // كلمة مرور الأدمن
+        if (!phoneInput || !passwordInput) {
+            alert('الرجاء إدخال رقم الهاتف وكلمة المرور');
+            return;
+        }
 
-        if (phone === adminPhone && password === adminPass) {
+        // رقم هاتف الأدمن وكلمة المرور الخاصة به
+        const adminPhone = "123456"; 
+        const adminPass = "123";     
+
+        if (phoneInput === adminPhone && passwordInput === adminPass) {
             // إذا كان المستخدم هو الأدمن، وجهه إلى لوحة الإدارة
             window.location.href = 'admin-dashboard.html';
             return;
         }
 
-        // البحث في ملف customers_db.js للعملاء العاديين
-        const user = customersDB.find(c => c.phone === phone && c.password === password);
+        // تنظيف رقم الهاتف المدخل من أي رموز أو مسافات (مثل + أو الفراغات) للمقارنة بدقة
+        let cleanInputPhone = phoneInput.replace(/[^0-9]/g, '');
+
+        // جلب قائمة العملاء المحدثة من لوحة التحكم (localStorage)
+        const customersDB = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+
+        // البحث في العملاء مع تنظيف رقم الهاتف المخزن أيضاً لضمان المطابقة الفورية
+        const user = customersDB.find(c => {
+            let cleanDbPhone = (c.phone || '').toString().replace(/[^0-9]/g, '');
+            return cleanDbPhone === cleanInputPhone && c.password.trim() === passwordInput;
+        });
 
         if (user) {
             // حفظ بيانات المستخدم كاملة في المتصفح لاستخدامها في الداشبورد
             localStorage.setItem('loggedInUser', JSON.stringify(user));
             
             // تحويل المستخدم إلى لوحة التحكم الخاصة به
-            window.location.href = 'dashboard.html'; 
+            window.location.href = 'dashboard.html';  
         } else {
-            alert('رقم الهاتف أو كلمة المرور غير صحيحة.');
+            alert('رقم الهاتف أو كلمة المرور غير صحيحة، أو أن الحساب غير مسجل.');
         }
    }
 </script>
