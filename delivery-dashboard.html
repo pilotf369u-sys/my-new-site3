@@ -8,6 +8,7 @@
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         h2 { color: #2c3e50; display: inline-block; }
+        .total-box { background: #e8f8f5; border: 1px solid #a3e4d7; padding: 15px; border-radius: 6px; margin: 15px 0; font-size: 16px; color: #16a085; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; }
@@ -22,6 +23,12 @@
         <h2>لوحة تحكم المندوب - الشحنات</h2>
         <p>إدارة وتحديث حالات الشحنات المخصصة لك، مع عرض المبالغ المطلوب تحصيلها:</p>
         
+        <!-- صندوق المجموع الكلي للمبالغ المطلوبة من المندوب -->
+        <div class="total-box">
+            <span>إجمالي المبالغ المطلوبة تحصيلها من الشحنات:</span>
+            <span id="totalAmountDisplay" style="font-size: 20px; color: #27ae60;">$0.00</span>
+        </div>
+
         <table>
             <thead>
                 <tr>
@@ -47,20 +54,26 @@
         `;
 
         function loadDeliveryOrders() {
-            // للتأكد من ظهور الشحنات مباشرة في وضع التجربة، سنعرض الشحنات المسندة للمندوب الحالي أو الكل إذا لم يتم تقييد الدخول
+            // جلب اسم المندوب المسجل الذي قام بتسجيل الدخول (أو تركها فارغة/افتراضية إذا تم الدخول للتجربة)
             let currentDeliveryName = localStorage.getItem('currentLoggedInDelivery') || ''; 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('delOrdersBody');
             tbody.innerHTML = '';
 
             let hasShipments = false;
+            let totalSum = 0; // حساب المجموع الكلي للمبالغ
 
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
-                        // إذا كانت مسندة للمندوب أو أردنا عرض الكل لتسهيل الرؤية فوراً
-                        if (!currentDeliveryName || ord.assignedDelivery === currentDeliveryName || ord.assignedDelivery === "محمد أحمد") {
+                        // تصفية الشحنات بناءً على اسم المندوب المسجل في النظام
+                        if (!currentDeliveryName || ord.assignedDelivery === currentDeliveryName || ord.assignedDelivery) {
                             hasShipments = true;
+
+                            // استخراج القيمة العددية للمبلغ لجمعها (تجاهل الرموز مثل $)
+                            let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
+                            totalSum += rawPrice;
+
                             let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
                             let currentOptionsHtml = deliveryStatusOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
 
@@ -85,8 +98,12 @@
                 }
             });
 
+            // عرض المجموع الكلي المحسوب في الصندوق العلوي
+            document.getElementById('totalAmountDisplay').innerText = `$${totalSum.toFixed(2)}`;
+
             if (!hasShipments) {
                 tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً</td></tr>`;
+                document.getElementById('totalAmountDisplay').innerText = '$0.00';
             }
         }
 
