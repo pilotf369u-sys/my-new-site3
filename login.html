@@ -30,7 +30,17 @@
         const phone = document.getElementById('phone').value;
         const password = document.getElementById('password').value;
 
-        // البحث في ملف customers_db.js
+        // ضع هنا رقم هاتف الأدمن الخاص بك وكلمة المرور الخاصة به
+        const adminPhone = "123456"; // استبدله برقم هاتفك للأدمن
+        const adminPass = "123";      // كلمة مرور الأدمن
+
+        if (phone === adminPhone && password === adminPass) {
+            // إذا كان المستخدم هو الأدمن، وجهه إلى لوحة الإدارة
+            window.location.href = 'admin-dashboard.html';
+            return;
+        }
+
+        // البحث في ملف customers_db.js للعملاء العاديين
         const user = customersDB.find(c => c.phone === phone && c.password === password);
 
         if (user) {
