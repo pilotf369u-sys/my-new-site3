@@ -169,7 +169,7 @@
 
             document.getElementById('repTotalShipments').innerText = totalShipmentsCount;
             document.getElementById('repTotalAmount').innerText = `$${totalAmountSum.toFixed(2)}`;
-            document.getElementById('repCollectedAmount').innerText = `$${collectedAmountSum.toFixed(2)}`;
+            document.getElementById('repCollectedAmount').innerText, (document.getElementById('repCollectedAmount').innerText = `$${collectedAmountSum.toFixed(2)}`);
             document.getElementById('repRemainingAmount').innerText = `$${remainingAmount.toFixed(2)}`;
 
             if (!hasRecords) {
@@ -179,7 +179,6 @@
 
         function markAsCollected(cIdx, oIdx) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            
             let now = new Date();
             let dateStr = now.toLocaleDateString('en-GB') + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -193,7 +192,6 @@
 
         function cancelCollection(cIdx, oIdx) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            
             customers[cIdx].orders[oIdx].financialStatus = "معلق";
             customers[cIdx].orders[oIdx].collectDate = "";
 
