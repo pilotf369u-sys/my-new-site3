@@ -8,10 +8,11 @@
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
         .sidebar { width: 260px; background: #2c3e50; color: white; position: fixed; height: 100%; padding: 20px; overflow-y: auto; }
         .sidebar h2 { font-size: 20px; text-align: center; margin-bottom: 30px; }
-        .sidebar a { display: block; color: white; text-decoration: none; padding: 12px; margin-bottom: 10px; border-radius: 5px; background: #34495e; transition: 0.3s; }
+        .sidebar a { display: block; color: white; text-decoration: none; padding: 12px; margin-bottom: 10px; border-radius: 5px; background: #34495e; transition: 0.3s; cursor: pointer; text-align: right; }
         .sidebar a:hover { background: #1abc9c; }
         .main-content { margin-right: 300px; padding: 30px; }
-        .card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: none; } /* الأقسام مخفية افتراضياً */
+        .active-section { display: block; } /* القسم النشط يظهر فقط */
         h1 { color: #333; }
         input, select { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 5px; width: 200px; }
         button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
@@ -27,12 +28,12 @@
     <!-- القائمة الجانبية -->
     <div class="sidebar">
         <h2>لوحة الإدارة</h2>
-        <a href="#orders">إدارة الطلبات</a>
-        <a href="#employees">إدارة الموظفين</a>
-        <a href="#delivery">إدارة المندوبين</a>
-        <a href="#exchange">أسعار صرف العملة</a>
-        <a href="#customers">إدارة العملاء</a>
-        <a href="#content">إدارة المحتوى</a>
+        <a onclick="showSection('orders')">إدارة الطلبات</a>
+        <a onclick="showSection('employees')">إدارة الموظفين</a>
+        <a onclick="showSection('delivery')">إدارة المندوبين</a>
+        <a onclick="showSection('exchange')">أسعار صرف العملة</a>
+        <a onclick="showSection('customers')">إدارة العملاء</a>
+        <a onclick="showSection('content')">إدارة المحتوى</a>
         <a href="login.html" class="btn-red" style="text-align:center; margin-top: 30px;">تسجيل الخروج</a>
     </div>
 
@@ -40,8 +41,14 @@
     <div class="main-content">
         <h1>مرحباً بك يا أدمن</h1>
         
-        <!-- 1. إدارة الموظفين -->
-        <div class="card" id="employees">
+        <!-- 1. إدارة الطلبات -->
+        <div class="card" id="orders">
+            <h3>إدارة الطلبات</h3>
+            <p>هنا تظهر طلبات العملاء.</p>
+        </div>
+
+        <!-- 2. إدارة الموظفين -->
+        <div class="card active-section" id="employees">
             <h3>إدارة الموظفين</h3>
             <div>
                 <input type="text" id="empName" placeholder="اسم الموظف">
@@ -56,13 +63,11 @@
                         <th>الإجراء</th>
                     </tr>
                 </thead>
-                <tbody id="empTableBody">
-                    <!-- سيتم تعبئتها تلقائياً -->
-                </tbody>
+                <tbody id="empTableBody"></tbody>
             </table>
         </div>
 
-        <!-- 2. إدارة المندوبين -->
+        <!-- 3. إدارة المندوبين -->
         <div class="card" id="delivery">
             <h3>إدارة المندوبين</h3>
             <div>
@@ -78,27 +83,19 @@
                         <th>الإجراء</th>
                     </tr>
                 </thead>
-                <tbody id="delTableBody">
-                    <!-- سيتم تعبئتها تلقائياً -->
-                </tbody>
+                <tbody id="delTableBody"></tbody>
             </table>
         </div>
 
-        <!-- 3. إدارة أسعار صرف العملة -->
+        <!-- 4. إدارة أسعار صرف العملة -->
         <div class="card" id="exchange">
             <h3>إدارة أسعار صرف العملة</h3>
             <div>
                 <input type="text" id="currencyName" placeholder="اسم العملة (مثال: دولار)">
-                <input type="number" id="currencyRate" placeholder="السعر مقابل العملة الأساسية">
+                <input type="number" id="currencyRate" placeholder="السعر">
                 <button class="btn-green" onclick="saveExchangeRate()">حفظ / تحديث السعر</button>
             </div>
-            <p style="margin-top: 15px; font-size: 16px;">السعر الحالي المخزن: <span id="currentRate" style="color: #27ae60; font-weight: bold;">لم يُحدد بعد</span></p>
-        </div>
-
-        <!-- 4. إدارة الطلبات -->
-        <div class="card" id="orders">
-            <h3>إدارة الطلبات</h3>
-            <p>هنا تظهر طلبات العملاء (قريباً سنربطها بصفحة الطلبات).</p>
+            <p style="margin-top: 15px; font-size: 16px;">السعر الحالي: <span id="currentRate" style="color: #27ae60; font-weight: bold;">لم يُحدد بعد</span></p>
         </div>
 
         <!-- 5. إدارة العملاء -->
@@ -106,9 +103,26 @@
             <h3>إدارة العملاء</h3>
             <p>قائمة العملاء المسجلين في النظام.</p>
         </div>
+
+        <!-- 6. إدارة المحتوى -->
+        <div class="card" id="content">
+            <h3>إدارة المحتوى والموقع</h3>
+            <p>تعديل نصوص وأقسام الموقع الرئيسية.</p>
+        </div>
     </div>
 
     <script>
+        // دالة لإظهار القسم المطلوب وإخفاء الباقي
+        function showSection(sectionId) {
+            let sections = document.querySelectorAll('.card');
+            sections.forEach(sec => sec.classList.remove('active-section'));
+            
+            let target = document.getElementById(sectionId);
+            if(target) {
+                target.classList.add('active-section');
+            }
+        }
+
         // --- إدارة الموظفين ---
         function loadEmployees() {
             let employees = JSON.parse(localStorage.getItem('employeesList')) || [];
@@ -119,7 +133,7 @@
                     <td>${emp.name}</td>
                     <td>${emp.phone}</td>
                     <td><button class="btn-red" onclick="deleteEmployee(${index})">حذف</button></td>
-                `;
+                </tr>`;
             });
         }
 
@@ -154,7 +168,7 @@
                     <td>${del.name}</td>
                     <td>${del.phone}</td>
                     <td><button class="btn-red" onclick="deleteDelivery(${index})">حذف</button></td>
-                `;
+                </tr>`;
             });
         }
 
