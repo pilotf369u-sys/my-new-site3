@@ -20,11 +20,12 @@
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
-        <h2 id="deliveryTitle">لوحة تحكم المندوب - الشحنات المسندة</h2>
-        <p>إدارة وتحديث حالات الشحنات المخصصة للمندوبين، مع عرض المبالغ المطلوب تحصيلها:</p>
+        <h2 id="deliveryTitle">لوحة تحكم المندوب - الشحنات المسندة إليك</h2>
+        <p>عرض الشحنات المخصصة لك حصرياً من الفرع، تحديث حالاتها، ومتابعة إجمالي المبالغ المطلوبة منك تحصيلها:</p>
         
+        <!-- صندوق المجموع الكلي للمبالغ المطلوبة للمندوب -->
         <div class="total-box">
-            <span>إجمالي المبالغ المطلوبة تحصيلها:</span>
+            <span>إجمالي المبالغ المطلوبة تحصيلها منك:</span>
             <span id="totalAmountDisplay" style="font-size: 20px; color: #27ae60;">$0.00</span>
         </div>
 
@@ -32,15 +33,15 @@
             <thead>
                 <tr>
                     <th>رقم الشحنة</th>
-                    <th>اسم المندوب المسند له</th>
                     <th>اسم العميل والهاتف</th>
+                    <th>عنوان التوصيل</th>
                     <th>المبلغ المطلوب تحصيله</th>
                     <th>الحالة والسبب</th>
                     <th>تحديث حالة التوصيل</th>
                 </tr>
             </thead>
             <tbody id="delOrdersBody">
-                <tr><td colspan="6">جاري التحميل...</td></tr>
+                <tr><td colspan="6">جاري تحميل شحناتك...</td></tr>
             </tbody>
         </table>
     </div>
@@ -53,6 +54,22 @@
         `;
 
         function loadDeliveryOrders() {
+            // جلب اسم المندوب المسجل دخوله تلقائياً من أي مفتاح محتمل في النظام
+            let currentDeliveryName = (
+                localStorage.getItem('loggedDeliveryName') || 
+                localStorage.getItem('deliveryName') || 
+                localStorage.getItem('username') || 
+                ''
+            ).trim();
+
+            if (!currentDeliveryName) {
+                alert('لم يتم العثور على بيانات تسجيل دخول المندوب. يرجى تسجيل الدخول مرة أخرى.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب: ${currentDeliveryName}`;
+
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('delOrdersBody');
             tbody.innerHTML = '';
@@ -63,8 +80,10 @@
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
-                        // عرض كل الطلبات التي تم إسناد مندوب لها من قبل الفرع
-                        if (ord.assignedDelivery && ord.assignedDelivery.trim() !== "") {
+                        let assignedDel = (ord.assignedDelivery || '').trim();
+
+                        // مطابقة اسم المندوب المسجل دخوله مع المندوب المسند له الطلب مطابقة تامة
+                        if (assignedDel === currentDeliveryName) {
                             hasShipments = true;
 
                             let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
@@ -76,8 +95,8 @@
                             tbody.innerHTML += `
                                 <tr>
                                     <td><b>${ord.id}</b></td>
-                                    <td><span style="background: #eef2f3; padding: 3px 8px; border-radius: 4px; font-weight: bold; color: #2980b9;">${ord.assignedDelivery}</span></td>
                                     <td style="text-align: right;"><b>${cust.name}</b><br><span dir="ltr" style="font-size:12px; color:#666;">${cust.phone}</span></td>
+                                    <td>${cust.address || '---'}</td>
                                     <td><b style="color: #e67e22; font-size: 15px;">${ord.price || '$0.00'}</b></td>
                                     <td><span style="padding: 3px 8px; background: #e2f0d9; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span>${reasonDisplay}</td>
                                     <td>
@@ -94,10 +113,10 @@
                 }
             });
 
-            document.getElementById('totalAmountDisplay`').innerText = `$${totalSum.toFixed(2)}`;
+            document.getElementById('totalAmountDisplay').innerText = `$${totalSum.toFixed(2)}`;
 
             if (!hasShipments) {
-                tbody.innerHTML = `<tr><td colspan="6">لا توجد أي شحنات مسندة للمندوبين حتى الآن من الفروع</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً من الفرع</td></tr>`;
                 document.getElementById('totalAmountDisplay').innerText = '$0.00';
             }
         }
