@@ -54,11 +54,14 @@
         `;
 
         function loadDeliveryOrders() {
-            // جلب اسم المندوب من مفتاح تسجيل الدخول الموحد (Logged Delivery Name)
-            let currentDeliveryName = localStorage.getItem('loggedDeliveryName') || localStorage.getItem('currentLoggedInDelivery') || ''; 
+            // جلب اسم المندوب المسجل دخوله من أي مفتاح محتمل
+            let currentDeliveryName = (localStorage.getItem('loggedDeliveryName') || localStorage.getItem('currentLoggedInDelivery') || '').trim();
             
             if (currentDeliveryName) {
                 document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب: ${currentDeliveryName}`;
+            } else {
+                // إذا لم يتم حفظ اسم المندوب عند تسجيل الدخول، نطلب منه تسجيل الدخول مجدداً أو ننبّهه
+                document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب (يرجى تسجيل الدخول باسم المندوب)`;
             }
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
@@ -71,8 +74,10 @@
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
-                        // الشرط الصحيح: عرض الشحنة فقط إذا تم إسنادها حصراً لهذا المندوب بالاسم
-                        if (currentDeliveryName && ord.assignedDelivery === currentDeliveryName) {
+                        let assignedDel = (ord.assignedDelivery || '').trim();
+
+                        // مطابقة دقيقة ومرنة لاسم المندوب المسجل دخوله مع الطلب المسند
+                        if (currentDeliveryName && assignedDel === currentDeliveryName) {
                             hasShipments = true;
 
                             let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
@@ -105,7 +110,7 @@
             document.getElementById('totalAmountDisplay').innerText = `$${totalSum.toFixed(2)}`;
 
             if (!hasShipments) {
-                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً من الفرع</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً (تأكد من تسجيل الدخول بنفس اسم المندوب المسند له الطلب)</td></tr>`;
                 document.getElementById('totalAmountDisplay').innerText = '$0.00';
             }
         }
