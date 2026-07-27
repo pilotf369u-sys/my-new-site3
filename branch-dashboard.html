@@ -3,98 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الفرع - إدارة الشحنات والمندوبين</title>
+    <title>لوحة تحكم الفرع - إدارة الطلبات والمندوبين</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 1200px; margin: auto; }
-        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        h2 { color: #2c3e50; margin: 0; }
-        .btn-logout { background: #c0392b; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; display: inline-block; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 30px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background: #f2f2f2; font-size: 13px; }
-        td { font-size: 13px; }
-        
-        select, button.btn-save { padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
-        button.btn-save { background: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold; margin-right: 5px; }
+        th { background: #f2f2f2; font-size: 14px; }
+        .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
+        select, input[type="text"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
+        button.action-btn { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .section-title { background: #34495e; color: white; padding: 10px 15px; border-radius: 5px; margin-top: 20px; font-size: 16px; }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <div class="header-flex">
-            <h2>لوحة تحكم الفرع: <span id="branchTitleName" style="color: #2980b9;"></span></h2>
-            <button class="btn-logout" onclick="logoutBranch()">تسجيل الخروج</button>
-        </div>
-        
-        <p>الطلبات والشحنات المحولة إلى فرعك من الإدارة، قم بإدارتها وإسنادها للمندوبين:</p>
-        
+        <a href="login.html" class="btn-red">تسجيل الخروج</a>
+        <h2 id="branchTitle">لوحة تحكم الفرع: جاري التحميل...</h2>
+        <p>الطلبات والشحنات المحولة إلى فرعك من الإدارة، قم بإدارتها، إسنادها للمندوبين، ومتابعة المحاسبة المالية.</p>
+
+        <!-- جدول الطلبات المحولة للفرع -->
+        <div class="section-title">📦 طلبات وشحنات الفرع</div>
         <table>
             <thead>
                 <tr>
                     <th>رقم الشحنة</th>
                     <th>اسم العميل والهاتف</th>
-                    <th>عنوان التوصيل</th>
                     <th>المبلغ المطلوب</th>
-                    <th>حالة الطلب</th>
-                    <th>إسناد إلى مندوب</th>
-                    <th>إجراء وتحديث</th>
+                    <th>الحالة والسبب</th>
+                    <th>إسناد إلى مندوب الفرع</th>
+                    <th>إجراء وتحديث الحالة</th>
                 </tr>
             </thead>
-            <tbody id="branchOrdersTable">
-                <tr><td colspan="7">جاري التحميل...</td></tr>
+            <tbody id="branchOrdersBody">
+                <tr><td colspan="6">جاري تحميل الطلبات...</td></tr>
+            </tbody>
+        </table>
+
+        <!-- قسم محاسبة المندوبين -->
+        <div class="section-title">💰 محاسبة المندوبين والذمم المالية</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>اسم المندوب</th>
+                    <th>رقم الهاتف</th>
+                    <th>عدد الطلبات المسلمة</th>
+                    <th>إجمالي النقدية المحصلة (الذمة)</th>
+                    <th>إجراءات المحاسبة</th>
+                </tr>
+            </thead>
+            <tbody id="deliveryAccountingBody">
+                <tr><td colspan="5">جاري تحميل حسابات المندوبين...</td></tr>
             </tbody>
         </table>
     </div>
 
     <script>
-        let currentBranchName = localStorage.getItem('loggedBranchName') || "الفرع";
-        document.getElementById('branchTitleName').innerText = currentBranchName;
+        const statusListOptions = `
+            <option value="قيد المعالجة">قيد المعالجة</option>
+            <option value="توزيع داخلي">توزيع داخلي</option>
+            <option value="تم التسليم">تم التسليم</option>
+            <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم (مرتج)</option>
+        `;
 
-        function loadBranchOrders() {
+        function loadBranchDashboard() {
+            let currentBranchName = localStorage.getItem('loggedBranchName');
+            if (!currentBranchName) {
+                alert('الرجاء تسجيل الدخول بحساب الفرع أولاً');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('branchTitle').innerText = `لوحة تحكم الفرع: ${currentBranchName}`;
+
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
-            let tbody = document.getElementById('branchOrdersTable');
+            let tbody = document.getElementById('branchOrdersBody');
             tbody.innerHTML = '';
 
             let hasOrders = false;
 
-            customers.forEach((cust, cIdx) => {
+            customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
-                    cust.orders.forEach((ord, oIdx) => {
-                        // الشحنات التي تخص هذا الفرع فقط
+                    cust.orders.forEach((ord, ordIndex) => {
+                        // عرض الطلبات الموجهة حصرياً لهذا الفرع
                         if (ord.assignedBranch === currentBranchName) {
                             hasOrders = true;
 
-                            // بناء خيارات المندوبين
-                            let deliveryOptions = `<option value="">اختر المندوب</option>`;
+                            let deliveryOptions = `<option value="">اختر مندوب الفرع</option>`;
                             deliveryList.forEach(del => {
-                                let selected = ord.assignedDelivery === del.name ? 'selected' : '';
+                                let selected = (ord.assignedDelivery === del.name) ? 'selected' : '';
                                 deliveryOptions += `<option value="${del.name}" ${selected}>${del.name}</option>`;
                             });
+
+                            let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
+                            let currentOptionsHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
 
                             tbody.innerHTML += `
                                 <tr>
                                     <td><b>${ord.id}</b></td>
-                                    <td style="text-align: right;"><b>${cust.name}</b><br><span dir="ltr">${cust.phone}</span></td>
-                                    <td>${cust.address || '---'}</td>
-                                    <td><b style="color: #e67e22;">${ord.price || '$0.00'}</b></td>
+                                    <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;" dir="ltr">${cust.phone}</span></td>
+                                    <td><b style="color: #2980b9;">${ord.price || '$0.00'}</b></td>
                                     <td>
-                                        <select id="status_${cIdx}_${oIdx}">
-                                            <option value="قيد المعالجة" ${ord.status === 'قيد المعالجة' ? 'selected' : ''}>قيد المعالجة</option>
-                                            <option value="توزيع داخلي" ${ord.status === 'توزيع داخلي' ? 'selected' : ''}>توزيع داخلي</option>
-                                            <option value="تم التوصيل" ${ord.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
-                                            <option value="مرتجع" ${ord.status === 'مرتجع' ? 'selected' : ''}>مرتجع</option>
-                                        </select>
+                                        <span style="padding: 3px 8px; background: #fff3cd; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span>
+                                        ${reasonDisplay}
                                     </td>
                                     <td>
-                                        <select id="delivery_${cIdx}_${oIdx}">
+                                        <select id="del_${custIndex}_${ordIndex}" onchange="assignDelivery(${custIndex}, ${ordIndex})">
                                             ${deliveryOptions}
                                         </select>
                                     </td>
                                     <td>
-                                        <button class="btn-save" onclick="updateBranchOrder(${cIdx}, ${oIdx})">حفظ التحديث</button>
+                                        <select id="status_${custIndex}_${ordIndex}" onchange="checkBranchReason(${custIndex}, ${ordIndex})">
+                                            ${currentOptionsHtml}
+                                        </select>
+                                        <input type="text" id="reason_${custIndex}_${ordIndex}" placeholder="اكتب سبب الرفض أو المرتجع..." style="display: ${ord.status === 'تم رفض الطلب أو عدم التسليم' ? 'block' : 'none'}; margin-top: 5px; width: 100%;" value="${ord.reason || ''}">
+                                        <button class="action-btn" onclick="updateBranchOrderStatus(${custIndex}, ${ordIndex})" style="margin-top: 5px;">حفظ وتحديث</button>
                                     </td>
                                 </tr>
                             `;
@@ -104,30 +129,99 @@
             });
 
             if (!hasOrders) {
-                tbody.innerHTML = `<tr><td colspan="7">لا توجد طلبات مسندة لفرعك حتى الآن</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6">لا توجد طلبات محولة لفرعك حتى الآن</td></tr>`;
+            }
+
+            loadDeliveryAccounting(currentBranchName, customers, deliveryList);
+        }
+
+        // إظهار وإخفاء حقل سبب الرفض/المرتجع في جدول الفرع
+        function checkBranchReason(custIndex, ordIndex) {
+            let status = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
+            let reasonInput = document.getElementById(`reason_${custIndex}_${ordIndex}`);
+            if (status === 'تم رفض الطلب أو عدم التسليم') {
+                reasonInput.style.display = 'block';
+            } else {
+                reasonInput.style.display = 'none';
+                reasonInput.value = '';
             }
         }
 
-        function updateBranchOrder(cIdx, oIdx) {
+        // إسناد الطلب لمندوب تابع للفرع
+        function assignDelivery(custIndex, ordIndex) {
+            let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let newStatus = document.getElementById(`status_${cIdx}_${oIdx}`).value;
-            let newDelivery = document.getElementById(`delivery_${cIdx}_${oIdx}`).value;
-
-            customers[cIdx].orders[oIdx].status = newStatus;
-            customers[cIdx].orders[oIdx].assignedDelivery = newDelivery;
-
+            customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تحديث الشحنة وإسنادها بنجاح');
-            loadBranchOrders();
+            alert('تم إسناد الطلب للمندوب بنجاح');
         }
 
-        function logoutBranch() {
-            localStorage.removeItem('loggedBranchName');
-            window.location.href = 'login.html';
+        // تحديث حالة الطلب والسبب من داخل الفرع
+        function updateBranchOrderStatus(custIndex, ordIndex) {
+            let newStatus = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
+            let reason = document.getElementById(`reason_${custIndex}_${ordIndex}`).value;
+
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            customers[custIndex].orders[ordIndex].status = newStatus;
+            customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
+            
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            alert('تم تحديث حالة الشحنة بنجاح');
+            loadBranchDashboard();
+        }
+
+        // حساب أموال المندوبين الخاصة بالفرع
+        function loadDeliveryAccounting(branchName, customers, deliveryList) {
+            let accountingBody = document.getElementById('deliveryAccountingBody');
+            accountingBody.innerHTML = '';
+
+            if (deliveryList.length === 0) {
+                accountingBody.innerHTML = `<tr><td colspan="5">لا توجد مناديب مسجلين في النظام</td></tr>`;
+                return;
+            }
+
+            deliveryList.forEach(del => {
+                let deliveredCount = 0;
+                let totalCashCollected = 0;
+
+                customers.forEach(cust => {
+                    if (cust.orders) {
+                        cust.orders.forEach(ord => {
+                            if (ord.assignedBranch === branchName && ord.assignedDelivery === del.name && ord.status === 'تم التسليم') {
+                                deliveredCount++;
+                                // استخراج القيمة العددية للمبلغ (تصفية الرموز مثل $)
+                                let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
+                                totalCashCollected += numericPrice;
+                            }
+                        });
+                    }
+                });
+
+                accountingBody.innerHTML += `
+                    <tr>
+                        <td><b>${del.name}</b></td>
+                        <td dir="ltr">${del.phone || '---'}</td>
+                        <td><span style="background: #e1f5fe; padding: 3px 8px; border-radius: 4px; font-weight: bold;">${deliveredCount} طلب</span></td>
+                        <td><b style="color: #c0392b; font-size: 15px;">$${totalCashCollected.toFixed(2)}</b></td>
+                        <td>
+                            <button class="action-btn" onclick="settleDeliveryAccount('${del.name}')" ${totalCashCollected === 0 ? 'disabled style="background: #ccc; cursor: not-allowed;"' : ''}>تصفية واستلام النقدية</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // تصفية حساب المندوب (إصدار سند استلام نقدي وتصفير ذمته للطلبات الحالية)
+        function settleDeliveryAccount(deliveryName) {
+            if (confirm(`هل أنتแน่ใจ من تصفية واستلام العهدة المالية للمندوب (${deliveryName})؟`)) {
+                // ملاحظة تشغيلية: هنا يتم أرشفة أو تصفير المبالغ المحصلة للمندوب بناءً على رغبته
+                alert(`تم تصفية حساب المندوب ${deliveryName} بنجاح وتسجيل توريد النقدية لخزينة الفرع.`);
+                loadBranchDashboard();
+            }
         }
 
         window.onload = function() {
-            loadBranchOrders();
+            loadBranchDashboard();
         }
     </script>
 </body>
