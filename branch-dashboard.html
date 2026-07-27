@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم الفرع - إدارة الشحنات والمندوبين</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 1200px; margin: auto; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #2c3e50; margin: 0; }
+        .btn-logout { background: #c0392b; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #f2f2f2; font-size: 13px; }
+        td { font-size: 13px; }
+        
+        select, button.btn-save { padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
+        button.btn-save { background: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-flex">
+            <h2>لوحة تحكم الفرع: <span id="branchTitleName" style="color: #2980b9;"></span></h2>
+            <button class="btn-logout" onclick="logoutBranch()">تسجيل الخروج</button>
+        </div>
+        
+        <p>الطلبات والشحنات المحولة إلى فرعك من الإدارة، قم بإدارتها وإسنادها للمندوبين:</p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>رقم الشحنة</th>
+                    <th>اسم العميل والهاتف</th>
+                    <th>عنوان التوصيل</th>
+                    <th>المبلغ المطلوب</th>
+                    <th>حالة الطلب</th>
+                    <th>إسناد إلى مندوب</th>
+                    <th>إجراء وتحديث</th>
+                </tr>
+            </thead>
+            <tbody id="branchOrdersTable">
+                <tr><td colspan="7">جاري التحميل...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let currentBranchName = localStorage.getItem('loggedBranchName') || "الفرع";
+        document.getElementById('branchTitleName').innerText = currentBranchName;
+
+        function loadBranchOrders() {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
+            let tbody = document.getElementById('branchOrdersTable');
+            tbody.innerHTML = '';
+
+            let hasOrders = false;
+
+            customers.forEach((cust, cIdx) => {
+                if (cust.orders && cust.orders.length > 0) {
+                    cust.orders.forEach((ord, oIdx) => {
+                        // الشحنات التي تخص هذا الفرع فقط
+                        if (ord.assignedBranch === currentBranchName) {
+                            hasOrders = true;
+
+                            // بناء خيارات المندوبين
+                            let deliveryOptions = `<option value="">اختر المندوب</option>`;
+                            deliveryList.forEach(del => {
+                                let selected = ord.assignedDelivery === del.name ? 'selected' : '';
+                                deliveryOptions += `<option value="${del.name}" ${selected}>${del.name}</option>`;
+                            });
+
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td><b>${ord.id}</b></td>
+                                    <td style="text-align: right;"><b>${cust.name}</b><br><span dir="ltr">${cust.phone}</span></td>
+                                    <td>${cust.address || '---'}</td>
+                                    <td><b style="color: #e67e22;">${ord.price || '$0.00'}</b></td>
+                                    <td>
+                                        <select id="status_${cIdx}_${oIdx}">
+                                            <option value="قيد المعالجة" ${ord.status === 'قيد المعالجة' ? 'selected' : ''}>قيد المعالجة</option>
+                                            <option value="توزيع داخلي" ${ord.status === 'توزيع داخلي' ? 'selected' : ''}>توزيع داخلي</option>
+                                            <option value="تم التوصيل" ${ord.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
+                                            <option value="مرتجع" ${ord.status === 'مرتجع' ? 'selected' : ''}>مرتجع</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select id="delivery_${cIdx}_${oIdx}">
+                                            ${deliveryOptions}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button class="btn-save" onclick="updateBranchOrder(${cIdx}, ${oIdx})">حفظ التحديث</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    });
+                }
+            });
+
+            if (!hasOrders) {
+                tbody.innerHTML = `<tr><td colspan="7">لا توجد طلبات مسندة لفرعك حتى الآن</td></tr>`;
+            }
+        }
+
+        function updateBranchOrder(cIdx, oIdx) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let newStatus = document.getElementById(`status_${cIdx}_${oIdx}`).value;
+            let newDelivery = document.getElementById(`delivery_${cIdx}_${oIdx}`).value;
+
+            customers[cIdx].orders[oIdx].status = newStatus;
+            customers[cIdx].orders[oIdx].assignedDelivery = newDelivery;
+
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            alert('تم تحديث الشحنة وإسنادها بنجاح');
+            loadBranchOrders();
+        }
+
+        function logoutBranch() {
+            localStorage.removeItem('loggedBranchName');
+            window.location.href = 'login.html';
+        }
+
+        window.onload = function() {
+            loadBranchOrders();
+        }
+    </script>
+</body>
+</html>
