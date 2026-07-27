@@ -68,7 +68,7 @@
     <div class="main-content">
         <div class="container">
             <h2>لوحة الأدمن - السجل المحاسبي ومتابعة المندوبين</h2>
-            <p>متابعة حركة المندوبين، المبالغ المحصلة، وما تبقى في ذمتهم المالية مع التواريخ:</p>
+            <p>متابعة حركة المندوبين، المبالغ المحصلة، وما تبقى في ذمتهم المالية مع التواريخ (مرتبط بتصفيات الفروع):</p>
             
             <!-- جدول السجل العام المالي الشامل للمندوبين -->
             <div id="generalReportArea">
@@ -77,9 +77,9 @@
                         <tr>
                             <th>اسم المندوب</th>
                             <th>رقم الهاتف</th>
-                            <th>إجمالي الشحنات</th>
+                            <th>إجمالي الشحنات النشطة</th>
                             <th>إجمالي المبالغ</th>
-                            <th>المبالغ المسلمة (المحصلة)</th>
+                            <th>المبالغ المسلمة (المحصلة / المصفاة)</th>
                             <th>المتبقي في الذمة</th>
                             <th>إجراء السجل المحاسبي</th>
                         </tr>
@@ -102,7 +102,7 @@
                 
                 <div class="summary-box" style="margin-top: 15px;">
                     <div class="card">
-                        <h4>إجمالي الشحنات</h4>
+                        <h4>إجمالي الشحنات النشطة</h4>
                         <p id="repTotalShipments" style="font-size: 18px; font-weight: bold; color: #2c3e50;">0</p>
                     </div>
                     <div class="card">
@@ -129,7 +129,7 @@
                             <th>المبلغ</th>
                             <th>حالة الطلب</th>
                             <th>الحالة المالية (الذمة)</th>
-                            <th>تاريخ ووقت التحصيل</th>
+                            <th>تاريخ ووقت التحصيل/التصفية</th>
                             <th>إجراء التسجيل المحاسبي</th>
                         </tr>
                     </thead>
@@ -160,11 +160,11 @@
                 let dTotal = 0;
                 let dCollected = 0;
 
-                // حساب الأموال والشحنات لكل مندوب تلقائياً من قائمة العملاء والطلبات
+                // حساب الأموال والشحنات لكل مندوب تلقائياً مع مراعاة حالة التصفية (isSettled) أو التوريد القديم
                 customers.forEach(cust => {
                     if (cust.orders && cust.orders.length > 0) {
                         cust.orders.forEach(ord => {
-                            if (ord.assignedDelivery === del.name) {
+                            if (ord.assignedDelivery === del.name && !ord.isSettled) {
                                 dShipments++;
                                 let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
                                 dTotal += rawPrice;
@@ -212,7 +212,8 @@
             customers.forEach((cust, cIdx) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, oIdx) => {
-                        if (ord.assignedDelivery === deliveryName) {
+                        // إظهار الشحنات النشطة غير المصفاة فقط في السجل النشط
+                        if (ord.assignedDelivery === deliveryName && !ord.isSettled) {
                             hasRecords = true;
                             totalShipmentsCount++;
 
@@ -259,7 +260,7 @@
             document.getElementById('repRemainingAmount').innerText = `$${remainingAmount.toFixed(2)}`;
 
             if (!hasRecords) {
-                repOrdersBody.innerHTML = `<tr><td colspan="8">لا توجد شحنات مسندة لهذا المندوب حتى الآن</td></tr>`;
+                repOrdersBody.innerHTML = `<tr><td colspan="8">لا توجد شحنات نشطة مسندة لهذا المندوب حتى الآن (أو تمت تصفيتها من قبل الفرع)</td></tr>`;
             }
 
             reportSec.scrollIntoView({ behavior: 'smooth' });
