@@ -14,17 +14,24 @@
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
         select, input[type="text"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
         button.action-btn { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.report-btn { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; }
         .section-title { background: #34495e; color: white; padding: 10px 15px; border-radius: 5px; margin-top: 20px; font-size: 16px; }
+        
+        /* تنسيق النافذة المنبثقة (Modal) لتفاصيل ومحاسبة المندوب */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fff; margin: 5% auto; padding: 20px; border-radius: 8px; width: 70%; max-height: 80vh; overflow-y: auto; text-align: right; }
+        .close-modal { color: #aaa; float: left; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-modal:hover { color: black; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
         <h2 id="branchTitle">لوحة تحكم الفرع: جاري التحميل...</h2>
-        <p>الطلبات والشحنات المحولة إلى فرعك من الإدارة، قم بإدارتها، إسنادها للمندوبين، ومتابعة المحاسبة المالية.</p>
+        <p>إدارة طلبات الفرع، إسناد الشحنات للمندوبين، ومتابعة الحسابات والتقارير المالية.</p>
 
         <!-- جدول الطلبات المحولة للفرع -->
-        <div class="section-title">📦 طلبات وشحنات الفرع</div>
+        <div class="section-title">📦 إدارة شحنات الفرع وإسنادها للمندوبين</div>
         <table>
             <thead>
                 <tr>
@@ -41,22 +48,32 @@
             </tbody>
         </table>
 
-        <!-- قسم محاسبة المندوبين والذمم المالية -->
-        <div class="section-title">💰 محاسبة المندوبين والذمم المالية والتقارير</div>
+        <!-- قسم محاسبة المندوبين المبسط والنظيف -->
+        <div class="section-title">💰 محاسبة المناديب والذمم المالية (اختر المندوب للمتابعة والتقارير)</div>
         <table>
             <thead>
                 <tr>
                     <th>اسم المندوب</th>
                     <th>رقم الهاتف</th>
-                    <th>تفاصيل الطلبات المسندة والمدفوعة</th>
-                    <th>إجمالي النقدية في ذمته</th>
-                    <th>إجراءات التصفية والتقارير</th>
+                    <th>إجمالي النقدية الحالية في ذمته</th>
+                    <th>الإجراءات (عرض الطلبات، التصفية، والطباعة)</th>
                 </tr>
             </thead>
             <tbody id="deliveryAccountingBody">
-                <tr><td colspan="5">جاري تحميل حسابات المندوبين...</td></tr>
+                <tr><td colspan="4">جاري تحميل حسابات المندوبين...</td></tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- نافذة منبثقة (Modal) لعرض تفاصيل طلبات المندوب والتحكم المالي -->
+    <div id="deliveryModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeDeliveryModal()">&times;</span>
+            <h3 id="modalDeliveryTitle" style="color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">تفاصيل حساب المندوب</h3>
+            <div id="modalDeliveryBody">
+                <!-- سيتم تعبئة تفاصيل الطلبات والذمة هنا ديناميكياً -->
+            </div>
+        </div>
     </div>
 
     <script>
@@ -184,14 +201,13 @@
             accountingBody.innerHTML = '';
 
             if (deliveryList.length === 0) {
-                accountingBody.innerHTML = `<tr><td colspan="5">لا توجد مناديب مسجلين في النظام</td></tr>`;
+                accountingBody.innerHTML = `<tr><td colspan="4">لا توجد مناديب مسجلين في النظام</td></tr>`;
                 return;
             }
 
             deliveryList.forEach(del => {
                 let totalCashCollected = 0;
                 let delName = (del.name || '').trim();
-                let ordersDetailsHtml = `<ul style="margin: 0; padding-right: 15px; text-align: right; font-size: 12px;">`;
                 let assignedCount = 0;
 
                 customers.forEach(cust => {
@@ -200,38 +216,105 @@
                             let assignedDel = (ord.assignedDelivery || '').trim();
                             let ordBranch = (ord.assignedBranch || '').trim();
 
-                            // الاحتساب يتم بناءً على إسناد الطلب للمندوب (وليس اشتراط حالة تم التسليم للزبون) وبشرط عدم تصفيته مسبقاً
                             if (ordBranch === branchName && assignedDel === delName && !ord.isSettled) {
                                 assignedCount++;
                                 let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
                                 totalCashCollected += numericPrice;
-                                ordersDetailsHtml += `<li><b>${ord.id}</b> - ${cust.name} (${ord.price || '$0.00'}) [<b>${ord.status}</b>]</li>`;
                             }
                         });
                     }
                 });
-                ordersDetailsHtml += `</ul>`;
-
-                if (assignedCount === 0) {
-                    ordersDetailsHtml = `<span style="color: #888; font-size: 12px;">لا توجد طلبات غير مصفاة مسندة حالياً</span>`;
-                }
 
                 accountingBody.innerHTML += `
                     <tr>
                         <td><b>${delName}</b></td>
                         <td dir="ltr">${del.phone || '---'}</td>
-                        <td>${ordersDetailsHtml}</td>
-                        <td><b style="color: #c0392b; font-size: 15px;">$${totalCashCollected.toFixed(2)}</b></td>
+                        <td><b style="color: #c0392b; font-size: 16px;">$${totalCashCollected.toFixed(2)}</b> (${assignedCount} طلب)</td>
                         <td>
-                            <button class="action-btn" onclick="settleDeliveryAccount('${delName}')" ${assignedCount === 0 ? 'disabled style="background: #ccc; cursor: not-allowed;"' : ''}>تصفية واستلام النقدية</button>
+                            <button class="report-btn" onclick="openDeliveryModal('${delName}')">إدارة الطلبات والتقرير</button>
                         </td>
                     </tr>
                 `;
             });
         }
 
+        // فتح النافذة المنبثقة الخاصة بالمندوب المختار
+        function openDeliveryModal(deliveryName) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let currentBranchName = (localStorage.getItem('loggedBranchName') || '').trim();
+            let modalTitle = document.getElementById('modalDeliveryTitle');
+            let modalBody = document.getElementById('modalDeliveryBody');
+
+            modalTitle.innerText = `تفاصيل حساب وطلبات المندوب: ${deliveryName}`;
+            
+            let totalCash = 0;
+            let ordersHtml = `
+                <table style="width:100%; margin-top:10px;">
+                    <thead>
+                        <tr style="background:#f2f2f2;">
+                            <th>رقم الشحنة</th>
+                            <th>اسم العميل</th>
+                            <th>الهاتف</th>
+                            <th>المبلغ</th>
+                            <th>حالة الطلب</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let hasActiveOrders = false;
+            customers.forEach(cust => {
+                if (cust.orders) {
+                    cust.orders.forEach(ord => {
+                        let assignedDel = (ord.assignedDelivery || '').trim();
+                        let ordBranch = (ord.assignedBranch || '').trim();
+
+                        if (ordBranch === currentBranchName && assignedDel === deliveryName && !ord.isSettled) {
+                            hasActiveOrders = true;
+                            let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
+                            totalCash += numericPrice;
+                            ordersHtml += `
+                                <tr>
+                                    <td><b>${ord.id}</b></td>
+                                    <td>${cust.name}</td>
+                                    <td dir="ltr">${cust.phone}</td>
+                                    <td><b>${ord.price || '$0.00'}</b></td>
+                                    <td><span style="background:#fff3cd; padding:3px 6px; border-radius:4px;">${ord.status}</span></td>
+                                </tr>
+                            `;
+                        }
+                    });
+                }
+            });
+
+            ordersHtml += `</tbody></table>`;
+
+            if (!hasActiveOrders) {
+                ordersHtml = `<p style="color: #666; text-align: center; padding: 20px;">لا توجد طلبات غير مصفاة مسندة لهذا المندوب حالياً.</p>`;
+            }
+
+            modalBody.innerHTML = `
+                ${ordersHtml}
+                <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="font-size: 16px;">إجمالي الذمة المالية: <b style="color: #c0392b; font-size: 18px;">$${totalCash.toFixed(2)}</b></span>
+                    </div>
+                    <div>
+                        <button class="action-btn" onclick="settleDeliveryAccount('${deliveryName}')" ${!hasActiveOrders ? 'disabled style="background: #ccc; cursor: not-allowed;"' : ''}>تصفية واستلام النقدية (ذمة صفر)</button>
+                        <button class="report-btn" onclick="printDeliveryReport('${deliveryName}', ${totalCash})" ${!hasActiveOrders ? 'disabled style="background: #ccc; cursor: not-allowed;"' : ''}>طباعة التقرير</button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('deliveryModal').style.display = 'block';
+        }
+
+        function closeDeliveryModal() {
+            document.getElementById('deliveryModal').style.display = 'none';
+        }
+
         function settleDeliveryAccount(deliveryName) {
-            if (confirm(`هل أنت تأكد من تصفية واستلام العهدة المالية للمندوب (${deliveryName})؟ سيتم تصفير ذمته وحفظ التقرير.`)) {
+            if (confirm(`هل أنت تأكد من تصفية العهدة المالية للمندوب (${deliveryName}) وتصفرير حسابه؟`)) {
                 let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
                 let currentBranchName = (localStorage.getItem('loggedBranchName') || '').trim();
                 let settledAmount = 0;
@@ -245,7 +328,7 @@
                             let ordBranch = (ord.assignedBranch || '').trim();
 
                             if (ordBranch === currentBranchName && assignedDel === deliveryName && !ord.isSettled) {
-                                ord.isSettled = true; // تعليم الطلب أنه تم تصفية حسابه
+                                ord.isSettled = true;
                                 let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
                                 settledAmount += numericPrice;
                                 settledOrdersCount++;
@@ -257,7 +340,7 @@
 
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
 
-                // حفظ تقرير مالي تفصيلي لتصفية المندوب في السجل
+                // حفظ التقرير في الأرشيف
                 let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
                 settlementReports.push({
                     branch: currentBranchName,
@@ -269,8 +352,50 @@
                 });
                 localStorage.setItem('branchSettlementReports', JSON.stringify(settlementReports));
 
-                alert(`تمت تصفية حساب المندوب ${deliveryName} بنجاح! المبلغ المستلم: $${settledAmount.toFixed(2)} وأصبح رصيد الذمة $0.00.`);
+                alert(`تمت تصفية حساب المندوب ${deliveryName} بنجاح بقيمة $${settledAmount.toFixed(2)} وأصبح رصيد الذمة $0.00.`);
+                closeDeliveryModal();
                 loadBranchDashboard();
+            }
+        }
+
+        function printDeliveryReport(deliveryName, totalCash) {
+            let currentBranchName = localStorage.getItem('loggedBranchName') || '';
+            let printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html lang="ar" dir="rtl">
+                <head>
+                    <title>تقرير تصفية حساب مندوب - ${deliveryName}</title>
+                    <style>
+                        body { font-family: Tahoma, sans-serif; padding: 20px; }
+                        h2, h4 { text-align: center; color: #2c3e50; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        table, th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+                        th { background: #eee; }
+                    .footer { margin-top: 40px; display: flex; justify-content: space-between; }
+                    </style>
+                </head>
+                <body>
+                    <h2>شركة النقل - فرع ${currentBranchName}</h2>
+                    <h4>تقرير عهدة وطلبات المندوب: ${deliveryName}</h4>
+                    <p><b>تاريخ الطباعة:</b> ${new Date().toLocaleString()}</p>
+                    <hr>
+                    ${document.getElementById('modalDeliveryBody').innerHTML}
+                    <div class="footer">
+                        <p>توقيع أمين الصندوق / الفرع: ........................</p>
+                        <p>توقيع المندوب المسلم: ........................</p>
+                    </div>
+                    <script>window.print();<\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        // إغلاق النافذة عند الضغط خارجها
+        window.onclick = function(event) {
+            let modal = document.getElementById('deliveryModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
             }
         }
 
