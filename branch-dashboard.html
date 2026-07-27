@@ -87,7 +87,6 @@
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
-                        // عرض الطلبات الموجهة حصرياً لهذا الفرع
                         if (ord.assignedBranch === currentBranchName) {
                             hasOrders = true;
 
@@ -135,7 +134,6 @@
             loadDeliveryAccounting(currentBranchName, customers, deliveryList);
         }
 
-        // إظهار وإخفاء حقل سبب الرفض/المرتجع في جدول الفرع
         function checkBranchReason(custIndex, ordIndex) {
             let status = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
             let reasonInput = document.getElementById(`reason_${custIndex}_${ordIndex}`);
@@ -147,7 +145,6 @@
             }
         }
 
-        // إسناد الطلب لمندوب تابع للفرع وحفظه فوراً
         function assignDelivery(custIndex, ordIndex) {
             let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
@@ -155,11 +152,10 @@
             customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             
-            alert('تم إسناد الطلب للمندوب بنجاح وسيحفظ في نظامه');
+            alert('تم إسناد الطلب للمندوب (' + selectedDelivery + ') بنجاح');
             loadBranchDashboard();
         }
 
-        // تحديث حالة الطلب والسبب من داخل الفرع
         function updateBranchOrderStatus(custIndex, ordIndex) {
             let newStatus = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
             let reason = document.getElementById(`reason_${custIndex}_${ordIndex}`).value;
@@ -173,7 +169,6 @@
             loadBranchDashboard();
         }
 
-        // حساب أموال المندوبين الخاصة بالفرع
         function loadDeliveryAccounting(branchName, customers, deliveryList) {
             let accountingBody = document.getElementById('deliveryAccountingBody');
             accountingBody.innerHTML = '';
@@ -190,7 +185,11 @@
                 customers.forEach(cust => {
                     if (cust.orders) {
                         cust.orders.forEach(ord => {
-                            if (ord.assignedBranch === branchName && ord.assignedDelivery === del.name && ord.status === 'تم التسليم') {
+                            // مقارنة مرنة تتجاهل الفراغات لضمان حساب أرباح الطلبات للمندوب بدقة
+                            let assignedDel = (ord.assignedDelivery || '').trim();
+                            let currentDel = (del.name || '').trim();
+
+                            if (ord.assignedBranch === branchName && assignedDel === currentDel && ord.status === 'تم التسليم') {
                                 deliveredCount++;
                                 let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
                                 totalCashCollected += numericPrice;
