@@ -50,14 +50,13 @@
         const employeesList = JSON.parse(localStorage.getItem('employeesList')) || [];
         const employee = employeesList.find(emp => {
             let empPhone = (emp.phone || '').toString().replace(/[^0-9]/g, '');
-            // الموظف يمكنه الدخول برقم هاتفه وكلمة المرور الخاصة به (أو الافتراضية 123)
             let empPass = emp.password || "123";
             return empPhone === cleanInput && passwordInput === empPass;
         });
 
         if (employee) {
             localStorage.setItem('loggedInEmployee', JSON.stringify(employee));
-            window.location.href = 'employee-dashboard.html'; // لوحة تحكم الموظف
+            window.location.href = 'employee-dashboard.html';
             return;
         }
 
@@ -65,28 +64,41 @@
         const deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
         const deliveryGuy = deliveryList.find(del => {
             let delPhone = (del.phone || '').toString().replace(/[^0-9]/g, '');
-            let delPass = del.password || "123"; // كلمة مرور المندوب
+            let delPass = del.password || "123";
             return delPhone === cleanInput && passwordInput === delPass;
         });
 
         if (deliveryGuy) {
             localStorage.setItem('loggedInDelivery', JSON.stringify(deliveryGuy));
-            window.location.href = 'delivery-dashboard.html'; // لوحة المندوب لتغيير حالة الطلب
+            window.location.href = 'delivery-dashboard.html';
             return;
         }
 
-        // --- الحالة الرابعة: دخول العميل (من قاعدة بيانات العملاء) ---
+        // --- الحالة الرابعة: دخول الفرع (من قاعدة بيانات الفروع) ---
+        const branchList = JSON.parse(localStorage.getItem('branchList')) || [];
+        const branchUser = branchList.find(br => {
+            let brPhone = (br.phone || '').toString().replace(/[^0-9]/g, '');
+            let brPass = br.password || "";
+            return brPhone === cleanInput && passwordInput === brPass;
+        });
+
+        if (branchUser) {
+            localStorage.setItem('loggedBranchName', branchUser.name);
+            window.location.href = 'branch-dashboard.html'; // توجيه الفرع إلى لوحة تحكمه الخاصة
+            return;
+        }
+
+        // --- الحالة الخامسة: دخول العميل (من قاعدة بيانات العملاء) ---
         const customersDB = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
         const user = customersDB.find(c => {
             let custPhone = (c.phone || '').toString().replace(/[^0-9]/g, '');
             let custCode = (c.code || '').toString().trim();
-            // العميل يمكنه الدخول برقم هاتفه أو بكود العميل الخاص به مع كلمة المرور
             return (custPhone === cleanInput || custCode === inputId) && c.password.trim() === passwordInput;
         });
 
         if (user) {
             localStorage.setItem('loggedInUser', JSON.stringify(user));
-            window.location.href = 'dashboard.html'; // لوحة تحكم العميل
+            window.location.href = 'dashboard.html';
         } else {
             alert('بيانات الدخول غير صحيحة، أو أن الحساب غير مسجل في النظام.');
         }
