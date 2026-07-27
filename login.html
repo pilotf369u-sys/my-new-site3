@@ -27,16 +27,7 @@
 </div>
 
 <script>
-    // تنظيف المفاتيح المؤقتة عند فتح صفحة تسجيل الدخول لمنع أي توجيه تلقائي سابق
-    window.onload = function() {
-        localStorage.removeItem('loggedInDelivery');
-        localStorage.removeItem('loggedDeliveryName');
-        localStorage.removeItem('loggedInEmployee');
-        localStorage.removeItem('loggedBranchName');
-        localStorage.removeItem('loggedInUser');
-    };
-
-    function login() {
+   function login() {
         let inputId = document.getElementById('phone').value.trim();
         const passwordInput = document.getElementById('password').value.trim();
 
@@ -45,7 +36,7 @@
             return;
         }
 
-        // 1. دخول الأدمن
+        // --- الحالة الأولى: دخول الأدمن ---
         const adminPhone = "123456"; 
         const adminPass = "123";     
         if (inputId === adminPhone && passwordInput === adminPass) {
@@ -55,7 +46,7 @@
 
         let cleanInput = inputId.replace(/[^0-9]/g, '');
 
-        // 2. دخول الموظف
+        // --- الحالة الثانية: دخول الموظف (من قاعدة بيانات الموظفين) ---
         const employeesList = JSON.parse(localStorage.getItem('employeesList')) || [];
         const employee = employeesList.find(emp => {
             let empPhone = (emp.phone || '').toString().replace(/[^0-9]/g, '');
@@ -69,7 +60,7 @@
             return;
         }
 
-        // 3. دخول المندوب
+        // --- الحالة الثالثة: دخول المندوب (من قاعدة بيانات المندوبين) ---
         const deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
         const deliveryGuy = deliveryList.find(del => {
             let delPhone = (del.phone || '').toString().replace(/[^0-9]/g, '');
@@ -79,12 +70,11 @@
 
         if (deliveryGuy) {
             localStorage.setItem('loggedInDelivery', JSON.stringify(deliveryGuy));
-            localStorage.setItem('loggedDeliveryName', deliveryGuy.name);
             window.location.href = 'delivery-dashboard.html';
             return;
         }
 
-        // 4. دخول الفرع
+        // --- الحالة الرابعة: دخول الفرع (من قاعدة بيانات الفروع) ---
         const branchList = JSON.parse(localStorage.getItem('branchList')) || [];
         const branchUser = branchList.find(br => {
             let brPhone = (br.phone || '').toString().replace(/[^0-9]/g, '');
@@ -94,11 +84,11 @@
 
         if (branchUser) {
             localStorage.setItem('loggedBranchName', branchUser.name);
-            window.location.href = 'branch-dashboard.html'; 
+            window.location.href = 'branch-dashboard.html'; // توجيه الفرع إلى لوحة تحكمه الخاصة
             return;
         }
 
-        // 5. دخول العميل
+        // --- الحالة الخامسة: دخول العميل (من قاعدة بيانات العملاء) ---
         const customersDB = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
         const user = customersDB.find(c => {
             let custPhone = (c.phone || '').toString().replace(/[^0-9]/g, '');
@@ -109,11 +99,10 @@
         if (user) {
             localStorage.setItem('loggedInUser', JSON.stringify(user));
             window.location.href = 'dashboard.html';
-            return;
+        } else {
+            alert('بيانات الدخول غير صحيحة، أو أن الحساب غير مسجل في النظام.');
         }
-
-        alert('بيانات الدخول غير صحيحة، أو أن الحساب غير مسجل في النظام.');
-    }
+   }
 </script>
 </body>
 </html>
