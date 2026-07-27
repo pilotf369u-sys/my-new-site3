@@ -41,16 +41,16 @@
             </tbody>
         </table>
 
-        <!-- قسم محاسبة المندوبين -->
-        <div class="section-title">💰 محاسبة المندوبين والذمم المالية</div>
+        <!-- قسم محاسبة المندوبين والذمم المالية -->
+        <div class="section-title">💰 محاسبة المندوبين والذمم المالية والتقارير</div>
         <table>
             <thead>
                 <tr>
                     <th>اسم المندوب</th>
                     <th>رقم الهاتف</th>
-                    <th>عدد الطلبات المسلمة</th>
-                    <th>إجمالي النقدية المحصلة (الذمة)</th>
-                    <th>إجراءات المحاسبة</th>
+                    <th>تفاصيل الطلبات المسندة والمدفوعة</th>
+                    <th>إجمالي النقدية في ذمته</th>
+                    <th>إجراءات التصفية والتقارير</th>
                 </tr>
             </thead>
             <tbody id="deliveryAccountingBody">
@@ -188,13 +188,11 @@
                 return;
             }
 
-            // جلب سجل التصفيات المالية المحفوظة سابقاً
-            let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
-
             deliveryList.forEach(del => {
-                let deliveredCount = 0;
                 let totalCashCollected = 0;
                 let delName = (del.name || '').trim();
+                let ordersDetailsHtml = `<ul style="margin: 0; padding-right: 15px; text-align: right; font-size: 12px;">`;
+                let assignedCount = 0;
 
                 customers.forEach(cust => {
                     if (cust.orders) {
@@ -202,24 +200,30 @@
                             let assignedDel = (ord.assignedDelivery || '').trim();
                             let ordBranch = (ord.assignedBranch || '').trim();
 
-                            // نحتسب الذمة فقط للطلبات التي سلمها المندوب ولم يتم تصفيتها بعد
-                            if (ordBranch === branchName && assignedDel === delName && ord.status === 'تم التسليم' && !ord.isSettled) {
-                                deliveredCount++;
+                            // الاحتساب يتم بناءً على إسناد الطلب للمندوب (وليس اشتراط حالة تم التسليم للزبون) وبشرط عدم تصفيته مسبقاً
+                            if (ordBranch === branchName && assignedDel === delName && !ord.isSettled) {
+                                assignedCount++;
                                 let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
                                 totalCashCollected += numericPrice;
+                                ordersDetailsHtml += `<li><b>${ord.id}</b> - ${cust.name} (${ord.price || '$0.00'}) [<b>${ord.status}</b>]</li>`;
                             }
                         });
                     }
                 });
+                ordersDetailsHtml += `</ul>`;
+
+                if (assignedCount === 0) {
+                    ordersDetailsHtml = `<span style="color: #888; font-size: 12px;">لا توجد طلبات غير مصفاة مسندة حالياً</span>`;
+                }
 
                 accountingBody.innerHTML += `
                     <tr>
                         <td><b>${delName}</b></td>
                         <td dir="ltr">${del.phone || '---'}</td>
-                        <td><span style="background: #e1f5fe; padding: 3px 8px; border-radius: 4px; font-weight: bold;">${deliveredCount} طلب</span></td>
+                        <td>${ordersDetailsHtml}</td>
                         <td><b style="color: #c0392b; font-size: 15px;">$${totalCashCollected.toFixed(2)}</b></td>
                         <td>
-                            <button class="action-btn" onclick="settleDeliveryAccount('${delName}')" ${totalCashCollected === 0 ? 'disabled style="background: #ccc; cursor: not-allowed;"' : ''}>تصفية واستلام النقدية</button>
+                            <button class="action-btn" onclick="settleDeliveryAccount('${delName}')" ${assignedCount === 0 ? 'disabled style="background: #ccc; cursor: not-allowed;"' : ''}>تصفية واستلام النقدية</button>
                         </td>
                     </tr>
                 `;
@@ -227,24 +231,25 @@
         }
 
         function settleDeliveryAccount(deliveryName) {
-            if (confirm(`هل أنت تأكد من تصفية واستلام العهدة المالية للمندوب (${deliveryName})؟`)) {
+            if (confirm(`هل أنت تأكد من تصفية واستلام العهدة المالية للمندوب (${deliveryName})؟ سيتم تصفير ذمته وحفظ التقرير.`)) {
                 let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
                 let currentBranchName = (localStorage.getItem('loggedBranchName') || '').trim();
                 let settledAmount = 0;
                 let settledOrdersCount = 0;
+                let settledOrdersList = [];
 
-                // تحديث الطلبات الخاصة بهذا المندوب لتصبح "مصفاة" (isSettled = true)
                 customers.forEach(cust => {
                     if (cust.orders) {
                         cust.orders.forEach(ord => {
                             let assignedDel = (ord.assignedDelivery || '').trim();
                             let ordBranch = (ord.assignedBranch || '').trim();
 
-                            if (ordBranch === currentBranchName && assignedDel === deliveryName && ord.status === 'تم التسليم' && !ord.isSettled) {
-                                ord.isSettled = true;
+                            if (ordBranch === currentBranchName && assignedDel === deliveryName && !ord.isSettled) {
+                                ord.isSettled = true; // تعليم الطلب أنه تم تصفية حسابه
                                 let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
                                 settledAmount += numericPrice;
                                 settledOrdersCount++;
+                                settledOrdersList.push({ id: ord.id, customer: cust.name, price: ord.price, status: ord.status });
                             }
                         });
                     }
@@ -252,18 +257,19 @@
 
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
 
-                // حفظ تقرير التصفية المالي لهذا المندوب في السجل
+                // حفظ تقرير مالي تفصيلي لتصفية المندوب في السجل
                 let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
                 settlementReports.push({
                     branch: currentBranchName,
                     deliveryName: deliveryName,
                     amount: settledAmount,
                     ordersCount: settledOrdersCount,
+                    orders: settledOrdersList,
                     date: new Date().toLocaleString()
                 });
                 localStorage.setItem('branchSettlementReports', JSON.stringify(settlementReports));
 
-                alert(`تم تصفية حساب المندوب ${deliveryName} بنجاح بقيمة $${settledAmount.toFixed(2)} وتجديد الذمة إلى $0.00 وتسجيل التقرير.`);
+                alert(`تمت تصفية حساب المندوب ${deliveryName} بنجاح! المبلغ المستلم: $${settledAmount.toFixed(2)} وأصبح رصيد الذمة $0.00.`);
                 loadBranchDashboard();
             }
         }
