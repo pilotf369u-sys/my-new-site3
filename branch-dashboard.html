@@ -87,10 +87,11 @@
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
+                        // مطابقة اسم الفرع تماماً كما هو مستخدم في لوحة الموظف
                         if (ord.assignedBranch === currentBranchName) {
                             hasOrders = true;
 
-                            let deliveryOptions = `<option value="">اختر مندوب الفرع</option>`;
+                            let deliveryOptions = `<option value="">اختر مندوب الفرع...</option>`;
                             deliveryList.forEach(del => {
                                 let selected = (ord.assignedDelivery === del.name) ? 'selected' : '';
                                 deliveryOptions += `<option value="${del.name}" ${selected}>${del.name}</option>`;
@@ -145,7 +146,7 @@
             }
         }
 
-        // حفظ اسم المندوب فوراً في الـ localStorage عند اختياره من القائمة المنسدلة
+        // إسناد المندوب وحفظه فوراً بنفس الآلية
         function assignDelivery(custIndex, ordIndex) {
             let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
@@ -153,7 +154,7 @@
             if (customers[custIndex] && customers[custIndex].orders[ordIndex]) {
                 customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-                console.log("Assigned delivery saved:", selectedDelivery, "for order:", customers[custIndex].orders[ordIndex].id);
+                alert(selectedDelivery ? `تم إسناد الطلب للمندوب (${selectedDelivery}) بنجاح` : 'تم إلغاء إسناد المندوب');
                 loadBranchDashboard();
             }
         }
@@ -170,7 +171,7 @@
                 customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
                 
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-                alert('تم تحديث حالة الشحنة وإسناد المندوب بنجاح');
+                alert('تم تحديث حالة الشحنة بنجاح');
                 loadBranchDashboard();
             }
         }
