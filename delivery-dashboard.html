@@ -57,23 +57,16 @@
             let tbody = document.getElementById('delOrdersBody');
             tbody.innerHTML = '';
 
-            // جلب اسم المندوب المسجل حالياً من مختلف المفاتيح المحتملة في المتصفح لضمان التطابق التام
+            // جلب اسم المندوب المسجل حالياً بدقة عالية ليتطابق مع ما يخزنه الفرع في assignedDelivery
             let loggedDeliveryName = (
                 localStorage.getItem('loggedDeliveryName') || 
-                localStorage.getItem('loggedBranchName') || 
                 localStorage.getItem('username') || 
                 localStorage.getItem('deliveryName') || ''
             ).trim();
 
-            // جمع كل القيم المخزنة كاحتياط في حال تم حفظ الاسم بمفتاح مختلف
-            let storedValues = [];
-            if (loggedDeliveryName) storedValues.push(loggedDeliveryName);
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                let val = localStorage.getItem(key);
-                if (val && !storedValues.includes(val.trim())) {
-                    storedValues.push(val.trim());
-                }
+            // تحديث عنوان الصفحة باسم المندوب لضمان وضوح الرؤية
+            if (loggedDeliveryName) {
+                document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب: ${loggedDeliveryName}`;
             }
 
             let hasShipments = false;
@@ -84,17 +77,23 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         let assignedDel = (ord.assignedDelivery || '').trim();
                         
-                        // مطابقة اسم المندوب المسجل بالشحنة مع القيم الموجودة
-                        let isMatch = storedValues.some(val => val.toLowerCase() === assignedDel.toLowerCase());
+                        // مطابقة مرنة لا تتأثر بحالة الأحرف (Lower Case) لضمان عدم ضياع أي شحنة
+                        let isMatch = (loggedDeliveryName !== '' && assignedDel.toLowerCase() === loggedDeliveryName.toLowerCase());
 
-                        if (assignedDel && isMatch && !ord.isSettled) {
+                        // الشرط: تطابق اسم المندوب وأن الطلب غير مُصفّى مالياً بعد
+                        if (isMatch && !ord.isSettled) {
                             hasShipments = true;
 
                             let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
                             totalSum += rawPrice;
 
                             let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
-                            let currentOptionsHtml = deliveryStatusOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
+                            
+                            // تجهيز خيارات الحالة مع الاحتفاظ بالحالة الحالية للطلب القادمة من الفرع
+                            let currentOptionsHtml = deliveryStatusOptions;
+                            if (ord.status) {
+                                currentOptionsHtml = deliveryStatusOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
+                            }
 
                             tbody.innerHTML += `
                                 <tr>
@@ -117,11 +116,11 @@
                 }
             });
 
-            // تم تصحيح الخطأ المطبعي في كتابة الـ ID هنا
+            // طباعة الإجمالي الصحيح وتفادي الأخطاء البرمجية
             document.getElementById('totalAmountDisplay').innerText = `$${totalSum.toFixed(2)}`;
 
             if (!hasShipments) {
-                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً من الفرع</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="padding: 20px; color: #666;">لا توجد شحنات مسندة إليك حالياً من الفرع (تأكد من أن الفرع قام باختيارك وإسناد الطلب واضغط تحديث).</td></tr>`;
                 document.getElementById('totalAmountDisplay').innerText = '$0.00';
             }
         }
@@ -142,13 +141,15 @@
             let reason = document.getElementById(`del_reason_${custIndex}_${ordIndex}`).value;
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers[custIndex].orders[ordIndex].status = newStatus;
-            customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
-            
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            if (customers[custIndex] && customers[custIndex].orders[ordIndex]) {
+                customers[custIndex].orders[ordIndex].status = newStatus;
+                customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
+                
+                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
 
-            alert('تم تحديث حالة الشحنة بنجاح');
-            loadDeliveryOrders();
+                alert('تم تحديث حالة الشحنة بنجاح');
+                loadDeliveryOrders();
+            }
         }
 
         window.onload = function() {
