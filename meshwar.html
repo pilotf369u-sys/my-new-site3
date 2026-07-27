@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>تسوق من Meshwar</title>
     <style>
-    /* خلفية متجر حديثة ومعاصرة بتدرج لوني */
     body { 
         font-family: 'Segoe UI', Tahoma, sans-serif; 
         background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); 
@@ -13,7 +12,6 @@
         min-height: 100vh;
     }
 
-    /* حقل البحث بتصميم عصري */
     .search-container { text-align: center; margin: 30px 0; }
     .search-container input { 
         padding: 15px 25px; 
@@ -59,7 +57,8 @@
     
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; font-size: 14px; margin-bottom: 5px; font-weight: bold; color: #444; }
-    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; background-color: #f9f9f9; }
+    .form-group input[readonly] { background-color: #eef2f5; color: #555; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -75,36 +74,29 @@
     <div id="orderModal" class="modal">
         <div class="modal-content">
             <h3 style="text-align:center;">إرسال تفاصيل الطلب</h3>
-            <div class="form-group"><label>الاسم الكريم:</label><input type="text" id="pName"></div>
-            <div class="form-group"><label>رقم الهاتف:</label><input type="tel" id="pPhone"></div>
+            
+            <!-- حقول بيانات الزبون المسجل (مغلقة وتعبأ تلقائياً من نظام تسجيل الدخول) -->
+            <div class="form-group"><label>الاسم الكريم:</label><input type="text" id="pName" readonly></div>
+            <div class="form-group"><label>رقم الهاتف:</label><input type="tel" id="pPhone" readonly></div>
             
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                 <div class="form-group">
                     <label>الدولة:</label>
-                    <select id="pCountry">
-                        <option value="">اختر..</option>
-                        <option value="العراق">العراق</option>
-                        <option value="سوريا">سوريا</option>
-                        <option value="تركيا">تركيا</option>
-                        <option value="السعودية">السعودية</option>
-                        <option value="مصر">مصر</option>
-                        <option value="الإمارات">الإمارات</option>
-                        <option value="الأردن">الأردن</option>
-                    </select>
+                    <input type="text" id="pCountry" readonly>
                 </div>
-                <div class="form-group"><label>العنوان:</label><input type="text" id="pAddress" placeholder="محافظة/منطقة"></div>
+                <div class="form-group"><label>العنوان:</label><input type="text" id="pAddress" readonly></div>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div class="form-group"><label>العدد:</label><input type="number" id="pQuantity"></div>
-                <div class="form-group"><label>اللون:</label><input type="text" id="pColor"></div>
+                <div class="form-group"><label>العدد:</label><input type="number" id="pQuantity" value="1" min="1"></div>
+                <div class="form-group"><label>اللون:</label><input type="text" id="pColor" placeholder="اللون المطلوب"></div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <div class="form-group"><label>الحجم/المقاس:</label><input type="text" id="pSize"></div>
-                <div class="form-group"><label>الوزن:</label><input type="text" id="pWeight"></div>
+                <div class="form-group"><label>الحجم/المقاس:</label><input type="text" id="pSize" placeholder="المقاس"></div>
+                <div class="form-group"><label>الوزن:</label><input type="text" id="pWeight" placeholder="الوزن إن وجد"></div>
             </div>
 
-            <button onclick="submitOrder()" class="whatsapp-btn">إرسال الطلب عبر الواتساب</button>
+            <button onclick="submitOrder()" class="whatsapp-btn">تأكيد وإرسال الطلب (واتساب + النظام)</button>
             <button onclick="document.getElementById('orderModal').style.display='none'" style="margin-top:10px; border:none; background:none; cursor:pointer; width:100%; color:#666;">إغلاق</button>
         </div>
     </div>
@@ -114,8 +106,7 @@
         let currentProduct = {};
         const container = document.getElementById('product-container');
         
-        // دالة عرض المنتجات مع خاصية البحث
-       function renderProducts() {
+        function renderProducts() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             container.innerHTML = '';
             
@@ -125,7 +116,6 @@
             );
 
             filtered.forEach(product => {
-                // منطق السعر: إذا وجدنا oldPrice نظهره، وإلا نظهر السعر العادي فقط
                 const priceDisplay = product.oldPrice 
                     ? `<span style="text-decoration:line-through; color:#888; font-size:0.85em; margin-left:8px;">${product.oldPrice}</span>
                        <span class="product-price" style="display:inline-block;">${product.price}</span>` 
@@ -139,52 +129,121 @@
                             <span class="product-code">الكود: ${product.code}</span>
                             <div style="margin-top:5px;">${priceDisplay}</div>
                         </div>
-                        <button class="whatsapp-btn" onclick="openModal('${product.name}', '${product.code}')">اطلب الآن</button>
+                        <button class="whatsapp-btn" onclick="openModal('${product.name}', '${product.code}', '${product.price || ''}')">اطلب الآن</button>
                     </div>
                 `;
             });
         }
 
-        function openModal(name, code) {
-            currentProduct = { name, code };
+        function openModal(name, code, price) {
+            // التحقق من تسجيل دخول الزبون عبر loggedInUser
+            let loggedUser = null;
+            try {
+                loggedUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            } catch(e) {}
+
+            if (!loggedUser) {
+                alert('يرجى تسجيل الدخول أولاً لتتمكن من إرسال الطلب.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            currentProduct = { name, code, price };
+
+            // تعبئة حقول بيانات الزبون تلقائياً من حسابة المخزن
+            document.getElementById('pName').value = loggedUser.name || loggedUser.username || '';
+            document.getElementById('pPhone').value = loggedUser.phone || '';
+            document.getElementById('pCountry').value = loggedUser.country || 'العراق';
+            document.getElementById('pAddress').value = loggedUser.address || '';
+            
+            // تصفير حقول التفاصيل المتغيرة
+            document.getElementById('pQuantity').value = '1';
+            document.getElementById('pColor').value = '';
+            document.getElementById('pSize').value = '';
+            document.getElementById('pWeight').value = '';
+
             document.getElementById('orderModal').style.display = 'block';
         }
 
         function submitOrder() {
-            const name = document.getElementById('pName').value.trim();
-            const phone = document.getElementById('pPhone').value.trim();
-            const country = document.getElementById('pCountry').value;
-            const address = document.getElementById('pAddress').value.trim();
+            let loggedUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (!loggedUser) {
+                alert('انتهت صلاحية الجلسة، يرجى تسجيل الدخول من جديد.');
+                window.location.href = 'login.html';
+                return;
+            }
+
             const qty = document.getElementById('pQuantity').value.trim();
             const color = document.getElementById('pColor').value.trim();
             const size = document.getElementById('pSize').value.trim();
             const weight = document.getElementById('pWeight').value.trim();
 
-            if(!name || !phone || !country || !address || !qty || !color) {
-                alert("يرجى تعبئة جميع الحقول المطلوبة (الاسم، الهاتف، الدولة، العنوان، العدد، اللون)!");
+            if(!qty || !color) {
+                alert("يرجى إدخال العدد واللون المطلوب!");
                 return;
             }
+
+            // إنشاء كائن الطلب الجديد لكي يتم إضافته في قاعدة بيانات الإدارة (adminCustomersList)
+            let newOrder = {
+                id: 'MW-#' + Math.floor(1000 + Math.random() * 9000), // رقم فريد للشحنة
+                productName: currentProduct.name,
+                productCode: currentProduct.code,
+                price: currentProduct.price || '$0.00',
+                quantity: qty,
+                color: color,
+                size: size || '---',
+                weight: weight || '---',
+                status: 'قيد المعالجة', // الحالة الابتدائية لتظهر للموظف
+                reason: '',
+                assignedDelivery: '',
+                date: new Date().toLocaleDateString()
+            };
+
+            // البحث عن العميل في القائمة العامة `adminCustomersList` وتحديث أو إضافة الطلب لديه
+            let customersDB = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             
+            // نبحث هل العميل موجود أصلاً برقم هاتفه
+            let customerIndex = customersDB.findIndex(c => c.phone === loggedUser.phone);
+            
+            if (customerIndex !== -1) {
+                if (!customersDB[customerIndex].orders) {
+                    customersDB[customerIndex].orders = [];
+                }
+                customersDB[customerIndex].orders.push(newOrder);
+            } else {
+                // إذا لم يكن موجوداً ننشئ له سجلاً جديداً في قاعدة بيانات العملاء
+                customersDB.push({
+                    name: loggedUser.name || loggedUser.username,
+                    phone: loggedUser.phone,
+                    address: loggedUser.address || '---',
+                    country: loggedUser.country || 'العراق',
+                    orders: [newOrder]
+                });
+            }
+
+            // حفظ التحديثات في الـ localStorage لتظهر في لوحة تحكم الموظفين والإدارة فوراً
+            localStorage.setItem('adminCustomersList', JSON.stringify(customersDB));
+
+            // تجهيز رسالة الواتساب وإرسالها
             const msg = `طلب جديد:%0A` +
                         `--------------------------%0A` +
+                        `رقم الطلب: ${newOrder.id}%0A` +
                         `المنتج: ${currentProduct.name}%0A` +
                         `الكود: ${currentProduct.code}%0A` +
-                        `الاسم: ${name}%0A` +
-                        `الهاتف: ${phone}%0A` +
-                        `الدولة: ${country}%0A` +
-                        `العنوان: ${address}%0A` +
+                        `الاسم: ${loggedUser.name}%0A` +
+                        `الهاتف: ${loggedUser.phone}%0A` +
+                        `العنوان: ${loggedUser.address || '---'}%0A` +
                         `العدد: ${qty}%0A` +
                         `اللون: ${color}%0A` +
                         `الحجم: ${size}%0A` +
-                        `الوزن: ${weight}%0A` +
                         `--------------------------%0A` +
-                        `بانتظار تزويدي بالسعر الكامل مع تكلفة الشحن لباب البيت، شكراً لكم.`;
+                        `بانتظار تأكيد الطلب ومعالجته.`;
 
             window.open(`https://wa.me/905521855554?text=${msg}`, '_blank');
-            document.getElementById('orderModal').style.display = 'none';
+            document.getElementById('orderModal').style.display='none';
+            alert('تم إرسال الطلب بنجاح وتخزينه في النظام لكي يتابعه الموظف!');
         }
 
-        // عرض المنتجات عند أول تحميل
         renderProducts();
     </script>
 </body>
