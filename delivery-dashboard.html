@@ -20,7 +20,7 @@
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
-        <h2>لوحة تحكم المندوب - الشحنات</h2>
+        <h2 id="deliveryTitle">لوحة تحكم المندوب - الشحنات</h2>
         <p>إدارة وتحديث حالات الشحنات المخصصة لك، مع عرض المبالغ المطلوب تحصيلها:</p>
         
         <!-- صندوق المجموع الكلي للمبالغ المطلوبة من المندوب -->
@@ -54,23 +54,27 @@
         `;
 
         function loadDeliveryOrders() {
-            // جلب اسم المندوب المسجل الذي قام بتسجيل الدخول (أو تركها فارغة/افتراضية إذا تم الدخول للتجربة)
-            let currentDeliveryName = localStorage.getItem('currentLoggedInDelivery') || ''; 
+            // جلب اسم المندوب من مفتاح تسجيل الدخول الموحد (Logged Delivery Name)
+            let currentDeliveryName = localStorage.getItem('loggedDeliveryName') || localStorage.getItem('currentLoggedInDelivery') || ''; 
+            
+            if (currentDeliveryName) {
+                document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب: ${currentDeliveryName}`;
+            }
+
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('delOrdersBody');
             tbody.innerHTML = '';
 
             let hasShipments = false;
-            let totalSum = 0; // حساب المجموع الكلي للمبالغ
+            let totalSum = 0; 
 
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
-                        // تصفية الشحنات بناءً على اسم المندوب المسجل في النظام
-                        if (!currentDeliveryName || ord.assignedDelivery === currentDeliveryName || ord.assignedDelivery) {
+                        // الشرط الصحيح: عرض الشحنة فقط إذا تم إسنادها حصراً لهذا المندوب بالاسم
+                        if (currentDeliveryName && ord.assignedDelivery === currentDeliveryName) {
                             hasShipments = true;
 
-                            // استخراج القيمة العددية للمبلغ لجمعها (تجاهل الرموز مثل $)
                             let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
                             totalSum += rawPrice;
 
@@ -98,11 +102,10 @@
                 }
             });
 
-            // عرض المجموع الكلي المحسوب في الصندوق العلوي
             document.getElementById('totalAmountDisplay').innerText = `$${totalSum.toFixed(2)}`;
 
             if (!hasShipments) {
-                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً من الفرع</td></tr>`;
                 document.getElementById('totalAmountDisplay').innerText = '$0.00';
             }
         }
