@@ -20,11 +20,12 @@
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
-        <h2 id="deliveryTitle">لوحة تحكم المندوب - الشحنات</h2>
-        <p>إدارة وتحديث حالات الشحنات المخصصة لك، مع عرض المبالغ المطلوب تحصيلها:</p>
+        <h2 id="deliveryTitle">لوحة تحكم المندوب - الشحنات المسندة إليك</h2>
+        <p>عرض الشحنات المخصصة لك حصرياً من الفرع، تحديث حالاتها، ومتابعة إجمالي المبالغ المطلوبة منك تحصيلها:</p>
         
+        <!-- صندوق المجموع الكلي للمبالغ المطلوبة للمندوب -->
         <div class="total-box">
-            <span>إجمالي المبالغ المطلوبة تحصيلها من الشحنات:</span>
+            <span>إجمالي المبالغ المطلوبة تحصيلها منك:</span>
             <span id="totalAmountDisplay" style="font-size: 20px; color: #27ae60;">$0.00</span>
         </div>
 
@@ -36,11 +37,11 @@
                     <th>عنوان التوصيل</th>
                     <th>المبلغ المطلوب تحصيله</th>
                     <th>الحالة والسبب</th>
-                    <th>تحديث حالة التوصيل الفردية</th>
+                    <th>تحديث حالة التوصيل</th>
                 </tr>
             </thead>
             <tbody id="delOrdersBody">
-                <tr><td colspan="6">جاري التحميل...</td></tr>
+                <tr><td colspan="6">جاري تحميل شحناتك...</td></tr>
             </tbody>
         </table>
     </div>
@@ -53,21 +54,43 @@
         `;
 
         function loadDeliveryOrders() {
+            // جلب اسم المندوب بدقة مع دعم كافة المفاتيح المحتملة في نظامك
+            let currentDeliveryName = (
+                localStorage.getItem('loggedDeliveryName') ||  
+                localStorage.getItem('deliveryName') ||  
+                localStorage.getItem('username') ||  
+                localStorage.getItem('currentUser') || 
+                ''
+            ).trim();
+
+            // إذا لم يتم العثور على اسم صريح، نحاول قراءته من كائن بيانات المستخدم المخزن إن وجد
+            if (!currentDeliveryName) {
+                try {
+                    let userData = JSON.parse(localStorage.getItem('user')) || JSON.parse(localStorage.getItem('loggedUser'));
+                    if (userData && (userData.name || userData.username)) {
+                        currentDeliveryName = (userData.name || userData.username).trim();
+                    }
+                } catch(e) {}
+            }
+
+            // في حال لم يتم تسجيل الدخول، نبه المستخدم بدلاً من التوجيه المفاجئ الذي يمنعك من اختبار الصفحة
+            if (!currentDeliveryName) {
+                currentDeliveryName = prompt("لم يتم التعرف على اسم المندوب المسجل. يرجى إدخال اسمك تماماً كما تم إسناد الشحنات لك من الفرع:") || "";
+                currentDeliveryName = currentDeliveryName.trim();
+                if (currentDeliveryName) {
+                    localStorage.setItem('loggedDeliveryName', currentDeliveryName);
+                } else {
+                    alert('يجب إدخال اسم المندوب لعرض الشحنات.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+            }
+
+            document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب: ${currentDeliveryName}`;
+
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('delOrdersBody');
             tbody.innerHTML = '';
-
-            // جلب اسم المندوب المسجل حالياً بدقة عالية ليتطابق مع ما يخزنه الفرع في assignedDelivery
-            let loggedDeliveryName = (
-                localStorage.getItem('loggedDeliveryName') || 
-                localStorage.getItem('username') || 
-                localStorage.getItem('deliveryName') || ''
-            ).trim();
-
-            // تحديث عنوان الصفحة باسم المندوب لضمان وضوح الرؤية
-            if (loggedDeliveryName) {
-                document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب: ${loggedDeliveryName}`;
-            }
 
             let hasShipments = false;
             let totalSum = 0; 
@@ -76,12 +99,9 @@
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
                         let assignedDel = (ord.assignedDelivery || '').trim();
-                        
-                        // مطابقة مرنة لا تتأثر بحالة الأحرف (Lower Case) لضمان عدم ضياع أي شحنة
-                        let isMatch = (loggedDeliveryName !== '' && assignedDel.toLowerCase() === loggedDeliveryName.toLowerCase());
 
-                        // الشرط: تطابق اسم المندوب وأن الطلب غير مُصفّى مالياً بعد
-                        if (isMatch && !ord.isSettled) {
+                        // مطابقة مرنة (لا تتأثر بحالة الأحرف وتتجاهل المسافات الزائدة)
+                        if (assignedDel !== "" && assignedDel.toLowerCase() === currentDeliveryName.toLowerCase()) {
                             hasShipments = true;
 
                             let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
@@ -89,7 +109,6 @@
 
                             let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
                             
-                            // تجهيز خيارات الحالة مع الاحتفاظ بالحالة الحالية للطلب القادمة من الفرع
                             let currentOptionsHtml = deliveryStatusOptions;
                             if (ord.status) {
                                 currentOptionsHtml = deliveryStatusOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
@@ -116,11 +135,10 @@
                 }
             });
 
-            // طباعة الإجمالي الصحيح وتفادي الأخطاء البرمجية
             document.getElementById('totalAmountDisplay').innerText = `$${totalSum.toFixed(2)}`;
 
             if (!hasShipments) {
-                tbody.innerHTML = `<tr><td colspan="6" style="padding: 20px; color: #666;">لا توجد شحنات مسندة إليك حالياً من الفرع (تأكد من أن الفرع قام باختيارك وإسناد الطلب واضغط تحديث).</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="padding: 20px; color: #666;">لا توجد شحنات مسندة إليك حالياً باسم (${currentDeliveryName}). تأكد من أن الفرع قام باختيار نفس اسمك في قائمة الإسناد وضغط زر التحديث.</td></tr>`;
                 document.getElementById('totalAmountDisplay').innerText = '$0.00';
             }
         }
@@ -146,7 +164,6 @@
                 customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
                 
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-
                 alert('تم تحديث حالة الشحنة بنجاح');
                 loadDeliveryOrders();
             }
