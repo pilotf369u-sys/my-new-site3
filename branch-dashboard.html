@@ -145,28 +145,34 @@
             }
         }
 
+        // حفظ اسم المندوب فوراً في الـ localStorage عند اختياره من القائمة المنسدلة
         function assignDelivery(custIndex, ordIndex) {
             let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             
-            customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            
-            alert('تم إسناد الطلب للمندوب (' + selectedDelivery + ') بنجاح');
-            loadBranchDashboard();
+            if (customers[custIndex] && customers[custIndex].orders[ordIndex]) {
+                customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
+                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+                console.log("Assigned delivery saved:", selectedDelivery, "for order:", customers[custIndex].orders[ordIndex].id);
+                loadBranchDashboard();
+            }
         }
 
         function updateBranchOrderStatus(custIndex, ordIndex) {
             let newStatus = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
             let reason = document.getElementById(`reason_${custIndex}_${ordIndex}`).value;
+            let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers[custIndex].orders[ordIndex].status = newStatus;
-            customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
-            
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تحديث حالة الشحنة بنجاح');
-            loadBranchDashboard();
+            if (customers[custIndex] && customers[custIndex].orders[ordIndex]) {
+                customers[custIndex].orders[ordIndex].status = newStatus;
+                customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
+                customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
+                
+                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+                alert('تم تحديث حالة الشحنة وإسناد المندوب بنجاح');
+                loadBranchDashboard();
+            }
         }
 
         function loadDeliveryAccounting(branchName, customers, deliveryList) {
@@ -185,7 +191,6 @@
                 customers.forEach(cust => {
                     if (cust.orders) {
                         cust.orders.forEach(ord => {
-                            // مقارنة مرنة تتجاهل الفراغات لضمان حساب أرباح الطلبات للمندوب بدقة
                             let assignedDel = (ord.assignedDelivery || '').trim();
                             let currentDel = (del.name || '').trim();
 
