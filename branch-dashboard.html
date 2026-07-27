@@ -67,7 +67,7 @@
         </table>
     </div>
 
-    <!-- نافذة منبثقة تفاصيل المندوب -->
+    <!-- نافذة منبثقة تفاصيل المندوب النشط -->
     <div id="deliveryModal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeDeliveryModal()">&times;</span>
@@ -84,6 +84,15 @@
             <div id="historyModalBody">
                 <!-- سيتم عرض السجلات هنا -->
             </div>
+        </div>
+    </div>
+
+    <!-- نافذة منبثقة عرض تفاصيل وطباعة تصفية سابقة -->
+    <div id="historyDetailModal" class="modal">
+        <div class="modal-content" style="width: 65%;">
+            <span class="close-modal" onclick="closeHistoryDetailModal()">&times;</span>
+            <h3 id="historyDetailTitle" style="color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">تفاصيل التصفية السابقة</h3>
+            <div id="historyDetailBody"></div>
         </div>
     </div>
 
@@ -259,7 +268,7 @@
             let modalTitle = document.getElementById('modalDeliveryTitle');
             let modalBody = document.getElementById('modalDeliveryBody');
 
-            modalTitle.innerText = `تفاصيل حساب وطلبات المندوب: ${deliveryName}`;
+            modalTitle.innerText = `تفاصيل حساب وطلبات المندوب النشط: ${deliveryName}`;
             
             let totalCash = 0;
             let ordersHtml = `
@@ -276,7 +285,6 @@
                     <tbody>
             `;
 
-            let hasActiveOrders = false;
             customers.forEach(cust => {
                 if (cust.orders) {
                     cust.orders.forEach(ord => {
@@ -284,7 +292,6 @@
                         let ordBranch = (ord.assignedBranch || '').trim();
 
                         if (ordBranch === currentBranchName && assignedDel === deliveryName && !ord.isSettled) {
-                            hasActiveOrders = true;
                             let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
                             totalCash += numericPrice;
                             ordersHtml += `
@@ -323,13 +330,12 @@
             document.getElementById('deliveryModal').style.display = 'none';
         }
 
-        // فتح سجل التصفيات السابقة (مصححة ومحدثة لتعمل بشكل فوري)
+        // فتح سجل التصفيات السابقة وعرض زر تفاصيل وطباعة لكل تصفية
         function openSettlementHistoryModal() {
             let currentBranchName = (localStorage.getItem('loggedBranchName') || '').trim();
             let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
             let historyBody = document.getElementById('historyModalBody');
             
-            // فلترة السجلات المطابقة لاسم الفرع الحالي بدقة
             let branchReports = settlementReports.filter(rep => (rep.branch || '').trim() === currentBranchName);
 
             if (branchReports.length === 0) {
@@ -342,21 +348,23 @@
                             <th>اسم المندوب</th>
                             <th>عدد الطلبات</th>
                             <th>المبلغ المُصَفّى</th>
-                            <th>تفاصيل الشحنات</th>
+                            <th>إجراءات التدقيق والطباعة</th>
                         </tr>
                     </thead>
                     <tbody>`;
 
-                // عكس الترتيب لعرض أحدث تصفية في الأعلى
-                [...branchReports].reverse().forEach(rep => {
-                    let ordsText = (rep.orders || []).map(o => `${o.id} (${o.price})`).join('، ');
+                [...branchReports].reverse().forEach((rep, index) => {
+                    // حساب المؤشر الحقيقي في المصفوفة الأصلية للعرض الصحيح
+                    let originalIndex = settlementReports.length - 1 - index;
                     html += `
                         <tr>
                             <td><small>${rep.date || '---'}</small></td>
                             <td><b>${rep.deliveryName || '---'}</b></td>
                             <td>${rep.ordersCount || 0} طلب</td>
                             <td><b style="color: #27ae60;">$${(rep.amount || 0).toFixed(2)}</b></td>
-                            <td style="text-align: right; font-size: 12px;">${ordsText}</td>
+                            <td>
+                                <button class="report-btn" onclick="openHistoryDetail(${originalIndex})">📂 فتح وطباعة تقرير المندوب</button>
+                            </td>
                         </tr>
                     `;
                 });
@@ -370,6 +378,91 @@
 
         function closeHistoryModal() {
             document.getElementById('historyModal').style.display = 'none';
+        }
+
+        // عرض تفاصيل التصفية المحددة في نافذة منبثقة مع زر طباعة منفصل
+        function openHistoryDetail(reportIndex) {
+            let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
+            let rep = settlementReports[reportIndex];
+            if (!rep) return;
+
+            document.getElementById('historyDetailTitle').innerText = `تقرير تصفية المندوب: ${rep.deliveryName} (${rep.date})`;
+
+            let ordersRows = '';
+            (rep.orders || []).forEach(o => {
+                ordersRows += `
+                    <tr>
+                        <td><b>${o.id}</b></td>
+                        <td>${o.customer || '---'}</td>
+                        <td><b>${o.price || '$0.00'}</b></td>
+                        <td><span style="background:#e8f8f5; color:#16a085; padding:3px 6px; border-radius:4px;">${o.status || 'مُصَفّى'}</span></td>
+                    </tr>
+                `;
+            });
+
+            let detailBody = document.getElementById('historyDetailBody');
+            detailBody.innerHTML = `
+                <div id="printableReportContent">
+                    <h4 style="text-align: center; color: #2c3e50; margin-bottom: 5px;">تقرير عهدة وطلبات المندوب (مُصَفّى سابقاً)</h4>
+                    <p style="text-align: center; font-size: 13px; color: #666;">تاريخ التصفية: ${rep.date} | اسم المندوب: ${rep.deliveryName}</p>
+                    <table style="width:100%; margin-top:15px;">
+                        <thead>
+                            <tr style="background:#f2f2f2;">
+                                <th>رقم الشحنة</th>
+                                <th>اسم العميل</th>
+                                <th>المبلغ</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${ordersRows}
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 5px; text-align: left;">
+                        <span style="font-size: 16px;">إجمالي المبلغ المُصَفّى: <b style="color: #27ae60; font-size: 18px;">$${(rep.amount || 0).toFixed(2)}</b> (${rep.ordersCount} طلب)</span>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="report-btn" onclick="printSpecificHistoryReport('${rep.deliveryName}', '${rep.date}')" style="padding: 10px 25px; font-size: 15px;">🖨️ طباعة هذا التقرير</button>
+                </div>
+            `;
+
+            document.getElementById('historyDetailModal').style.display = 'block';
+        }
+
+        function closeHistoryDetailModal() {
+            document.getElementById('historyDetailModal').style.display = 'none';
+        }
+
+        function printSpecificHistoryReport(deliveryName, reportDate) {
+            let currentBranchName = localStorage.getItem('loggedBranchName') || '';
+            let contentHtml = document.getElementById('printableReportContent').innerHTML;
+            let printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html lang="ar" dir="rtl">
+                <head>
+                    <title>طباعة تقرير تصفية - ${deliveryName}</title>
+                    <style>
+                        body { font-family: Tahoma, sans-serif; padding: 20px; }
+                        h2, h4 { text-align: center; color: #2c3e50; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        table, th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+                        th { background: #eee; }
+                        .footer { margin-top: 50px; display: flex; justify-content: space-between; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <h2>شركة النقل - فرع ${currentBranchName}</h2>
+                    ${contentHtml}
+                    <div class="footer">
+                        <p>توقيع أمين الصندوق / الفرع: ........................</p>
+                        <p>توقيع المندوب: ........................</p>
+                    </div>
+                    <script>window.print();<\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         }
 
         function settleDeliveryAccount(deliveryName) {
@@ -399,7 +492,6 @@
 
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
 
-                // حفظ التقرير في سجل التصفيات الخاص بالفرع
                 let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
                 settlementReports.push({
                     branch: currentBranchName,
@@ -453,8 +545,10 @@
         window.onclick = function(event) {
             let deliveryModal = document.getElementById('deliveryModal');
             let historyModal = document.getElementById('historyModal');
+            let historyDetailModal = document.getElementById('historyDetailModal');
             if (event.target == deliveryModal) deliveryModal.style.display = "none";
             if (event.target == historyModal) historyModal.style.display = "none";
+            if (event.target == historyDetailModal) historyDetailModal.style.display = "none";
         }
 
         window.onload = function() {
