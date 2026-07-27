@@ -54,8 +54,14 @@
         `;
 
         function loadDeliveryOrders() {
-            // جلب اسم المندوب من مفتاح تسجيل الدخول الموحد (Logged Delivery Name)
-            let currentDeliveryName = localStorage.getItem('loggedDeliveryName') || localStorage.getItem('currentLoggedInDelivery') || ''; 
+            // فحص شامل لجميع مفاتيح تسجيل الدخول المحتملة في النظام
+            let currentDeliveryName = (
+                localStorage.getItem('loggedDeliveryName') || 
+                localStorage.getItem('currentLoggedInDelivery') || 
+                localStorage.getItem('deliveryName') || 
+                localStorage.getItem('username') || 
+                ''
+            ).trim();
             
             if (currentDeliveryName) {
                 document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب: ${currentDeliveryName}`;
@@ -71,8 +77,10 @@
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
-                        // الشرط الصحيح: عرض الشحنة فقط إذا تم إسنادها حصراً لهذا المندوب بالاسم
-                        if (currentDeliveryName && ord.assignedDelivery === currentDeliveryName) {
+                        let assignedDel = (ord.assignedDelivery || '').trim();
+                        
+                        // مقارنة مرنة تتجاهل الفروقات البسيطة وتتحقق من عدم تصفية الشحنة مسبقاً
+                        if (currentDeliveryName && assignedDel.toLowerCase() === currentDeliveryName.toLowerCase() && !ord.isSettled) {
                             hasShipments = true;
 
                             let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
