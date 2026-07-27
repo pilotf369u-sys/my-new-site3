@@ -323,16 +323,17 @@
             document.getElementById('deliveryModal').style.display = 'none';
         }
 
-        // فتح سجل التصفيات السابقة للفرع
+        // فتح سجل التصفيات السابقة (مصححة ومحدثة لتعمل بشكل فوري)
         function openSettlementHistoryModal() {
             let currentBranchName = (localStorage.getItem('loggedBranchName') || '').trim();
             let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
             let historyBody = document.getElementById('historyModalBody');
             
-            let branchReports = settlementReports.filter(rep => rep.branch === currentBranchName);
+            // فلترة السجلات المطابقة لاسم الفرع الحالي بدقة
+            let branchReports = settlementReports.filter(rep => (rep.branch || '').trim() === currentBranchName);
 
             if (branchReports.length === 0) {
-                historyBody.innerHTML = `<p style="text-align:center; color:#666; padding:20px;">لا توجد سجيلات تصفية سابقة محفوظة لهذا الفرع حتى الآن.</p>`;
+                historyBody.innerHTML = `<p style="text-align:center; color:#666; padding:20px;">لا توجد سجلات تصفية سابقة محفوظة لهذا الفرع حتى الآن.</p>`;
             } else {
                 let html = `<table style="width:100%; margin-top:10px;">
                     <thead>
@@ -346,14 +347,15 @@
                     </thead>
                     <tbody>`;
 
-                branchReports.reverse().forEach(rep => {
-                    let ordsText = rep.orders.map(o => `${o.id} (${o.price})`).join('، ');
+                // عكس الترتيب لعرض أحدث تصفية في الأعلى
+                [...branchReports].reverse().forEach(rep => {
+                    let ordsText = (rep.orders || []).map(o => `${o.id} (${o.price})`).join('، ');
                     html += `
                         <tr>
-                            <td><small>${rep.date}</small></td>
-                            <td><b>${rep.deliveryName}</b></td>
-                            <td>${rep.ordersCount} طلب</td>
-                            <td><b style="color: #27ae60;">$${rep.amount.toFixed(2)}</b></td>
+                            <td><small>${rep.date || '---'}</small></td>
+                            <td><b>${rep.deliveryName || '---'}</b></td>
+                            <td>${rep.ordersCount || 0} طلب</td>
+                            <td><b style="color: #27ae60;">$${(rep.amount || 0).toFixed(2)}</b></td>
                             <td style="text-align: right; font-size: 12px;">${ordsText}</td>
                         </tr>
                     `;
@@ -371,7 +373,7 @@
         }
 
         function settleDeliveryAccount(deliveryName) {
-            if (confirm(`هل أنت تأكد من تصفية العهدة المالية للمندوب (${deliveryName}) وتصفرير حسابه؟`)) {
+            if (confirm(`هل أنت متأكد من تصفية العهدة المالية للمندوب (${deliveryName}) وتصفير حسابه؟`)) {
                 let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
                 let currentBranchName = (localStorage.getItem('loggedBranchName') || '').trim();
                 let settledAmount = 0;
@@ -397,6 +399,7 @@
 
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
 
+                // حفظ التقرير في سجل التصفيات الخاص بالفرع
                 let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
                 settlementReports.push({
                     branch: currentBranchName,
