@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الموظف الاحترافية</title>
+    <title>لوحة تحكم الموظف - إدارة وتحويل الطلبات</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -21,8 +21,8 @@
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
-        <h2>لوحة تحكم الموظف - إدارة الطلبات</h2>
-        <p>متابعة الطلبات، إسنادها للمندوبين المسجلين، وتحديث حالتها فردياً أو جماعياً.</p>
+        <h2>لوحة تحكم الموظف - إدارة الطلبات وتحويلها للفروع</h2>
+        <p>متابعة الطلبات، توجيهها وإرسالها إلى الفرع المختص، وتحديث حالتها.</p>
 
         <!-- شريط التحديث الجماعي -->
         <div class="action-bar">
@@ -51,7 +51,7 @@
                     <th>العميل ورقم الهاتف</th>
                     <th>التفاصيل والمبلغ</th>
                     <th>الحالة الحالية والسبب</th>
-                    <th>إسناد لمندوب (من النظام)</th>
+                    <th>إرسال وتوجيه إلى الفرع</th>
                     <th>تحديث الحالة الفردية</th>
                 </tr>
             </thead>
@@ -76,8 +76,8 @@
 
         function loadEmployeeOrders() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            // جلب المندوبين المسجلين في النظام فعلياً
-            let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
+            // جلب الفروع المسجلة في النظام بدلاً من المندوبين
+            let branchList = JSON.parse(localStorage.getItem('branchList')) || [];
             let tbody = document.getElementById('empOrdersBody');
             tbody.innerHTML = '';
 
@@ -88,11 +88,11 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         hasOrders = true;
 
-                        // تعبئة القائمة بجميع المندوبين المسجلين في النظام
-                        let deliveryOptions = `<option value="">اختر المندوب</option>`;
-                        deliveryList.forEach(del => {
-                            let selected = (ord.assignedDelivery === del.name) ? 'selected' : '';
-                            deliveryOptions += `<option value="${del.name}" ${selected}>${del.name}</option>`;
+                        // تعبئة قائمة الفروع المسجلة لتحويل الطلب إليها
+                        let branchOptions = `<option value="">اختر الفرع المختص</option>`;
+                        branchList.forEach(br => {
+                            let selected = (ord.assignedBranch === br.name) ? 'selected' : '';
+                            branchOptions += `<option value="${br.name}" ${selected}>${br.name} (${br.address || ''})</option>`;
                         });
 
                         let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
@@ -106,8 +106,8 @@
                                 <td><b style="color: #2980b9;">${ord.price || '$0.00'}</b></td>
                                 <td><span style="padding: 3px 8px; background: #fff3cd; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span>${reasonDisplay}</td>
                                 <td>
-                                    <select id="del_${custIndex}_${ordIndex}" onchange="assignDelivery(${custIndex}, ${ordIndex})">
-                                        ${deliveryOptions}
+                                    <select id="branch_${custIndex}_${ordIndex}" onchange="assignBranch(${custIndex}, ${ordIndex})">
+                                        ${branchOptions}
                                     </select>
                                 </td>
                                 <td>
@@ -155,11 +155,13 @@
             }
         }
 
-        function assignDelivery(custIndex, ordIndex) {
-            let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
+        // دالة إسناد وتحويل الطلب إلى الفرع
+        function assignBranch(custIndex, ordIndex) {
+            let selectedBranch = document.getElementById(`branch_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
+            customers[custIndex].orders[ordIndex].assignedBranch = selectedBranch;
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            alert('تم تحويل الطلب إلى الفرع بنجاح');
         }
 
         function updateOrderStatus(custIndex, ordIndex) {
@@ -177,7 +179,7 @@
 
         function applyBulkUpdate() {
             let selectedStatus = document.getElementById('bulkStatusSelect').value;
-            let bulkReason = document.getElementById('bulkReasonInput5').value || document.getElementById('bulkReasonInput').value;
+            let bulkReason = document.getElementById('bulkReasonInput').value;
 
             if (!selectedStatus) {
                 alert('الرجاء اختيار الحالة المراد تطبيقها أولاً');
