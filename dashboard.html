@@ -86,36 +86,49 @@
     </div>
 
     <script>
-        window.onload = function() {
+       window.onload = function() {
             const userData = JSON.parse(localStorage.getItem('loggedInUser'));
             if (!userData) { window.location.href = 'login.html'; return; }
             
-            const customer = customersDB.find(c => c.name === userData.name);
-            document.getElementById('userName').innerText = userData.name;
-            document.getElementById('userAddress').value = userData.address;
+            // وضع اسم وعنوان العميل الحالي
+            document.getElementById('userName').innerText = userData.name || userData.username;
+            if(document.getElementById('userAddress')) {
+                document.getElementById('userAddress').value = userData.address || '';
+            }
+
+            // البحث عن بيانات العميل وطلباته (سواء من adminCustomersList أو customersDB)
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let currentCustomer = adminCustomersList.find(c => c.phone === userData.phone || c.name === userData.name);
+            
+            if (!currentCustomer && typeof customersDB !== 'undefined') {
+                currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
+            }
 
             const table = document.getElementById('ordersTable');
             table.innerHTML = `<tr><th>رقم الطلب</th><th>الحالة</th><th>السعر</th><th>إجراءات التواصل</th><th>إلغاء</th></tr>`;
             
             let total = 0;
-            if (customer && customer.orders && customer.orders.length > 0) {
-                customer.orders.forEach(order => {
-                    const priceValue = parseFloat(order.price.replace('$', ''));
+            if (currentCustomer && currentCustomer.orders && currentCustomer.orders.length > 0) {
+                currentCustomer.orders.forEach((order, index) => {
+                    let priceStr = order.price || '$0.00';
+                    const priceValue = parseFloat(priceStr.replace('$', '')) || 0;
                     total += priceValue;
                     
-                    const waLink = "https://wa.me/905521855554?text=مرحبا%20بخصوص%20الطلب%20" + order.id;
+                    const orderId = order.id || order.productCode || 'طلب';
+                    const waLink = "https://wa.me/905521855554?text=" + encodeURIComponent("مرحبا بخصوص الطلب " + orderId);
                     
                     table.innerHTML += `<tr>
-                        <td>${order.id}</td>
-                        <td>${order.status}</td>
-                        <td>${order.price}</td>
+                        <td>${orderId}</td>
+                        <td><span style="padding: 4px 8px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-size: 12px;">${order.status || 'قيد المعالجة'}</span></td>
+                        <td>${priceStr}</td>
                         <td>
                             <a href="${waLink}" class="btn-wa" target="_blank"><i class="fa-brands fa-whatsapp"></i> واتساب</a> 
-                            <button class="btn-msg">رسالة</button>
+                            <button class="btn-msg" onclick="alert('مُرسل للموظف')">رسالة</button>
                         </td>
-                        <td><button class="btn-cancel" onclick="this.parentElement.parentElement.remove()">إلغاء</button></td>
+                        <td><button class="btn-cancel" onclick="cancelOrder(${index})">إلغاء</button></td>
                     </tr>`;
                 });
+                
                 // إضافة صف الإجمالي
                 table.innerHTML += `<tr style="font-weight: bold; color: var(--primary-red);">
                     <td colspan="2" style="text-align: left;">الإجمالي المطلوب دفعه:</td>
@@ -125,6 +138,23 @@
                 table.innerHTML += `<tr><td colspan="5" style="text-align:center;">لا توجد طلبات نشطة حالياً.</td></tr>`;
             }
         };
+
+        // دالة إلغاء الطلب المحدثة لتتصل بالنظام
+        function cancelOrder(index) {
+            if(confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
+                const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+                let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+                let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone);
+                
+                if(cIndex !== -1 && adminCustomersList[cIndex].orders) {
+                    adminCustomersList[cIndex].orders.splice(index, 1);
+                    localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
+                    location.reload(); 
+                } else {
+                    alert('عذراً، لا يمكن إلغاء هذا الطلب مباشرة.');
+                }
+            }
+        }
 
         function saveAddress() {
             let userData = JSON.parse(localStorage.getItem('loggedInUser'));
