@@ -398,5 +398,63 @@
         }
     </script>
     <script src="meshwar-app.js"></script>
+    <script>
+    // التأكد من جلب بيانات المستخدم وتعبئتها عند فتح نافذة الطلب
+    document.addEventListener("DOMContentLoaded", function() {
+        const fixedOrderBtn = document.querySelector('.fixed-order-btn');
+        if (fixedOrderBtn) {
+            fixedOrderBtn.addEventListener('click', function() {
+                const userDataString = localStorage.getItem('loggedInUser');
+                if (userDataString) {
+                    try {
+                        const userData = JSON.parse(userDataString);
+                        if (userData.name) {
+                            document.getElementById('pName').value = userData.name;
+                        }
+                        if (userData.code) {
+                            document.getElementById('pCode').value = userData.code;
+                        }
+                    } catch (e) {
+                        console.error("خطأ في قراءة بيانات المستخدم", e);
+                    }
+                }
+                document.getElementById('orderModal').style.display = 'block';
+            });
+        }
+    });
+
+    // دالة إرسال الطلب عبر الواتساب
+    function submitOrder() {
+        const name = document.getElementById('pName').value.trim();
+        const code = document.getElementById('pCode').value.trim();
+        const url = document.getElementById('pUrl').value.trim();
+        const color = document.getElementById('pColor').value.trim();
+        const size = document.getElementById('pSize').value.trim();
+        const quantity = document.getElementById('pQuantity').value.trim();
+        const address = document.getElementById('pAddress').value.trim();
+        const phone = document.getElementById('pPhone').value.trim();
+
+        if (!name || !url || !phone) {
+            alert('الرجاء إدخال (الاسم الكريم، رابط المنتج، ورقم الهاتف) على الأقل.');
+            return;
+        }
+
+        let message = `*طلب جديد عبر منصة MeshWar* 🛒\n\n`;
+        message += `👤 *الاسم:* ${name}\n`;
+        if (code) message += `🆔 *كود العميل:* ${code}\n`;
+        message += `🔗 *رابط المنتج:* ${url}\n`;
+        if (color) message += `🎨 *اللون:* ${color}\n`;
+        if (size) message += `📏 *المقاس:* ${size}\n`;
+        message += `📦 *العدد:* ${quantity || 1}\n`;
+        message += `📍 *العنوان:* ${address}\n`;
+        message += `📞 *رقم الهاتف:* ${phone}\n`;
+
+        const whatsappNumber = "905521855554"; // استبدل الرقم برقمك الحقيقي
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+        window.open(whatsappURL, '_blank');
+    }
+</script>
 </body>
 </html>
