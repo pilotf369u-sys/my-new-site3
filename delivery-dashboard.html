@@ -54,13 +54,17 @@
         `;
 
         function loadDeliveryOrders() {
-            // جلب اسم المندوب المسجل دخوله من أي مفتاح محتمل
-            let currentDeliveryName = (localStorage.getItem('loggedDeliveryName') || localStorage.getItem('currentLoggedInDelivery') || '').trim();
+            // جلب اسم المندوب المسجل دخوله بأي مفتاح محتمل في النظام
+            let currentDeliveryName = (
+                localStorage.getItem('loggedDeliveryName') || 
+                localStorage.getItem('deliveryName') || 
+                localStorage.getItem('username') || 
+                ''
+            ).trim();
             
             if (currentDeliveryName) {
                 document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب: ${currentDeliveryName}`;
             } else {
-                // إذا لم يتم حفظ اسم المندوب عند تسجيل الدخول، نطلب منه تسجيل الدخول مجدداً أو ننبّهه
                 document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب (يرجى تسجيل الدخول باسم المندوب)`;
             }
 
@@ -76,7 +80,7 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         let assignedDel = (ord.assignedDelivery || '').trim();
 
-                        // مطابقة دقيقة ومرنة لاسم المندوب المسجل دخوله مع الطلب المسند
+                        // مطابقة اسم المندوب المسند له الطلب مع المندوب الحالي
                         if (currentDeliveryName && assignedDel === currentDeliveryName) {
                             hasShipments = true;
 
@@ -110,7 +114,7 @@
             document.getElementById('totalAmountDisplay').innerText = `$${totalSum.toFixed(2)}`;
 
             if (!hasShipments) {
-                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً (تأكد من تسجيل الدخول بنفس اسم المندوب المسند له الطلب)</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً (تأكد من إسناد الطلب لك من الفرع وتسجيل الدخول بنفس الاسم تماماً)</td></tr>`;
                 document.getElementById('totalAmountDisplay').innerText = '$0.00';
             }
         }
@@ -131,13 +135,14 @@
             let reason = document.getElementById(`del_reason_${custIndex}_${ordIndex}`).value;
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers[custIndex].orders[ordIndex].status = newStatus;
-            customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
-            
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-
-            alert('تم تحديث حالة الشحنة بنجاح');
-            loadDeliveryOrders();
+            if (customers[custIndex] && customers[custIndex].orders[ordIndex]) {
+                customers[custIndex].orders[ordIndex].status = newStatus;
+                customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
+                
+                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+                alert('تم تحديث حالة الشحنة بنجاح');
+                loadDeliveryOrders();
+            }
         }
 
         window.onload = function() {
