@@ -188,6 +188,9 @@
                 return;
             }
 
+            // جلب سجل التصفيات المالية المحفوظة سابقاً
+            let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
+
             deliveryList.forEach(del => {
                 let deliveredCount = 0;
                 let totalCashCollected = 0;
@@ -199,7 +202,8 @@
                             let assignedDel = (ord.assignedDelivery || '').trim();
                             let ordBranch = (ord.assignedBranch || '').trim();
 
-                            if (ordBranch === branchName && assignedDel === delName && ord.status === 'تم التسليم') {
+                            // نحتسب الذمة فقط للطلبات التي سلمها المندوب ولم يتم تصفيتها بعد
+                            if (ordBranch === branchName && assignedDel === delName && ord.status === 'تم التسليم' && !ord.isSettled) {
                                 deliveredCount++;
                                 let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
                                 totalCashCollected += numericPrice;
@@ -224,7 +228,42 @@
 
         function settleDeliveryAccount(deliveryName) {
             if (confirm(`هل أنت تأكد من تصفية واستلام العهدة المالية للمندوب (${deliveryName})؟`)) {
-                alert(`تم تصفية حساب المندوب ${deliveryName} بنجاح وتسجيل توريد النقدية لخزينة الفرع.`);
+                let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+                let currentBranchName = (localStorage.getItem('loggedBranchName') || '').trim();
+                let settledAmount = 0;
+                let settledOrdersCount = 0;
+
+                // تحديث الطلبات الخاصة بهذا المندوب لتصبح "مصفاة" (isSettled = true)
+                customers.forEach(cust => {
+                    if (cust.orders) {
+                        cust.orders.forEach(ord => {
+                            let assignedDel = (ord.assignedDelivery || '').trim();
+                            let ordBranch = (ord.assignedBranch || '').trim();
+
+                            if (ordBranch === currentBranchName && assignedDel === deliveryName && ord.status === 'تم التسليم' && !ord.isSettled) {
+                                ord.isSettled = true;
+                                let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
+                                settledAmount += numericPrice;
+                                settledOrdersCount++;
+                            }
+                        });
+                    }
+                });
+
+                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+
+                // حفظ تقرير التصفية المالي لهذا المندوب في السجل
+                let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
+                settlementReports.push({
+                    branch: currentBranchName,
+                    deliveryName: deliveryName,
+                    amount: settledAmount,
+                    ordersCount: settledOrdersCount,
+                    date: new Date().toLocaleString()
+                });
+                localStorage.setItem('branchSettlementReports', JSON.stringify(settlementReports));
+
+                alert(`تم تصفية حساب المندوب ${deliveryName} بنجاح بقيمة $${settledAmount.toFixed(2)} وتجديد الذمة إلى $0.00 وتسجيل التقرير.`);
                 loadBranchDashboard();
             }
         }
