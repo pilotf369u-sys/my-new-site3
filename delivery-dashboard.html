@@ -57,15 +57,24 @@
             let tbody = document.getElementById('delOrdersBody');
             tbody.innerHTML = '';
 
-            // جمع كل النصوص والقيم المخزنة في الـ localStorage لاكتشاف اسم المندوب أينما وجد
+            // جلب اسم المندوب المسجل حالياً من مختلف المفاتيح المحتملة في المتصفح لضمان التطابق التام
+            let loggedDeliveryName = (
+                localStorage.getItem('loggedDeliveryName') || 
+                localStorage.getItem('loggedBranchName') || 
+                localStorage.getItem('username') || 
+                localStorage.getItem('deliveryName') || ''
+            ).trim();
+
+            // جمع كل القيم المخزنة كاحتياط في حال تم حفظ الاسم بمفتاح مختلف
             let storedValues = [];
+            if (loggedDeliveryName) storedValues.push(loggedDeliveryName);
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
                 let val = localStorage.getItem(key);
-                if (val) storedValues.push(val.trim());
+                if (val && !storedValues.includes(val.trim())) {
+                    storedValues.push(val.trim());
+                }
             }
-
-            console.log("All LocalStorage Values:", storedValues);
 
             let hasShipments = false;
             let totalSum = 0; 
@@ -75,7 +84,7 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         let assignedDel = (ord.assignedDelivery || '').trim();
                         
-                        // التحقق مما إذا كان اسم المندوب المعين للشحنة مطابقاً لأي قيمة مخزنة في المتصفح
+                        // مطابقة اسم المندوب المسجل بالشحنة مع القيم الموجودة
                         let isMatch = storedValues.some(val => val.toLowerCase() === assignedDel.toLowerCase());
 
                         if (assignedDel && isMatch && !ord.isSettled) {
@@ -108,7 +117,8 @@
                 }
             });
 
-            document.getElementById('totalAmountDisplay` + `).innerText = `$${totalSum.toFixed(2)}`;
+            // تم تصحيح الخطأ المطبعي في كتابة الـ ID هنا
+            document.getElementById('totalAmountDisplay').innerText = `$${totalSum.toFixed(2)}`;
 
             if (!hasShipments) {
                 tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً من الفرع</td></tr>`;
