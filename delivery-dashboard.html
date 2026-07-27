@@ -23,7 +23,6 @@
         <h2 id="deliveryTitle">لوحة تحكم المندوب - الشحنات</h2>
         <p>إدارة وتحديث حالات الشحنات المخصصة لك، مع عرض المبالغ المطلوب تحصيلها:</p>
         
-        <!-- صندوق المجموع الكلي للمبالغ المطلوبة من المندوب -->
         <div class="total-box">
             <span>إجمالي المبالغ المطلوبة تحصيلها من الشحنات:</span>
             <span id="totalAmountDisplay" style="font-size: 20px; color: #27ae60;">$0.00</span>
@@ -54,22 +53,19 @@
         `;
 
         function loadDeliveryOrders() {
-            // فحص شامل لجميع مفاتيح تسجيل الدخول المحتملة في النظام
-            let currentDeliveryName = (
-                localStorage.getItem('loggedDeliveryName') || 
-                localStorage.getItem('currentLoggedInDelivery') || 
-                localStorage.getItem('deliveryName') || 
-                localStorage.getItem('username') || 
-                ''
-            ).trim();
-            
-            if (currentDeliveryName) {
-                document.getElementById('deliveryTitle').innerText = `لوحة تحكم المندوب: ${currentDeliveryName}`;
-            }
-
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('delOrdersBody');
             tbody.innerHTML = '';
+
+            // جمع كل النصوص والقيم المخزنة في الـ localStorage لاكتشاف اسم المندوب أينما وجد
+            let storedValues = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                let val = localStorage.getItem(key);
+                if (val) storedValues.push(val.trim());
+            }
+
+            console.log("All LocalStorage Values:", storedValues);
 
             let hasShipments = false;
             let totalSum = 0; 
@@ -79,8 +75,10 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         let assignedDel = (ord.assignedDelivery || '').trim();
                         
-                        // مقارنة مرنة تتجاهل الفروقات البسيطة وتتحقق من عدم تصفية الشحنة مسبقاً
-                        if (currentDeliveryName && assignedDel.toLowerCase() === currentDeliveryName.toLowerCase() && !ord.isSettled) {
+                        // التحقق مما إذا كان اسم المندوب المعين للشحنة مطابقاً لأي قيمة مخزنة في المتصفح
+                        let isMatch = storedValues.some(val => val.toLowerCase() === assignedDel.toLowerCase());
+
+                        if (assignedDel && isMatch && !ord.isSettled) {
                             hasShipments = true;
 
                             let rawPrice = ord.price ? parseFloat(ord.price.replace(/[^0-9.]/g, '')) || 0 : 0;
@@ -110,7 +108,7 @@
                 }
             });
 
-            document.getElementById('totalAmountDisplay').innerText = `$${totalSum.toFixed(2)}`;
+            document.getElementById('totalAmountDisplay` + `).innerText = `$${totalSum.toFixed(2)}`;
 
             if (!hasShipments) {
                 tbody.innerHTML = `<tr><td colspan="6">لا توجد شحنات مسندة إليك حالياً من الفرع</td></tr>`;
