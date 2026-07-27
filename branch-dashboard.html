@@ -87,7 +87,6 @@
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
-                        // مطابقة اسم الفرع تماماً كما هو مستخدم في لوحة الموظف
                         if (ord.assignedBranch === currentBranchName) {
                             hasOrders = true;
 
@@ -146,7 +145,7 @@
             }
         }
 
-        // إسناد المندوب وحفظه فوراً بنفس الآلية
+        // إسناد المندوب وحفظه فوراً في الـ localStorage لكي يراه المندوب في لوحته
         function assignDelivery(custIndex, ordIndex) {
             let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
@@ -154,8 +153,11 @@
             if (customers[custIndex] && customers[custIndex].orders[ordIndex]) {
                 customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-                alert(selectedDelivery ? `تم إسناد الطلب للمندوب (${selectedDelivery}) بنجاح` : 'تم إلغاء إسناد المندوب');
-                loadBranchDashboard();
+                
+                // تحديث واجهة المحاسبة فوراً لتظهر عدد الطلبات للمندوب
+                let currentBranchName = localStorage.getItem('loggedBranchName');
+                let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
+                loadDeliveryAccounting(currentBranchName, customers, deliveryList);
             }
         }
 
@@ -171,7 +173,7 @@
                 customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
                 
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-                alert('تم تحديث حالة الشحنة بنجاح');
+                alert('تم تحديث حالة الشحنة وإسناد المندوب بنجاح');
                 loadBranchDashboard();
             }
         }
