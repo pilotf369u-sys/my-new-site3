@@ -68,8 +68,9 @@
             return delPhone === cleanInput && passwordInput === delPass;
         });
 
-        if (deliveryGuy) {
+       if (deliveryGuy) {
             localStorage.setItem('loggedInDelivery', JSON.stringify(deliveryGuy));
+            localStorage.setItem('loggedDeliveryName', deliveryGuy.name); // <--- أضف هذا السطر فقط هنا
             window.location.href = 'delivery-dashboard.html';
             return;
         }
