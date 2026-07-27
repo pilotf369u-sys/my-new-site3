@@ -19,7 +19,7 @@
         
         h2, h3 { color: #2c3e50; }
         form { background: #f9f9f9; padding: 15px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 200px; font-size: 14px; }
+        input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 180px; font-size: 14px; }
         button.btn-add { background: #27ae60; color: white; border: none; padding: 9px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -50,11 +50,12 @@
     <div class="main-content">
         <div class="container">
             <h2>إدارة الفروع والشركات الموزعة</h2>
-            <p>أضف الفروع أو الشركات الموزعة الجديدة لتتمكن من إسناد الشحنات إليها ومتابعتها:</p>
+            <p>أضف الفروع وكلمات المرور الخاصة بهم لتتمكن الفروع من تسجيل الدخول للنظام:</p>
             
             <form id="branchForm" onsubmit="addBranch(event)">
-                <input type="text" id="branchName" placeholder="اسم الفرع أو الشركة الموزعة" required>
-                <input type="text" id="branchPhone" placeholder="رقم الهاتف" required>
+                <input type="text" id="branchName" placeholder="اسم الفرع / الشركة الموزعة" required>
+                <input type="text" id="branchPhone" placeholder="رقم الهاتف (اسم المستخدم)" required>
+                <input type="password" id="branchPassword" placeholder="كلمة المرور للدخول" required>
                 <input type="text" id="branchAddress" placeholder="العنوان / المدينة" required>
                 <button type="submit" class="btn-add">➕ إضافة الفرع</button>
             </form>
@@ -64,13 +65,14 @@
                 <thead>
                     <tr>
                         <th>اسم الفرع / الشركة</th>
-                        <th>رقم الهاتف</th>
+                        <th>رقم الهاتف (حساب الدخول)</th>
+                        <th>كلمة المرور</th>
                         <th>العنوان</th>
                         <th>إجراءات</th>
                     </tr>
                 </thead>
                 <tbody id="branchesTableBody">
-                    <tr><td colspan="4">جاري التحميل...</td></tr>
+                    <tr><td colspan="5">جاري التحميل...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -83,7 +85,7 @@
             tbody.innerHTML = '';
 
             if (branchList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4">لا توجد فروع مسجلة حالياً</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5">لا توجد فروع مسجلة حالياً</td></tr>`;
                 return;
             }
 
@@ -92,6 +94,7 @@
                     <tr>
                         <td><b>${br.name}</b></td>
                         <td dir="ltr">${br.phone}</td>
+                        <td><code>${br.password || 'غير محددة'}</code></td>
                         <td>${br.address}</td>
                         <td>
                             <button class="btn-delete" onclick="deleteBranch(${index})">حذف</button>
@@ -105,16 +108,17 @@
             e.preventDefault();
             let name = document.getElementById('branchName').value.trim();
             let phone = document.getElementById('branchPhone').value.trim();
+            let password = document.getElementById('branchPassword').value.trim();
             let address = document.getElementById('branchAddress').value.trim();
 
             let branchList = JSON.parse(localStorage.getItem('branchList')) || [];
             
-            branchList.push({ name, phone, address });
+            branchList.push({ name, phone, password, address });
             localStorage.setItem('branchList', JSON.stringify(branchList));
 
             document.getElementById('branchForm').reset();
             loadBranches();
-            alert('تم إضافة الفرع بنجاح');
+            alert('تم إضافة الفرع وكلمة المرور بنجاح');
         }
 
         function deleteBranch(index) {
