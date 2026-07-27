@@ -17,7 +17,7 @@
         button.report-btn { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; }
         .section-title { background: #34495e; color: white; padding: 10px 15px; border-radius: 5px; margin-top: 20px; font-size: 16px; }
         
-        /* تنسيق النافذة المنبثقة (Modal) لتفاصيل ومحاسبة المندوب */
+        /* تنسيق النافذة المنبثقة (Modal) */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fff; margin: 5% auto; padding: 20px; border-radius: 8px; width: 70%; max-height: 80vh; overflow-y: auto; text-align: right; }
         .close-modal { color: #aaa; float: left; font-size: 28px; font-weight: bold; cursor: pointer; }
@@ -48,8 +48,8 @@
             </tbody>
         </table>
 
-        <!-- قسم محاسبة المندوبين المبسط والنظيف -->
-        <div class="section-title">💰 محاسبة المناديب والذمم المالية (اختر المندوب للمتابعة والتقارير)</div>
+        <!-- قسم محاسبة المندوبين المنظم (يعرض فقط المناديب الذين لديهم طلبات مسندة) -->
+        <div class="section-title">💰 محاسبة المناديب والذمم المالية (مناديب فرعك الذين لديهم شحنات نشطة فقط)</div>
         <table>
             <thead>
                 <tr>
@@ -60,19 +60,17 @@
                 </tr>
             </thead>
             <tbody id="deliveryAccountingBody">
-                <tr><td colspan="4">جاري تحميل حسابات المندوبين...</td></tr>
+                <tr><td colspan="4">جاري التحميل...</td></tr>
             </tbody>
         </table>
     </div>
 
-    <!-- نافذة منبثقة (Modal) لعرض تفاصيل طلبات المندوب والتحكم المالي -->
+    <!-- نافذة منبثقة (Modal) لتفاصيل المندوب -->
     <div id="deliveryModal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closeDeliveryModal()">&times;</span>
             <h3 id="modalDeliveryTitle" style="color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">تفاصيل حساب المندوب</h3>
-            <div id="modalDeliveryBody">
-                <!-- سيتم تعبئة تفاصيل الطلبات والذمة هنا ديناميكياً -->
-            </div>
+            <div id="modalDeliveryBody"></div>
         </div>
     </div>
 
@@ -200,16 +198,14 @@
             let accountingBody = document.getElementById('deliveryAccountingBody');
             accountingBody.innerHTML = '';
 
-            if (deliveryList.length === 0) {
-                accountingBody.innerHTML = `<tr><td colspan="4">لا توجد مناديب مسجلين في النظام</td></tr>`;
-                return;
-            }
+            let activeDeliveriesCount = 0;
 
             deliveryList.forEach(del => {
-                let totalCashCollected = 0;
                 let delName = (del.name || '').trim();
+                let totalCashCollected = 0;
                 let assignedCount = 0;
 
+                // فحص الطلبات غير المصفاة المسندة لهذا المندوب في هذا الفرع حصرياً
                 customers.forEach(cust => {
                     if (cust.orders) {
                         cust.orders.forEach(ord => {
@@ -225,20 +221,27 @@
                     }
                 });
 
-                accountingBody.innerHTML += `
-                    <tr>
-                        <td><b>${delName}</b></td>
-                        <td dir="ltr">${del.phone || '---'}</td>
-                        <td><b style="color: #c0392b; font-size: 16px;">$${totalCashCollected.toFixed(2)}</b> (${assignedCount} طلب)</td>
-                        <td>
-                            <button class="report-btn" onclick="openDeliveryModal('${delName}')">إدارة الطلبات والتقرير</button>
-                        </td>
-                    </tr>
-                `;
+                // شرط الصرامة والترتيب: إظهار المندوب فقط إذا كان لديه طلبات مسندة وغير مصفاة حالياً
+                if (assignedCount > 0) {
+                    activeDeliveriesCount++;
+                    accountingBody.innerHTML += `
+                        <tr>
+                            <td><b>${delName}</b></td>
+                            <td dir="ltr">${del.phone || '---'}</td>
+                            <td><b style="color: #c0392b; font-size: 16px;">$${totalCashCollected.toFixed(2)}</b> (${assignedCount} طلب)</td>
+                            <td>
+                                <button class="report-btn" onclick="openDeliveryModal('${delName}')">إدارة الطلبات والتقرير</button>
+                            </td>
+                        </tr>
+                    `;
+                }
             });
+
+            if (activeDeliveriesCount === 0) {
+                accountingBody.innerHTML = `<tr><td colspan="4" style="color: #666; padding: 15px;">لا توجد طلبات مسندة لأي مندوب حالياً (جميع المناديب أصفار).</td></tr>`;
+            }
         }
 
-        // فتح النافذة المنبثقة الخاصة بالمندوب المختار
         function openDeliveryModal(deliveryName) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let currentBranchName = (localStorage.getItem('loggedBranchName') || '').trim();
@@ -289,10 +292,6 @@
 
             ordersHtml += `</tbody></table>`;
 
-            if (!hasActiveOrders) {
-                ordersHtml = `<p style="color: #666; text-align: center; padding: 20px;">لا توجد طلبات غير مصفاة مسندة لهذا المندوب حالياً.</p>`;
-            }
-
             modalBody.innerHTML = `
                 ${ordersHtml}
                 <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
@@ -300,8 +299,8 @@
                         <span style="font-size: 16px;">إجمالي الذمة المالية: <b style="color: #c0392b; font-size: 18px;">$${totalCash.toFixed(2)}</b></span>
                     </div>
                     <div>
-                        <button class="action-btn" onclick="settleDeliveryAccount('${deliveryName}')" ${!hasActiveOrders ? 'disabled style="background: #ccc; cursor: not-allowed;"' : ''}>تصفية واستلام النقدية (ذمة صفر)</button>
-                        <button class="report-btn" onclick="printDeliveryReport('${deliveryName}', ${totalCash})" ${!hasActiveOrders ? 'disabled style="background: #ccc; cursor: not-allowed;"' : ''}>طباعة التقرير</button>
+                        <button class="action-btn" onclick="settleDeliveryAccount('${deliveryName}')">تصفية واستلام النقدية (ذمة صفر)</button>
+                        <button class="report-btn" onclick="printDeliveryReport('${deliveryName}', ${totalCash})">طباعة التقرير</button>
                     </div>
                 </div>
             `;
@@ -340,7 +339,6 @@
 
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
 
-                // حفظ التقرير في الأرشيف
                 let settlementReports = JSON.parse(localStorage.getItem('branchSettlementReports')) || [];
                 settlementReports.push({
                     branch: currentBranchName,
@@ -371,7 +369,7 @@
                         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                         table, th, td { border: 1px solid #333; padding: 8px; text-align: center; }
                         th { background: #eee; }
-                    .footer { margin-top: 40px; display: flex; justify-content: space-between; }
+                        .footer { margin-top: 40px; display: flex; justify-content: space-between; }
                     </style>
                 </head>
                 <body>
@@ -391,7 +389,6 @@
             printWindow.document.close();
         }
 
-        // إغلاق النافذة عند الضغط خارجها
         window.onclick = function(event) {
             let modal = document.getElementById('deliveryModal');
             if (event.target == modal) {
