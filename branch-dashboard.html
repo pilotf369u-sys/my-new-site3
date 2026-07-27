@@ -68,7 +68,7 @@
         `;
 
         function loadBranchDashboard() {
-            let currentBranchName = localStorage.getItem('loggedBranchName');
+            let currentBranchName = (localStorage.getItem('loggedBranchName') || '').trim();
             if (!currentBranchName) {
                 alert('الرجاء تسجيل الدخول بحساب الفرع أولاً');
                 window.location.href = 'login.html';
@@ -87,13 +87,16 @@
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
-                        if (ord.assignedBranch === currentBranchName) {
+                        let ordBranch = (ord.assignedBranch || '').trim();
+                        if (ordBranch === currentBranchName) {
                             hasOrders = true;
 
                             let deliveryOptions = `<option value="">اختر مندوب الفرع...</option>`;
                             deliveryList.forEach(del => {
-                                let selected = (ord.assignedDelivery === del.name) ? 'selected' : '';
-                                deliveryOptions += `<option value="${del.name}" ${selected}>${del.name}</option>`;
+                                let delName = (del.name || '').trim();
+                                let ordDel = (ord.assignedDelivery || '').trim();
+                                let selected = (ordDel === delName) ? 'selected' : '';
+                                deliveryOptions += `<option value="${delName}" ${selected}>${delName}</option>`;
                             });
 
                             let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
@@ -145,17 +148,15 @@
             }
         }
 
-        // إسناد المندوب وحفظه فوراً في الـ localStorage لكي يراه المندوب في لوحته
         function assignDelivery(custIndex, ordIndex) {
-            let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
+            let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value.trim();
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             
             if (customers[custIndex] && customers[custIndex].orders[ordIndex]) {
                 customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
                 
-                // تحديث واجهة المحاسبة فوراً لتظهر عدد الطلبات للمندوب
-                let currentBranchName = localStorage.getItem('loggedBranchName');
+                let currentBranchName = (localStorage.getItem('loggedBranchName') || '').trim();
                 let deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
                 loadDeliveryAccounting(currentBranchName, customers, deliveryList);
             }
@@ -164,7 +165,7 @@
         function updateBranchOrderStatus(custIndex, ordIndex) {
             let newStatus = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
             let reason = document.getElementById(`reason_${custIndex}_${ordIndex}`).value;
-            let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
+            let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value.trim();
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             if (customers[custIndex] && customers[custIndex].orders[ordIndex]) {
@@ -190,14 +191,15 @@
             deliveryList.forEach(del => {
                 let deliveredCount = 0;
                 let totalCashCollected = 0;
+                let delName = (del.name || '').trim();
 
                 customers.forEach(cust => {
                     if (cust.orders) {
                         cust.orders.forEach(ord => {
                             let assignedDel = (ord.assignedDelivery || '').trim();
-                            let currentDel = (del.name || '').trim();
+                            let ordBranch = (ord.assignedBranch || '').trim();
 
-                            if (ord.assignedBranch === branchName && assignedDel === currentDel && ord.status === 'تم التسليم') {
+                            if (ordBranch === branchName && assignedDel === delName && ord.status === 'تم التسليم') {
                                 deliveredCount++;
                                 let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
                                 totalCashCollected += numericPrice;
@@ -208,12 +210,12 @@
 
                 accountingBody.innerHTML += `
                     <tr>
-                        <td><b>${del.name}</b></td>
+                        <td><b>${delName}</b></td>
                         <td dir="ltr">${del.phone || '---'}</td>
                         <td><span style="background: #e1f5fe; padding: 3px 8px; border-radius: 4px; font-weight: bold;">${deliveredCount} طلب</span></td>
                         <td><b style="color: #c0392b; font-size: 15px;">$${totalCashCollected.toFixed(2)}</b></td>
                         <td>
-                            <button class="action-btn" onclick="settleDeliveryAccount('${del.name}')" ${totalCashCollected === 0 ? 'disabled style="background: #ccc; cursor: not-allowed;"' : ''}>تصفية واستلام النقدية</button>
+                            <button class="action-btn" onclick="settleDeliveryAccount('${delName}')" ${totalCashCollected === 0 ? 'disabled style="background: #ccc; cursor: not-allowed;"' : ''}>تصفية واستلام النقدية</button>
                         </td>
                     </tr>
                 `;
