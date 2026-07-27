@@ -16,17 +16,28 @@
         .action-bar { background: #eef2f3; padding: 12px; border-radius: 6px; margin-top: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         button.action-btn { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button.btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.btn-purple { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
         <h2>لوحة تحكم الموظف - إدارة الطلبات وتحويلها للفروع</h2>
-        <p>متابعة الطلبات، توجيهها وإرسالها إلى الفرع المختص، وتحديث حالتها.</p>
+        <p>متابعة الطلبات، توجيهها وإرسالها إلى الفروع بشكل فردي أو جماعي، وتحديث حالتها.</p>
 
-        <!-- شريط التحديث الجماعي -->
+        <!-- شريط الإجراء الجماعي (الحالة والتحويل للفرع) -->
         <div class="action-bar">
-            <span><b>الإجراء الجماعي للطلبات المحددة:</b></span>
+            <span><b>الإجراء الجماعي للمحدد:</b></span>
+            
+            <!-- تحويل جماعي للفرع -->
+            <select id="bulkBranchSelect">
+                <option value="" disabled selected>اختر الفرع للتحويل الجماعي...</option>
+            </select>
+            <button class="btn-purple" onclick="applyBulkBranch()">تحويل المختار للفرع</button>
+
+            <span style="border-right: 2px solid #ccc; margin: 0 5px;"></span>
+
+            <!-- تحديث حالة جماعي -->
             <select id="bulkStatusSelect" onchange="checkBulkReason()">
                 <option value="" disabled selected>اختر الحالة الجماعية...</option>
                 <option value="انتظار الدفع">انتظار الدفع</option>
@@ -39,8 +50,8 @@
                 <option value="تم التسليم">تم التسليم</option>
                 <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
             </select>
-            <input type="text" id="bulkReasonInput" placeholder="أدخل سبب الرفض أو عدم التسليم..." style="display: none; flex: 1; min-width: 200px;">
-            <button class="btn-blue" onclick="applyBulkUpdate()">تطبيق على المختار</button>
+            <input type="text" id="bulkReasonInput" placeholder="سبب الرفض..." style="display: none; width: 150px;">
+            <button class="btn-blue" onclick="applyBulkUpdate()">تطبيق الحالة</button>
         </div>
         
         <table>
@@ -51,7 +62,7 @@
                     <th>العميل ورقم الهاتف</th>
                     <th>التفاصيل والمبلغ</th>
                     <th>الحالة الحالية والسبب</th>
-                    <th>إرسال وتوجيه إلى الفرع</th>
+                    <th>الفرع المسؤول (إرسال / تغيير / إرجاع)</th>
                     <th>تحديث الحالة الفردية</th>
                 </tr>
             </thead>
@@ -76,10 +87,18 @@
 
         function loadEmployeeOrders() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            // جلب الفروع المسجلة في النظام بدلاً من المندوبين
             let branchList = JSON.parse(localStorage.getItem('branchList')) || [];
             let tbody = document.getElementById('empOrdersBody');
+            let bulkBranchSelect = document.getElementById('bulkBranchSelect');
+            
             tbody.innerHTML = '';
+
+            // تعبئة قائمة التحويل الجماعي للفروع
+            let bulkBranchOptions = `<option value="" disabled selected>اختر الفرع للتحويل الجماعي...</option>`;
+            branchList.forEach(br => {
+                bulkBranchOptions += `<option value="${br.name}">${br.name}</option>`;
+            });
+            bulkBranchSelect.innerHTML = bulkBranchOptions;
 
             let hasOrders = false;
 
@@ -88,15 +107,17 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         hasOrders = true;
 
-                        // تعبئة قائمة الفروع المسجلة لتحويل الطلب إليها
-                        let branchOptions = `<option value="">اختر الفرع المختص</option>`;
+                        // تعبئة قائمة الفروع الفردية مع خيار الإلغاء/الإرجاع
+                        let branchOptions = `<option value="">--- غير محدد (بدون فرع) ---</option>`;
                         branchList.forEach(br => {
                             let selected = (ord.assignedBranch === br.name) ? 'selected' : '';
-                            branchOptions += `<option value="${br.name}" ${selected}>${br.name} (${br.address || ''})</option>`;
+                            branchOptions += `<option value="${br.name}" ${selected}>${br.name}</option>`;
                         });
 
                         let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
                         let currentOptionsHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
+                        
+                        let branchBadge = ord.assignedBranch ? `<span style="color: #27ae60; font-weight: bold; font-size: 12px;">(الفرع الحالي: ${ord.assignedBranch})</span>` : `<span style="color: #c0392b; font-size: 11px;">غير محدد لفرع</span>`;
 
                         tbody.innerHTML += `
                             <tr>
@@ -106,7 +127,8 @@
                                 <td><b style="color: #2980b9;">${ord.price || '$0.00'}</b></td>
                                 <td><span style="padding: 3px 8px; background: #fff3cd; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span>${reasonDisplay}</td>
                                 <td>
-                                    <select id="branch_${custIndex}_${ordIndex}" onchange="assignBranch(${custIndex}, ${ordIndex})">
+                                    ${branchBadge}<br>
+                                    <select id="branch_${custIndex}_${ordIndex}" onchange="assignBranch(${custIndex}, ${ordIndex})" style="margin-top: 5px; width: 100%;">
                                         ${branchOptions}
                                     </select>
                                 </td>
@@ -115,7 +137,7 @@
                                         ${currentOptionsHtml}
                                     </select>
                                     <input type="text" id="reason_${custIndex}_${ordIndex}" placeholder="سبب الرفض/عدم التسليم" style="display: ${ord.status === 'تم رفض الطلب أو عدم التسليم' ? 'block' : 'none'}; margin-top: 5px; width: 100%;" value="${ord.reason || ''}">
-                                    <button class="action-btn" onclick="updateOrderStatus(${custIndex}, ${ordIndex})" style="margin-top: 5px;">حفظ</button>
+                                    <button class="action-btn" onclick="updateOrderStatus(${custIndex}, ${ordIndex})" style="margin-top: 5px;">حفظ الحالة</button>
                                 </td>
                             </tr>
                         `;
@@ -155,13 +177,41 @@
             }
         }
 
-        // دالة إسناد وتحويل الطلب إلى الفرع
+        // إسناد وتغيير أو إرجاع الطلب لفردي
         function assignBranch(custIndex, ordIndex) {
             let selectedBranch = document.getElementById(`branch_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].assignedBranch = selectedBranch;
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تحويل الطلب إلى الفرع بنجاح');
+            alert(selectedBranch ? 'تم تحديث وتحويل الفرع بنجاح' : 'تم إلغاء وإرجاع الطلب من الفرع');
+            loadEmployeeOrders();
+        }
+
+        // التحويل الجماعي للفرع
+        function applyBulkBranch() {
+            let targetBranch = document.getElementById('bulkBranchSelect').value;
+            if (!targetBranch) {
+                alert('الرجاء اختيار الفرع المراد التحويل إليه أولاً');
+                return;
+            }
+
+            let checkboxes = document.querySelectorAll('.order-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('الرجاء تحديد طلب واحد على الأقل من الجدول');
+                return;
+            }
+
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+
+            checkboxes.forEach(cb => {
+                let cIdx = cb.getAttribute('data-cust');
+                let oIdx = cb.getAttribute('data-ord');
+                customers[cIdx].orders[oIdx].assignedBranch = targetBranch;
+            });
+
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            alert('تم تحويل الطلبات المحددة إلى الفرع بنجاح');
+            loadEmployeeOrders();
         }
 
         function updateOrderStatus(custIndex, ordIndex) {
@@ -202,7 +252,7 @@
             });
 
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تطبيق التحديث الجماعي بنجاح');
+            alert('تم تطبيق التحديث الجماعي للحالات بنجاح');
             loadEmployeeOrders();
         }
 
