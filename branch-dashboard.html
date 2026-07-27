@@ -147,13 +147,16 @@
             }
         }
 
-        // إسناد الطلب لمندوب تابع للفرع
+        // إسناد الطلب لمندوب تابع للفرع وحفظه فوراً
         function assignDelivery(custIndex, ordIndex) {
             let selectedDelivery = document.getElementById(`del_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            
             customers[custIndex].orders[ordIndex].assignedDelivery = selectedDelivery;
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم إسناد الطلب للمندوب بنجاح');
+            
+            alert('تم إسناد الطلب للمندوب بنجاح وسيحفظ في نظامه');
+            loadBranchDashboard();
         }
 
         // تحديث حالة الطلب والسبب من داخل الفرع
@@ -189,7 +192,6 @@
                         cust.orders.forEach(ord => {
                             if (ord.assignedBranch === branchName && ord.assignedDelivery === del.name && ord.status === 'تم التسليم') {
                                 deliveredCount++;
-                                // استخراج القيمة العددية للمبلغ (تصفية الرموز مثل $)
                                 let numericPrice = parseFloat((ord.price || '0').replace(/[^0-9.]/g, '')) || 0;
                                 totalCashCollected += numericPrice;
                             }
@@ -211,10 +213,8 @@
             });
         }
 
-        // تصفية حساب المندوب (إصدار سند استلام نقدي وتصفير ذمته للطلبات الحالية)
         function settleDeliveryAccount(deliveryName) {
-            if (confirm(`هل أنتแน่ใจ من تصفية واستلام العهدة المالية للمندوب (${deliveryName})؟`)) {
-                // ملاحظة تشغيلية: هنا يتم أرشفة أو تصفير المبالغ المحصلة للمندوب بناءً على رغبته
+            if (confirm(`هل أنت تأكد من تصفية واستلام العهدة المالية للمندوب (${deliveryName})؟`)) {
                 alert(`تم تصفية حساب المندوب ${deliveryName} بنجاح وتسجيل توريد النقدية لخزينة الفرع.`);
                 loadBranchDashboard();
             }
