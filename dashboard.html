@@ -56,16 +56,16 @@
     </div>
 
     <div class="orders-container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2><i class="fa-solid fa-box-open"></i> طلباتي النشطة</h2>
-            <!-- زر الانتقال لصفحة الطلب الجديد المستقلة -->
-            <a href="order.html" style="background: var(--primary-red); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-cart-plus"></i> طلب منتج جديد
-            </a>
-        </div>
-        
+        <h2><i class="fa-solid fa-box-open"></i> طلباتي النشطة</h2>
         <table id="ordersTable">
-            <tr><th>رقم الطلب</th><th>الحالة</th><th>السعر</th><th>إجراءات التواصل</th><th>إلغاء</th></tr>
+            <tr>
+                <th>رقم الطلب</th>
+                <th>تاريخ ووقت الطلب</th>
+                <th>الحالة</th>
+                <th>السعر</th>
+                <th>إجراءات التواصل</th>
+                <th>إلغاء</th>
+            </tr>
         </table>
     </div>
 
@@ -97,13 +97,11 @@
             const userData = JSON.parse(localStorage.getItem('loggedInUser'));
             if (!userData) { window.location.href = 'login.html'; return; }
             
-            // وضع اسم وعنوان العميل الحالي
             document.getElementById('userName').innerText = userData.name || userData.username;
             if(document.getElementById('userAddress')) {
                 document.getElementById('userAddress').value = userData.address || '';
             }
 
-            // البحث عن بيانات العميل وطلباته (سواء من adminCustomersList أو customersDB)
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let currentCustomer = adminCustomersList.find(c => c.phone === userData.phone || c.name === userData.name);
             
@@ -112,7 +110,14 @@
             }
 
             const table = document.getElementById('ordersTable');
-            table.innerHTML = `<tr><th>رقم الطلب</th><th>الحالة</th><th>السعر</th><th>إجراءات التواصل</th><th>إلغاء</th></tr>`;
+            table.innerHTML = `<tr>
+                <th>رقم الطلب</th>
+                <th>تاريخ ووقت الطلب</th>
+                <th>الحالة</th>
+                <th>السعر</th>
+                <th>إجراءات التواصل</th>
+                <th>إلغاء</th>
+            </tr>`;
             
             let total = 0;
             if (currentCustomer && currentCustomer.orders && currentCustomer.orders.length > 0) {
@@ -122,10 +127,12 @@
                     total += priceValue;
                     
                     const orderId = order.id || order.productCode || 'طلب';
+                    const orderDate = order.date || 'غير محدد'; // يعرض تاريخ ووقت الطلب
                     const waLink = "https://wa.me/905521855554?text=" + encodeURIComponent("مرحبا بخصوص الطلب " + orderId);
                     
                     table.innerHTML += `<tr>
                         <td>${orderId}</td>
+                        <td style="font-size: 13px; color: #555;">${orderDate}</td>
                         <td><span style="padding: 4px 8px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-size: 12px;">${order.status || 'قيد المعالجة'}</span></td>
                         <td>${priceStr}</td>
                         <td>
@@ -136,20 +143,18 @@
                     </tr>`;
                 });
                 
-                // إضافة صف الإجمالي
                 table.innerHTML += `<tr style="font-weight: bold; color: var(--primary-red);">
-                    <td colspan="2" style="text-align: left;">الإجمالي المطلوب دفعه:</td>
+                    <td colspan="3" style="text-align: left;">الإجمالي المطلوب دفعه:</td>
                     <td colspan="3">$${total.toFixed(2)}</td>
                 </tr>`;
             } else {
-                table.innerHTML += `<tr><td colspan="5" style="text-align:center;">لا توجد طلبات نشطة حالياً.</td></tr>`;
+                table.innerHTML += `<tr><td colspan="6" style="text-align:center;">لا توجد طلبات نشطة حالياً.</td></tr>`;
             }
         };
 
-        // دالة إلغاء الطلب المحدثة لتتصل بالنظام
         function cancelOrder(index) {
             if(confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
-                const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+                const userData = JSON.parse(localStorage.Investment || localStorage.getItem('loggedInUser'));
                 let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
                 let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone);
                 
