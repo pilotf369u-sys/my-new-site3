@@ -3,24 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الموظف - إدارة وتحويل الطلبات والدردشة</title>
+    <title>لوحة تحكم الموظف - إدارة وتجهيز الطلبات والدردشة</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { max-width: 1300px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { color: #2c3e50; display: inline-block; }
+        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #2c3e50; margin: 0; }
+        
+        /* أزرار التبديل بين القسمين */
+        .tabs-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { background: #bdc3c7; color: #2c3e50; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .tab-btn.active { background: #2980b9; color: white; }
+
+        .section-panel { display: none; }
+        .section-panel.active { display: block; }
+
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; font-size: 14px; }
-        .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
-        select, input[type="text"], input[type="number"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
-        .action-bar { background: #eef2f3; padding: 12px; border-radius: 6px; margin-top: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        button.action-btn { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button.btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button.btn-purple { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button.btn-whatsapp { background: #25d366; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
-        button.btn-chat { background: #e67e22; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
         
-        /* Modal Chat Styles */
+        .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; }
+        .btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-green { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-purple { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-whatsapp { background: #25d366; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-chat { background: #e67e22; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        
+        select, input[type="text"], input[type="number"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
+
+        /* نافذة الدردشة المنبثقة */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 500px; border-radius: 8px; }
         .close { color: #aaa; float: left; font-size: 28px; font-weight: bold; cursor: pointer; }
@@ -33,53 +44,58 @@
 </head>
 <body>
     <div class="container">
-        <a href="login.html" class="btn-red">تسجيل الخروج</a>
-        <h2>لوحة تحكم الموظف - إدارة الطلبات، الأسعار والدردشة</h2>
-        <p>متابعة الطلبات، تعديل الأسعار الفعلية، توجيهها للفروع، إرسال إشعارات الواتساب، والدردشة المباشرة مع العملاء.</p>
-
-        <!-- شريط الإجراء الجماعي -->
-        <div class="action-bar">
-            <span><b>الإجراء الجماعي للمحدد:</b></span>
-            <select id="bulkBranchSelect">
-                <option value="" disabled selected>اختر الفرع للتحويل الجماعي...</option>
-            </select>
-            <button class="btn-purple" onclick="applyBulkBranch()">تحويل المختار للفرع</button>
-            <span style="border-right: 2px solid #ccc; margin: 0 5px;"></span>
-            <select id="bulkStatusSelect" onchange="checkBulkReason()">
-                <option value="" disabled selected>اختر الحالة الجماعية...</option>
-                <option value="انتظار الدفع">انتظار الدفع</option>
-                <option value="قيد المعالجة">قيد المعالجة</option>
-                <option value="تم الطلب">تم الطلب</option>
-                <option value="جاهز للشحن">جاهز للشحن</option>
-                <option value="تم الشحن">تم الشحن</option>
-                <option value="مخزن محلي">مخزن محلي</option>
-                <option value="توزيع داخلي">توزيع داخلي</option>
-                <option value="تم التسليم">تم التسليم</option>
-                <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
-            </select>
-            <input type="text" id="bulkReasonInput" placeholder="سبب الرفض..." style="display: none; width: 150px;">
-            <button class="btn-blue" onclick="applyBulkUpdate()">تطبيق الحالة</button>
+        <div class="top-nav">
+            <h2>لوحة تحكم الموظف - إدارة وتجهيز الطلبات والدردشة</h2>
+            <a href="login.html" class="btn-red">تسجيل الخروج</a>
         </div>
-        
-        <table>
-            <thead>
-                <tr>
-                    <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"> تحديد الكل</th>
-                    <th>رقم الطلب</th>
-                    <th>العميل ورقم الهاتف</th>
-                    <th>التفاصيل والمبلغ الفعلي ($)</th>
-                    <th>الحالة والسبب</th>
-                    <th>الفرع المسؤول</th>
-                    <th>إجراءات التحديث والتواصل</th>
-                </tr>
-            </thead>
-            <tbody id="empOrdersBody">
-                <tr><td colspan="7">جاري تحميل الطلبات...</td></tr>
-            </tbody>
-        </table>
+        <p style="color: #666; font-size: 13px;">متابعة الطلبات، تعديل الأسعار الفعلية، توجيهها للفروع، إرسال إشعارات الواتساب، والدردشة المباشرة مع العملاء.</p>
+
+        <!-- أزرار التنقل بين القسمين داخل نفس الصفحة -->
+        <div class="tabs-bar">
+            <button class="tab-btn active" onclick="switchTab('customersTab', this)">1. معالجة طلبات الزبائن والأسعار</button>
+            <button class="tab-btn" onclick="switchTab('branchesTab', this)">2. معالجة وتوجيه الفروع والشحن</button>
+        </div>
+
+        <!-- القسم الأول: طلبات الزبائن -->
+        <div id="customersTab" class="section-panel active">
+            <table>
+                <thead>
+                    <tr>
+                        <th>رقم الطلب</th>
+                        <th>العميل ورقم الهاتف</th>
+                        <th>المبلغ الفعلي ($)</th>
+                        <th>الحالة الأولية</th>
+                        <th>إجراءات التواصل (واتساب، دردشة)</th>
+                        <th>الخطوة النهائية</th>
+                    </tr>
+                </thead>
+                <tbody id="customerOrdersBody">
+                    <tr><td colspan="6">جاري التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- القسم الثاني: الفروع والشحن -->
+        <div id="branchesTab" class="section-panel">
+            <table>
+                <thead>
+                    <tr>
+                        <th>رقم الطلب</th>
+                        <th>العميل والعنوان</th>
+                        <th>المبلغ ($)</th>
+                        <th>الفرع المسؤول</th>
+                        <th>حالة الطلب مع الفرع</th>
+                        <th>إجراءات التحديث</th>
+                    </tr>
+                </thead>
+                <tbody id="branchOrdersBody">
+                    <tr><td colspan="6">جاري التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <!-- نافذة الدردشة المنبثقة -->
+    <!-- نافذة الدردشة المباشرة -->
     <div id="chatModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeChatModal()">&times;</span>
@@ -87,16 +103,14 @@
             <div id="chatMessages" class="chat-box"></div>
             <div style="display: flex; gap: 5px;">
                 <input type="text" id="chatInput" placeholder="اكتب رد الموظف هنا..." style="flex: 1;" onkeypress="handleChatKeyPress(event)">
-                <button class="action-btn" onclick="sendChatMessage()">إرسال</button>
+                <button class="btn-green" onclick="sendChatMessage()">إرسال</button>
             </div>
         </div>
     </div>
 
     <script>
         const statusListOptions = `
-            <option value="انتظار الدفع">انتظار الدفع</option>
-            <option value="قيد المعالجة">قيد المعالجة</option>
-            <option value="تم الطلب">تم الطلب</option>
+            <option value="قيد المعالجة للفرع">قيد المعالجة للفرع</option>
             <option value="جاهز للشحن">جاهز للشحن</option>
             <option value="تم الشحن">تم الشحن</option>
             <option value="مخزن محلي">مخزن محلي</option>
@@ -108,66 +122,50 @@
         let currentActiveCustIndex = null;
         let currentActiveOrdIndex = null;
 
-        function loadEmployeeOrders() {
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let branchList = JSON.parse(localStorage.getItem('branchList')) || [];
-            let tbody = document.getElementById('empOrdersBody');
-            let bulkBranchSelect = document.getElementById('bulkBranchSelect');
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.section-panel').forEach(panel => panel.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+
+            if(tabId === 'customersTab') loadCustomerProcessingOrders();
+            if(tabId === 'branchesTab') loadBranchProcessingOrders();
+        }
+
+        function loadCustomerProcessingOrders() {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let tbody = document.getElementById('customerOrdersBody');
             tbody.innerHTML = '';
-
-            let bulkBranchOptions = `<option value="" disabled selected>اختر الفرع للتحويل الجماعي...</option>`;
-            branchList.forEach(br => {
-                bulkBranchOptions += `<option value="${br.name}">${br.name}</option>`;
-            });
-            bulkBranchSelect.innerHTML = bulkBranchOptions;
-
             let hasOrders = false;
 
             customers.forEach((cust, custIndex) => {
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
                         hasOrders = true;
-
-                        let branchOptions = `<option value="">--- غير محدد ---</option>`;
-                        branchList.forEach(br => {
-                            let selected = (ord.assignedBranch === br.name) ? 'selected' : '';
-                            branchOptions += `<option value="${br.name}" ${selected}>${br.name}</option>`;
-                        });
-
-                        let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
-                        let currentOptionsHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
-                        let branchBadge = ord.assignedBranch ? `<span style="color: #27ae60; font-weight: bold; font-size: 12px;">(${ord.assignedBranch})</span>` : `<span style="color: #c0392b; font-size: 11px;">غير محدد</span>`;
-
-                        // معالجة عرض السعر (حتى يتمكن الموظف من تعديل 0.00 إلى السعر الحقيقي)
                         let rawPrice = ord.price ? ord.price.toString().replace('$', '').trim() : '0.00';
+                        let isTransferred = ord.transferredToBranch === true;
 
                         tbody.innerHTML += `
                             <tr>
-                                <td><input type="checkbox" class="order-checkbox" data-cust="${custIndex}" data-ord="${ordIndex}"></td>
                                 <td><b>${ord.id}</b></td>
                                 <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;" dir="ltr">${cust.phone}</span></td>
                                 <td>
                                     <input type="text" id="price_${custIndex}_${ordIndex}" value="${rawPrice}" style="width: 70px; text-align: center; font-weight: bold; color: #2980b9;"> $
-                                    <button class="action-btn" onclick="updateOrderPrice(${custIndex}, ${ordIndex})" style="padding: 2px 6px; font-size: 11px; margin-top: 3px;">حفظ السعر</button>
+                                    <button class="btn-green" onclick="updateOrderPrice(${custIndex}, ${ordIndex})" style="padding: 2px 6px; font-size: 11px; margin-top: 3px;">حفظ</button>
                                 </td>
-                                <td><span style="padding: 3px 8px; background: #fff3cd; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span>${reasonDisplay}</td>
+                                <td><span style="padding: 3px 8px; background: #fff3cd; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span></td>
                                 <td>
-                                    ${branchBadge}<br>
-                                    <select id="branch_${custIndex}_${ordIndex}" onchange="assignBranch(${custIndex}, ${ordIndex})" style="margin-top: 5px; width: 100%;">
-                                        ${branchOptions}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select id="status_${custIndex}_${ordIndex}" onchange="checkIndividualReason(${custIndex}, ${ordIndex})">
-                                        ${currentOptionsHtml}
-                                    </select>
-                                    <input type="text" id="reason_${custIndex}_${ordIndex}" placeholder="سبب الرفض" style="display: ${ord.status === 'تم رفض الطلب أو عدم التسليم' ? 'block' : 'none'}; margin-top: 5px; width: 100%;" value="${ord.reason || ''}">
-                                    <div style="margin-top: 5px; display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
-                                        <button class="action-btn" onclick="updateOrderStatus(${custIndex}, ${ordIndex})">حفظ الحالة</button>
-                                        <button class="btn-whatsapp" onclick="sendWhatsAppNotification(${custIndex}, ${ordIndex})" title="إرسال إشعار واتساب للعميل">واتساب</button>
+                                    <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+                                        <button class="btn-whatsapp" onclick="sendWhatsAppNotification(${custIndex}, ${ordIndex})">واتساب</button>
                                         <button class="btn-chat" onclick="openChatModal(${custIndex}, ${ordIndex})">الدردشة</button>
                                     </div>
+                                </td>
+                                <td>
+                                    ${isTransferred ? 
+                                        '<span style="color: #27ae60; font-weight: bold;">تم الإرسال للفرع ✓</span>' : 
+                                        `<button class="btn-purple" onclick="sendToBranchStage(${custIndex}, ${ordIndex})">إرسال إلى الفرع</button>`
+                                    }
                                 </td>
                             </tr>
                         `;
@@ -176,35 +174,79 @@
             });
 
             if (!hasOrders) {
-                tbody.innerHTML = `<tr><td colspan="7">لا توجد طلبات واردة حالياً</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6">لا توجد طلبات واردة حالياً</td></tr>`;
             }
         }
 
-        function toggleSelectAll(source) {
-            let checkboxes = document.querySelectorAll('.order-checkbox');
-            checkboxes.forEach(cb => cb.checked = source.checked);
+        function loadBranchProcessingOrders() {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let branchList = JSON.parse(localStorage.getItem('branchList')) || [];
+            let tbody = document.getElementById('branchOrdersBody');
+            tbody.innerHTML = '';
+            let hasOrders = false;
+
+            customers.forEach((cust, custIndex) => {
+                if (cust.orders && cust.orders.length > 0) {
+                    cust.orders.forEach((ord, ordIndex) => {
+                        if (ord.transferredToBranch === true) {
+                            hasOrders = true;
+
+                            let branchOptions = `<option value="">--- اختر الفرع ---</option>`;
+                            branchList.forEach(br => {
+                                let selected = (ord.assignedBranch === br.name) ? 'selected' : '';
+                                branchOptions += `<option value="${br.name}" ${selected}>${br.name}</option>`;
+                            });
+
+                            let currentOptionsHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
+
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td><b>${ord.id}</b></td>
+                                    <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;">${cust.country} - ${cust.state || ''}</span></td>
+                                    <td><b style="color: #2980b9;">${ord.price || '$0.00'}</b></td>
+                                    <td>
+                                        <select id="branch_${custIndex}_${ordIndex}" onchange="assignBranch(${custIndex}, ${ordIndex})" style="width: 100%;">
+                                            ${branchOptions}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select id="status_${custIndex}_${ordIndex}" style="width: 100%;">
+                                            ${currentOptionsHtml}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button class="btn-blue" onclick="updateBranchOrderStatus(${custIndex}, ${ordIndex})">حفظ وتحديث</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    });
+                }
+            });
+
+            if (!hasOrders) {
+                tbody.innerHTML = `<tr><td colspan="6" style="color: #777;">لا توجد طلبات محولة إلى الفروع حالياً. قم بترحيل الطلبات من قسم طلبات الزبائن أولاً.</td></tr>`;
+            }
         }
 
-        function checkBulkReason() {
-            let status = document.getElementById('bulkStatusSelect').value;
-            let reasonInput = document.getElementById('bulkReasonInput');
-            reasonInput.style.display = (status === 'تم رفض الطلب أو عدم التسليم') ? 'inline-block' : 'none';
-        }
-
-        function checkIndividualReason(custIndex, ordIndex) {
-            let status = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
-            let reasonInput = document.getElementById(`reason_${custIndex}_${ordIndex}`);
-            reasonInput.style.display = (status === 'تم رفض الطلب أو عدم التسليم') ? 'block' : 'none';
-        }
-
-        // تحديث السعر الفعلي للطلب
         function updateOrderPrice(custIndex, ordIndex) {
             let val = document.getElementById(`price_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].price = '$' + parseFloat(val || 0).toFixed(2);
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تحديث سعر الطلب بنجاح');
-            loadEmployeeOrders();
+            alert('تم تحديث السعر بنجاح');
+            loadCustomerProcessingOrders();
+        }
+
+        function sendToBranchStage(custIndex, ordIndex) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            customers[custIndex].orders[ordIndex].transferredToBranch = true;
+            if(!customers[custIndex].orders[ordIndex].assignedBranch) {
+                customers[custIndex].orders[ordIndex].assignedBranch = "الفرع الرئيس";
+            }
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            alert('تم نقل الطلب بنجاح إلى قسم معالجة الفروع والشحن!');
+            loadCustomerProcessingOrders();
         }
 
         function assignBranch(custIndex, ordIndex) {
@@ -212,112 +254,51 @@
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].assignedBranch = selectedBranch;
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert(selectedBranch ? 'تم تحويل الفرع بنجاح' : 'تم إلغاء الفرع للطلب');
-            loadEmployeeOrders();
+            alert('تم تعيين الفرع بنجاح');
         }
 
-        function applyBulkBranch() {
-            let targetBranch = document.getElementById('bulkBranchSelect').value;
-            if (!targetBranch) { alert('الرجاء اختيار الفرع'); return; }
-            let checkboxes = document.querySelectorAll('.order-checkbox:checked');
-            if (checkboxes.length === 0) { alert('الرجاء تحديد طلبات'); return; }
-
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            checkboxes.forEach(cb => {
-                customers[cb.getAttribute('data-cust')].orders[cb.getAttribute('data-ord')].assignedBranch = targetBranch;
-            });
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم التحويل الجماعي بنجاح');
-            loadEmployeeOrders();
-        }
-
-        function updateOrderStatus(custIndex, ordIndex) {
+        function updateBranchOrderStatus(custIndex, ordIndex) {
             let newStatus = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
-            let reason = document.getElementById(`reason_${custIndex}_${ordIndex}`).value;
-
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].status = newStatus;
-            customers[custIndex].orders[ordIndex].reason = (newStatus === 'تم رفض الطلب أو عدم التسليم') ? reason : '';
-            
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تحديث حالة الطلب بنجاح');
-            loadEmployeeOrders();
+            alert('تم تحديث حالة الفرع والشحن بنجاح');
+            loadBranchProcessingOrders();
         }
 
-        function applyBulkUpdate() {
-            let selectedStatus = document.getElementById('bulkStatusSelect').value;
-            let bulkReason = document.getElementById('bulkReasonInput').value;
-            if (!selectedStatus) { alert('الرجاء اختيار الحالة'); return; }
-            let checkboxes = document.querySelectorAll('.order-checkbox:checked');
-            if (checkboxes.length === 0) { alert('الرجاء تحديد طلبات'); return; }
-
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            checkboxes.forEach(cb => {
-                let c = cb.getAttribute('data-cust');
-                let o = cb.getAttribute('data-ord');
-                customers[c].orders[o].status = selectedStatus;
-                customers[c].orders[o].reason = (selectedStatus === 'تم رفض الطلب أو عدم التسليم') ? bulkReason : '';
-            });
-
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تطبيق التحديث الجماعي بنجاح');
-            loadEmployeeOrders();
-        }
-
-        // إشعار الواتساب التلقائي
         function sendWhatsAppNotification(custIndex, ordIndex) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let cust = customers[custIndex];
             let ord = cust.orders[ordIndex];
-
             let phone = cust.phone.replace(/[^0-9]/g, '');
-            let msg = `عزيزي العميل ${cust.name}،\nنحيطكم علماً بأن حالة طلبكم رقم (${ord.id}) أصبحت الآن: *${ord.status}*.`;
-            if (ord.reason) msg += `\nالسبب: ${ord.reason}`;
-            if (ord.price) msg += `\nالمبلغ الإجمالي: ${ord.price}`;
-
+            let msg = `عزيزي العميل ${cust.name}،\nطلبكم رقم (${ord.id}) قيد المعالجة الآن.\nالمبلغ الإجمالي: ${ord.price}`;
             let url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
         }
 
-        // نظام الدردشة المباشرة مع العميل
         function openChatModal(custIndex, ordIndex) {
             currentActiveCustIndex = custIndex;
             currentActiveOrdIndex = ordIndex;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let cust = customers[custIndex];
             let ord = cust.orders[ordIndex];
-
             document.getElementById('chatTitle').innerText = `محادثة العميل: ${cust.name} (طلب: ${ord.id})`;
             renderChatMessages();
             document.getElementById('chatModal').style.display = 'block';
         }
 
-        function closeChatModal() {
-            document.getElementById('chatModal').style.display = 'none';
-        }
+        function closeChatModal() { document.getElementById('chatModal').style.display = 'none'; }
 
         function renderChatMessages() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let ord = customers[currentActiveCustIndex].orders[currentActiveOrdIndex];
             if (!ord.chat) ord.chat = [];
-
             let chatBox = document.getElementById('chatMessages');
-            chatBox.innerHTML = '';
-
-            if (ord.chat.length === 0) {
-                chatBox.innerHTML = `<p style="text-align: center; color: #888;">لا توجد رسائل سابقة في هذه المحادثة.</p>`;
-                return;
-            }
-
+            chatBox.innerHTML = ord.chat.length === 0 ? `<p style="text-align: center; color: #888;">لا توجد رسائل سابقة.</p>` : '';
             ord.chat.forEach(msg => {
                 let senderClass = (msg.sender === 'employee') ? 'employee' : 'customer';
                 let senderName = (msg.sender === 'employee') ? 'الموظف' : 'العميل';
-                chatBox.innerHTML += `
-                    <div class="chat-msg ${senderClass}">
-                        <b style="font-size: 11px; display: block; color: #555;">${senderName} (${msg.time}):</b>
-                        <span>${msg.text}</span>
-                    </div>
-                `;
+                chatBox.innerHTML += `<div class="chat-msg ${senderClass}"><b style="font-size: 11px; display: block; color: #555;">${senderName} (${msg.time}):</b><span>${msg.text}</span></div>`;
             });
             chatBox.scrollTop = chatBox.scrollHeight;
         }
@@ -326,25 +307,20 @@
             let input = document.getElementById('chatInput');
             let text = input.value.trim();
             if (!text) return;
-
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let ord = customers[currentActiveCustIndex].orders[currentActiveOrdIndex];
             if (!ord.chat) ord.chat = [];
-
             let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             ord.chat.push({ sender: 'employee', text: text, time: timeStr });
-
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             input.value = '';
             renderChatMessages();
         }
 
-        function handleChatKeyPress(e) {
-            if (e.key === 'Enter') sendChatMessage();
-        }
+        function handleChatKeyPress(e) { if (e.key === 'Enter') sendChatMessage(); }
 
         window.onload = function() {
-            loadEmployeeOrders();
+            loadCustomerProcessingOrders();
         }
     </script>
 </body>
