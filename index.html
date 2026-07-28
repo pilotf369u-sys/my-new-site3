@@ -172,7 +172,7 @@
         <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/tech.png" alt="أجهزة وتكنولوجيا"></div><h3>أجهزة وتكنولوجيا</h3><a class="store-link local-link" href="tech.html">دخول</a></div>
     </div>
 
-    <!-- نافذة الطلب (Modal) -->
+    <!-- نافذة الطلب (بدون حقول الاسم والكود والعنوان - تسحب تلقائياً) -->
     <div id="orderModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; overflow-y:auto;">
         <div style="background:white; width:90%; max-width:350px; margin:30px auto; padding:15px; border-radius:15px; text-align:right; direction:rtl;">
             
@@ -181,17 +181,6 @@
             </div>
 
             <h3 style="color:#cc0000; text-align:center; margin-top:0; font-size:18px;">إرسال تفاصيل الطلب</h3>
-            
-            <div style="display:flex; gap:10px;">
-                <div style="flex:1;">
-                    <label>الاسم الكريم:</label>
-                    <input type="text" id="pName" placeholder="الاسم الكامل" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
-                </div>
-                <div style="flex:1;">
-                    <label>كود العميل:</label>
-                    <input type="text" id="pCode" placeholder="إن وجد" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
-                </div>
-            </div>
             
             <label>رابط المنتج:</label>
             <input type="text" id="pUrl" placeholder="الصق الرابط هنا" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
@@ -202,10 +191,7 @@
             </div>
             
             <label>العدد:</label>
-            <input type="number" id="pQuantity" value="1" min="1" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
-            
-            <label>العنوان الكامل:</label>
-            <input type="text" id="pAddress" placeholder="الدولة، المحافظة، الشارع..." style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
+            <input type="number" id="pQuantity" value="1" min="1" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
             
             <button onclick="submitOrder()" style="background:#25d366; color:white; padding:12px; border:none; border-radius:8px; width:100%; font-weight:bold; cursor:pointer;">إرسال للواتساب</button>
             <button onclick="document.getElementById('orderModal').style.display='none'" style="margin-top:10px; background:none; border:none; color:#666; cursor:pointer; width:100%;">إغلاق</button>
@@ -256,28 +242,42 @@
             window.location.reload();
         }
 
+        // دالة إرسال الطلب مع سحب بيانات العميل تلقائياً
         function submitOrder() {
-            const name = document.getElementById('pName').value.trim();
-            const code = document.getElementById('pCode').value.trim();
+            const userDataString = localStorage.getItem('loggedInUser');
+            let userName = "";
+            let userCode = "";
+            let userAddress = "";
+
+            if (userDataString) {
+                try {
+                    const userData = JSON.parse(userDataString);
+                    userName = userData.name || "";
+                    userCode = userData.code || userData.id || "";
+                    userAddress = userData.address || "";
+                } catch (e) {
+                    console.error("خطأ في جلب بيانات المستخدم", e);
+                }
+            }
+
             const url = document.getElementById('pUrl').value.trim();
             const color = document.getElementById('pColor').value.trim();
             const size = document.getElementById('pSize').value.trim();
             const quantity = document.getElementById('pQuantity').value.trim();
-            const address = document.getElementById('pAddress').value.trim();
 
-            if (!name || !url) {
-                alert('الرجاء إدخال (الاسم الكريم ورابط المنتج) على الأقل.');
+            if (!url) {
+                alert('الرجاء إدخال رابط المنتج على الأقل.');
                 return;
             }
 
             let message = `*طلب جديد عبر منصة MeshWar* 🛒\n\n`;
-            message += `👤 *الاسم:* ${name}\n`;
-            if (code) message += `🆔 *كود العميل:* ${code}\n`;
+            message += `👤 *الاسم:* ${userName || 'غير مسجل'}\n`;
+            if (userCode) message += `🆔 *كود العميل:* ${userCode}\n`;
             message += `🔗 *رابط المنتج:* ${url}\n`;
             if (color) message += `🎨 *اللون:* ${color}\n`;
             if (size) message += `📏 *المقاس:* ${size}\n`;
             message += `📦 *العدد:* ${quantity || 1}\n`;
-            if (address) message += `📍 *العنوان:* ${address}\n`;
+            if (userAddress) message += `📍 *العنوان:* ${userAddress}\n`;
 
             const whatsappNumber = "905521855554";
             const encodedMessage = encodeURIComponent(message);
@@ -286,9 +286,5 @@
             window.open(whatsappURL, '_blank');
         }
     </script>
-    <!-- زر الطلب العائم السريع -->
-<button class="fixed-order-btn" onclick="document.getElementById('orderModal').style.display='block'">
-    <i class="fa-solid fa-cart-shopping"></i> طلب منتج
-</button>
 </body>
 </html>
