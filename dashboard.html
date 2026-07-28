@@ -56,10 +56,17 @@
     </div>
 
     <div class="orders-container">
-        <h2><i class="fa-solid fa-box-open"></i> طلباتي النشطة</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2><i class="fa-solid fa-box-open"></i> طلباتي النشطة</h2>
+            <!-- زر الانتقال لصفحة الطلب الجديد المستقلة -->
+            <a href="order.html" style="background: var(--primary-red); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-cart-plus"></i> طلب منتج جديد
+            </a>
+        </div>
+        
         <table id="ordersTable">
             <tr><th>رقم الطلب</th><th>الحالة</th><th>السعر</th><th>إجراءات التواصل</th><th>إلغاء</th></tr>
-            </table>
+        </table>
     </div>
 
     <div style="margin-bottom: 25px;">
