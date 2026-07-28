@@ -204,11 +204,7 @@
         </div>
     </div>
 
-    <!-- زر ونوافذ الطلب -->
-    <button class="fixed-order-btn" onclick="document.getElementById('orderModal').style.display='block'">
-        <i class="fa-brands fa-whatsapp"></i> اطلب منتجك الآن
-    </button>
-
+    <!-- نافذة الطلب المعدلة (بدون زر طلب عائم، وبدون حقل رقم الهاتف اليدوي) -->
     <div id="orderModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; overflow-y:auto;">
         <div style="background:white; width:90%; max-width:350px; margin:30px auto; padding:15px; border-radius:15px; text-align:right; direction:rtl;">
             
@@ -241,10 +237,7 @@
             <input type="number" id="pQuantity" value="1" min="1" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
             
             <label>العنوان الكامل:</label>
-            <input type="text" id="pAddress" placeholder="الدولة، المحافظة، الشارع..." style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
-            
-            <label>رقم الهاتف:</label>
-            <input type="tel" id="pPhone" placeholder="رقم المستلم" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
+            <input type="text" id="pAddress" placeholder="الدولة، المحافظة، الشارع..." style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
             
             <button onclick="submitOrder()" style="background:#25d366; color:white; padding:12px; border:none; border-radius:8px; width:100%; font-weight:bold; cursor:pointer;">إرسال للواتساب</button>
             <button onclick="document.getElementById('orderModal').style.display='none'" style="margin-top:10px; background:none; border:none; color:#666; cursor:pointer; width:100%;">إغلاق</button>
@@ -337,34 +330,13 @@
             });
         });
 
-        // --- 4. وظائف عامة (تسجيل الخروج وفتح نافذة الطلب وتعبئة البيانات) ---
+        // --- 4. وظائف عامة (تسجيل الخروج) ---
         function logout() {
             localStorage.removeItem('loggedInUser');
             window.location.reload();
         }
 
-        const originalOpenModal = document.querySelector('.fixed-order-btn');
-        if (originalOpenModal) {
-            originalOpenModal.addEventListener('click', function() {
-                const userDataString = localStorage.getItem('loggedInUser');
-                if (userDataString) {
-                    try {
-                        const userData = JSON.parse(userDataString);
-                        if (userData.name) {
-                            document.getElementById('pName').value = userData.name;
-                        }
-                        if (userData.code) {
-                            document.getElementById('pCode').value = userData.code;
-                        }
-                    } catch (e) {
-                        console.error("خطأ في قراءة بيانات المستخدم", e);
-                    }
-                }
-                document.getElementById('orderModal').style.display = 'block';
-            });
-        }
-
-        // --- 5. دالة إرسال الطلب عبر الواتساب ---
+        // --- 5. دالة إرسال الطلب عبر الواتساب (تلقائية بالكامل حسب لوحة العميل) ---
         function submitOrder() {
             const name = document.getElementById('pName').value.trim();
             const code = document.getElementById('pCode').value.trim();
@@ -373,10 +345,9 @@
             const size = document.getElementById('pSize').value.trim();
             const quantity = document.getElementById('pQuantity').value.trim();
             const address = document.getElementById('pAddress').value.trim();
-            const phone = document.getElementById('pPhone').value.trim();
 
-            if (!name || !url || !phone) {
-                alert('الرجاء إدخال (الاسم الكريم، رابط المنتج، ورقم الهاتف) على الأقل.');
+            if (!name || !url) {
+                alert('الرجاء إدخال (الاسم الكريم ورابط المنتج) على الأقل.');
                 return;
             }
 
@@ -387,10 +358,9 @@
             if (color) message += `🎨 *اللون:* ${color}\n`;
             if (size) message += `📏 *المقاس:* ${size}\n`;
             message += `📦 *العدد:* ${quantity || 1}\n`;
-            message += `📍 *العنوان:* ${address}\n`;
-            message += `📞 *رقم الهاتف:* ${phone}\n`;
+            if (address) message += `📍 *العنوان:* ${address}\n`;
 
-            const whatsappNumber = "905521855554"; // استبدل الرقم برقمك الفعلي
+            const whatsappNumber = "905521855554";
             const encodedMessage = encodeURIComponent(message);
             const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
@@ -398,63 +368,5 @@
         }
     </script>
     <script src="meshwar-app.js"></script>
-    <script>
-    // التأكد من جلب بيانات المستخدم وتعبئتها عند فتح نافذة الطلب
-    document.addEventListener("DOMContentLoaded", function() {
-        const fixedOrderBtn = document.querySelector('.fixed-order-btn');
-        if (fixedOrderBtn) {
-            fixedOrderBtn.addEventListener('click', function() {
-                const userDataString = localStorage.getItem('loggedInUser');
-                if (userDataString) {
-                    try {
-                        const userData = JSON.parse(userDataString);
-                        if (userData.name) {
-                            document.getElementById('pName').value = userData.name;
-                        }
-                        if (userData.code) {
-                            document.getElementById('pCode').value = userData.code;
-                        }
-                    } catch (e) {
-                        console.error("خطأ في قراءة بيانات المستخدم", e);
-                    }
-                }
-                document.getElementById('orderModal').style.display = 'block';
-            });
-        }
-    });
-
-    // دالة إرسال الطلب عبر الواتساب
-    function submitOrder() {
-        const name = document.getElementById('pName').value.trim();
-        const code = document.getElementById('pCode').value.trim();
-        const url = document.getElementById('pUrl').value.trim();
-        const color = document.getElementById('pColor').value.trim();
-        const size = document.getElementById('pSize').value.trim();
-        const quantity = document.getElementById('pQuantity').value.trim();
-        const address = document.getElementById('pAddress').value.trim();
-        const phone = document.getElementById('pPhone').value.trim();
-
-        if (!name || !url || !phone) {
-            alert('الرجاء إدخال (الاسم الكريم، رابط المنتج، ورقم الهاتف) على الأقل.');
-            return;
-        }
-
-        let message = `*طلب جديد عبر منصة MeshWar* 🛒\n\n`;
-        message += `👤 *الاسم:* ${name}\n`;
-        if (code) message += `🆔 *كود العميل:* ${code}\n`;
-        message += `🔗 *رابط المنتج:* ${url}\n`;
-        if (color) message += `🎨 *اللون:* ${color}\n`;
-        if (size) message += `📏 *المقاس:* ${size}\n`;
-        message += `📦 *العدد:* ${quantity || 1}\n`;
-        message += `📍 *العنوان:* ${address}\n`;
-        message += `📞 *رقم الهاتف:* ${phone}\n`;
-
-        const whatsappNumber = "905521855554"; // استبدل الرقم برقمك الحقيقي
-        const encodedMessage = encodeURIComponent(message);
-        const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-
-        window.open(whatsappURL, '_blank');
-    }
-</script>
 </body>
 </html>
