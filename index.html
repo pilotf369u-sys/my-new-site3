@@ -20,7 +20,10 @@
         .store-logo { max-width: 85%; max-height: 100%; object-fit: contain; }
         .store-link { display: inline-block; background-color: #003366; color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; width: 90%; font-weight: bold; font-size: 12px; margin-top: auto; }
         .local-link { background-color: #cc6600; }
-        .fixed-order-btn { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: white; padding: 15px 25px; border-radius: 50px; border: none; z-index: 9999; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); }
+        
+        /* زر الطلب الثابت العائم */
+        .fixed-order-btn { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: white; padding: 15px 25px; border-radius: 50px; border: none; z-index: 9999; cursor: pointer; font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); transition: transform 0.3s; }
+        .fixed-order-btn:hover { transform: scale(1.05); }
 
         /* تنسيق التبويبات */
         .nav-container {
@@ -56,6 +59,11 @@
     </style>
 </head>
 <body>
+
+    <!-- زر الطلب العائم السريع للرئيسية -->
+    <button class="fixed-order-btn" onclick="document.getElementById('orderModal').style.display='block'">
+        <i class="fa-solid fa-cart-shopping"></i> طلب منتج
+    </button>
 
     <!-- منطقة حساب المستخدم -->
     <div class="user-auth-zone" style="text-align: center;">
@@ -152,59 +160,19 @@
     <!-- المتاجر الشخصية والمحلية -->
     <h2 class="section-title">المتاجر الشخصية والمحلية</h2>
     <div class="grid-container">
-        <div class="store-card">
-            <div class="logo-container"><img class="store-logo" src="images/meshwar.png" alt="Meshwar"></div>
-            <h3>Meshwar</h3>
-            <a class="store-link local-link" href="meshwar.html">دخول</a>
-        </div>
-        <div class="store-card">
-            <div class="logo-container"><img class="store-logo" src="images/supermarket.png" alt="سوبرماركت"></div>
-            <h3>سوبرماركت</h3>
-            <a class="store-link local-link" href="supermarket.html">دخول</a>
-        </div>
-        <div class="store-card">
-            <div class="logo-container"><img class="store-logo" src="images/gifts.png" alt="تحفيات"></div>
-            <h3>تحفيات</h3>
-            <a class="store-link local-link" href="gifts.html">دخول</a>
-        </div>
-        <div class="store-card">
-            <div class="logo-container"><img class="store-logo" src="images/home.png" alt="مستلزمات منزل"></div>
-            <h3>مستلزمات منزل</h3>
-            <a class="store-link local-link" href="home.html">دخول</a>
-        </div>
-        <div class="store-card">
-            <div class="logo-container"><img class="store-logo" src="images/pets.png" alt="مستلزمات حيوانات"></div>
-            <h3>مستلزمات حيوانات</h3>
-            <a class="store-link local-link" href="pets.html">دخول</a>
-        </div>
-        <div class="store-card">
-            <div class="logo-container"><img class="store-logo" src="images/beauty.png" alt="تجميل وعناية"></div>
-            <h3>تجميل وعناية</h3>
-            <a class="store-link local-link" href="beauty.html">دخول</a>
-        </div>
-        <div class="store-card">
-            <div class="logo-container"><img class="store-logo" src="images/kids.png" alt="أطفال"></div>
-            <h3>أطفال</h3>
-            <a class="store-link local-link" href="kids.html">دخول</a>
-        </div>
-        <div class="store-card">
-            <div class="logo-container"><img class="store-logo" src="images/men.png" alt="رجالي"></div>
-            <h3>رجالي</h3>
-            <a class="store-link local-link" href="men.html">دخول</a>
-        </div>
-        <div class="store-card">
-            <div class="logo-container"><img class="store-logo" src="images/women.png" alt="نسائي"></div>
-            <h3>نسائي</h3>
-            <a class="store-link local-link" href="women.html">دخول</a>
-        </div>
-        <div class="store-card">
-            <div class="logo-container"><img class="store-logo" src="images/tech.png" alt="أجهزة وتكنولوجيا"></div>
-            <h3>أجهزة وتكنولوجيا</h3>
-            <a class="store-link local-link" href="tech.html">دخول</a>
-        </div>
+        <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/meshwar.png" alt="Meshwar"></div><h3>Meshwar</h3><a class="store-link local-link" href="meshwar.html">دخول</a></div>
+        <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/supermarket.png" alt="سوبرماركت"></div><h3>سوبرماركت</h3><a class="store-link local-link" href="supermarket.html">دخول</a></div>
+        <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/gifts.png" alt="تحفيات"></div><h3>تحفيات</h3><a class="store-link local-link" href="gifts.html">دخول</a></div>
+        <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/home.png" alt="مستلزمات منزل"></div><h3>مستلزمات منزل</h3><a class="store-link local-link" href="home.html">دخول</a></div>
+        <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/pets.png" alt="مستلزمات حيوانات"></div><h3>مستلزمات حيوانات</h3><a class="store-link local-link" href="pets.html">دخول</a></div>
+        <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/beauty.png" alt="تجميل وعناية"></div><h3>تجميل وعناية</h3><a class="store-link local-link" href="beauty.html">دخول</a></div>
+        <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/kids.png" alt="أطفال"></div><h3>أطفال</h3><a class="store-link local-link" href="kids.html">دخول</a></div>
+        <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/men.png" alt="رجالي"></div><h3>رجالي</h3><a class="store-link local-link" href="men.html">دخول</a></div>
+        <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/women.png" alt="نسائي"></div><h3>نسائي</h3><a class="store-link local-link" href="women.html">دخول</a></div>
+        <div class="store-card"><div class="logo-container"><img class="store-logo" src="images/tech.png" alt="أجهزة وتكنولوجيا"></div><h3>أجهزة وتكنولوجيا</h3><a class="store-link local-link" href="tech.html">دخول</a></div>
     </div>
 
-    <!-- نافذة الطلب المعدلة (بدون زر طلب عائم، وبدون حقل رقم الهاتف اليدوي) -->
+    <!-- نافذة الطلب (Modal) -->
     <div id="orderModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; overflow-y:auto;">
         <div style="background:white; width:90%; max-width:350px; margin:30px auto; padding:15px; border-radius:15px; text-align:right; direction:rtl;">
             
@@ -244,10 +212,9 @@
         </div>
     </div>
 
-    <!-- السكربتات والبرمجيات -->
+    <!-- السكريبتات -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // --- 1. منطق اسم المستخدم ---
             const userDataString = localStorage.getItem('loggedInUser');
             const authLink = document.getElementById('authLink');
             const authText = document.getElementById('authText');
@@ -260,13 +227,13 @@
                     if (authLink) authLink.href = "dashboard.html";
                     if (logoutBtn) logoutBtn.style.display = 'inline-block';
                 } catch (e) {
-                    console.error("خطأ في قراءة بيانات المستخدم", e);
+                    console.error("خطأ", e);
                 }
             } else {
                 if (authLink) authLink.href = "login.html";
             }
 
-            // --- 2. منطق التبويبات العلنية ---
+            // إنشاء التبويبات العلوية
             const nav = document.createElement('nav');
             nav.className = 'nav-container';
             const all = document.createElement('a');
@@ -282,61 +249,13 @@
                 nav.appendChild(link);
             });
             document.body.insertBefore(nav, document.body.firstChild);
-
-            // --- 3. جلب المتاجر الديناميكية من التخزين المحلي ---
-            const dynamicStores = JSON.parse(localStorage.getItem('dynamicStoresList')) || [];
-            const categoryMap = {
-                'comprehensive': 'المتاجر الشاملة',
-                'fashion': 'الأزياء والملابس',
-                'sports': 'الرياضة والأحذية',
-                'beauty': 'التجميل والعناية',
-                'home': 'المنزل والأطفال والسوبر ماركت',
-                'local': 'المتاجر الشخصية والمحلية'
-            };
-
-            dynamicStores.forEach(store => {
-                const card = document.createElement('div');
-                card.className = 'store-card';
-
-                const isLocal = store.category === 'local';
-                const btnText = isLocal ? 'دخول' : 'تصفح';
-                const linkClass = isLocal ? 'store-link local-link' : 'store-link';
-
-                card.innerHTML = `
-                    <div class="logo-container">
-                        <img class="store-logo" src="${store.img || 'images/meshwar-logo.png'}" alt="${store.name}">
-                    </div>
-                    <h3>${store.name}</h3>
-                    <a class="${linkClass}" href="${store.url}" target="_blank" rel="noopener noreferrer">${btnText}</a>
-                `;
-
-                let targetContainer = null;
-                const targetSectionName = categoryMap[store.category];
-
-                if (targetSectionName) {
-                    const sectionTitle = Array.from(document.querySelectorAll('.section-title')).find(el => el.innerText.includes(targetSectionName));
-                    if (sectionTitle) {
-                        targetContainer = sectionTitle.nextElementSibling;
-                    }
-                }
-
-                if (!targetContainer || !targetContainer.classList.contains('grid-container')) {
-                    targetContainer = document.querySelector('.grid-container');
-                }
-
-                if (targetContainer) {
-                    targetContainer.appendChild(card);
-                }
-            });
         });
 
-        // --- 4. وظائف عامة (تسجيل الخروج) ---
         function logout() {
             localStorage.removeItem('loggedInUser');
             window.location.reload();
         }
 
-        // --- 5. دالة إرسال الطلب عبر الواتساب (تلقائية بالكامل حسب لوحة العميل) ---
         function submitOrder() {
             const name = document.getElementById('pName').value.trim();
             const code = document.getElementById('pCode').value.trim();
@@ -367,6 +286,9 @@
             window.open(whatsappURL, '_blank');
         }
     </script>
-    <script src="meshwar-app.js"></script>
+    <!-- زر الطلب العائم السريع -->
+<button class="fixed-order-btn" onclick="document.getElementById('orderModal').style.display='block'">
+    <i class="fa-solid fa-cart-shopping"></i> طلب منتج
+</button>
 </body>
 </html>
