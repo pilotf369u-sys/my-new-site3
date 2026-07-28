@@ -30,10 +30,11 @@
     <div class="sidebar">
         <h2>لوحة الإدارة</h2>
         <a onclick="showSection('orders')">إدارة الطلبات</a>
+        <a onclick="showSection('pricing')">إدارة التسعير والشحن</a>
+        <a onclick="showSection('whatsapp')">إشعارات الواتساب</a>
         <a onclick="showSection('employees')">إدارة الموظفين</a>
         <a onclick="showSection('delivery')">إدارة المندوبين</a>
         <a href="admin-delivery-reports.html">تقرير ومتابعة المندوبين</a>
-        <!-- قسم الفروع المستقل تماماً مثل المندوبين -->
         <a href="admin-branches.html">إدارة الفروع والمخازن</a>
         <a href="admin-branch-reports.html">تقرير ومتابعة الفروع</a>
         <a onclick="showSection('exchange')">أسعار صرف العملات</a>
@@ -47,14 +48,60 @@
     <div class="main-content">
         <h1>مرحباً بك يا أدمن</h1>
         
-        <!-- 1. إدارة الطلبات -->
-        <div class="card" id="orders">
-            <h3>إدارة الطلبات</h3>
-            <p>هنا تظهر طلبات العملاء.</p>
+        <!-- 1. إدارة الطلبات المحدثة -->
+        <div class="card active-section" id="orders">
+            <h3>إدارة الطلبات الواردة من العملاء</h3>
+            <p>متابعة وتحديث حالة طلبات العملاء المسجلين في النظام.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>رقم الطلب</th>
+                        <th>اسم العميل</th>
+                        <th>الهاتف</th>
+                        <th>العنوان</th>
+                        <th>السعر الإجمالي</th>
+                        <th>الحالة الحالية</th>
+                        <th>تحديث الحالة</th>
+                    </tr>
+                </thead>
+                <tbody id="adminOrdersTableBody"></tbody>
+            </table>
         </div>
 
-        <!-- 2. إدارة الموظفين -->
-        <div class="card active-section" id="employees">
+        <!-- 2. إدارة التسعير والشحن -->
+        <div class="card" id="pricing">
+            <h3>إدارة التسعير وعمولات الشحن</h3>
+            <div style="background: #eef2f3; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                <h4>إعدادات عمولة الشركة وأسعار التوصيل</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                    <div>
+                        <label><b>نسبة عمولة الموقع (%) :</b></label><br>
+                        <input type="number" id="siteCommission" placeholder="مثال: 10">
+                    </div>
+                    <div>
+                        <label><b>سعر الشحن الثابت ($) :</b></label><br>
+                        <input type="number" id="baseShippingFee" placeholder="مثال: 5">
+                    </div>
+                    <div style="align-self: flex-end;">
+                        <button class="btn-green" onclick="savePricingSettings()">حفظ إعدادات التسعير</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. إعدادات إشعارات الواتساب -->
+        <div class="card" id="whatsapp">
+            <h3>إعدادات إشعارات الواتساب</h3>
+            <div style="background: #eef2f3; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                <h4>ربط رقم الواتساب لإرسال الفواتير وتحديثات الطلبات</h4>
+                <input type="text" id="adminWhatsappPhone" placeholder="رقم واتساب الأدمن (مثال: 905378240430)" style="width: 300px;" dir="ltr">
+                <button class="btn-green" onclick="saveWhatsappSettings()">حفظ رقم الواتساب</button>
+                <p style="margin-top: 5px; color: #555;">الرقم الحالي: <span id="displayWhatsappPhone" style="color: #27ae60; font-weight: bold;">غير مسجل</span></p>
+            </div>
+        </div>
+
+        <!-- 4. إدارة الموظفين -->
+        <div class="card" id="employees">
             <h3>إدارة الموظفين</h3>
             <div>
                 <input type="text" id="empName" placeholder="اسم الموظف">
@@ -75,7 +122,7 @@
             </table>
         </div>
 
-        <!-- 3. إدارة المندوبين -->
+        <!-- 5. إدارة المندوبين -->
         <div class="card" id="delivery">
             <h3>إدارة المندوبين</h3>
             <div>
@@ -97,7 +144,7 @@
             </table>
         </div>
 
-        <!-- 4. إدارة أسعار صرف العملات -->
+        <!-- 6. إدارة أسعار صرف العملات -->
         <div class="card" id="exchange">
             <h3>إدارة أسعار صرف العملات</h3>
             <div style="background: #eef2f3; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
@@ -124,7 +171,7 @@
             </table>
         </div>
 
-        <!-- 5. إدارة المتاجر -->
+        <!-- 7. إدارة المتاجر -->
         <div class="card" id="stores">
             <h3>إدارة المتاجر</h3>
             <div>
@@ -154,7 +201,7 @@
             </table>
         </div>
 
-        <!-- 6. إدارة العملاء المتكاملة -->
+        <!-- 8. إدارة العملاء المتكاملة -->
         <div class="card" id="customers">
             <h3>إدارة العملاء</h3>
             <div style="background: #fdfdfd; padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
@@ -207,7 +254,7 @@
             </table>
         </div>
 
-        <!-- 7. إدارة المحتوى -->
+        <!-- 9. إدارة المحتوى -->
         <div class="card" id="content">
             <h3>إدارة المحتوى والموقع</h3>
             <p>تعديل نصوص وأقسام الموقع الرئيسية.</p>
@@ -222,7 +269,7 @@
             if(target) { target.classList.add('active-section'); }
         }
 
-        // تهيئة قاعدة بيانات العملاء الافتراضية إذا كانت فارغة لأول مرة
+        // تهيئة بيانات العملاء والطلبات الافتراضية
         function initDefaultCustomers() {
             if (!localStorage.getItem('adminCustomersList')) {
                 const defaultCustomers = [
@@ -249,7 +296,7 @@
                         address: "بغداد، حي العدل، شارع 14",
                         orders: [
                             { id: "#MW-5520", status: "تم التوصيل", price: "$200.00" },
-                            { id: "#MW-8821", status: "قيد المعالجة", price: "$120.00" }
+                            { id: "#MW-8822", status: "قيد المعالجة", price: "$120.00" }
                         ]
                     },
                     { 
@@ -276,6 +323,90 @@
                     }
                 ];
                 localStorage.setItem('adminCustomersList', JSON.stringify(defaultCustomers));
+            }
+        }
+
+        // --- إدارة الطلبات الحقيقية المربوطة بالعملاء ---
+        function loadAdminOrders() {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let tbody = document.getElementById('adminOrdersTableBody');
+            tbody.innerHTML = '';
+            
+            let hasOrders = false;
+            customers.forEach((cust, cIndex) => {
+                if (cust.orders && cust.orders.length > 0) {
+                    cust.orders.forEach((ord, oIndex) => {
+                        hasOrders = true;
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><b>${ord.id}</b></td>
+                                <td>${cust.name}</td>
+                                <td dir="ltr" style="text-align: right;">${cust.phone}</td>
+                                <td>${cust.country} - ${cust.state || ''}</td>
+                                <td><span style="color: #27ae60; font-weight: bold;">${ord.price}</span></td>
+                                <td><span style="background: #fff3cd; padding: 3px 8px; border-radius: 4px;">${ord.status}</span></td>
+                                <td>
+                                    <select onchange="updateOrderStatus(${cIndex}, ${oIndex}, this.value)">
+                                        <option value="" disabled selected>تغيير الحالة</option>
+                                        <option value="في انتظار الدفع">في انتظار الدفع</option>
+                                        <option value="قيد المعالجة">قيد المعالجة</option>
+                                        <option value="قيد الشحن">قيد الشحن</option>
+                                        <option value="تم التوصيل">تم التوصيل</option>
+                                        <option value="ملغي">ملغي</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+
+            if (!hasOrders) {
+                tbody.innerHTML = '<tr><td colspan="7" style="color: #777;">لا توجد طلبات مسجلة حتى الآن</td></tr>';
+            }
+        }
+
+        function updateOrderStatus(customerIndex, orderIndex, newStatus) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            if (customers[customerIndex] && customers[customerIndex].orders[orderIndex]) {
+                customers[customerIndex].orders[orderIndex].status = newStatus;
+                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+                alert('تم تحديث حالة الطلب بنجاح');
+                loadAdminOrders();
+            }
+        }
+
+        // --- إدارة التسعير والشحن ---
+        function savePricingSettings() {
+            let commission = document.getElementById('siteCommission').value;
+            let shipping = document.getElementById('baseShippingFee').value;
+            localStorage.setItem('siteCommissionVal', commission);
+            localStorage.setItem('baseShippingVal', shipping);
+            alert('تم حفظ إعدادات التسعير والشحن بنجاح');
+        }
+
+        function loadPricingSettings() {
+            document.getElementById('siteCommission').value = localStorage.getItem('siteCommissionVal') || '';
+            document.getElementById('baseShippingFee').value = localStorage.getItem('baseShippingVal') || '';
+        }
+
+        // --- إعدادات إشعارات الواتساب ---
+        function saveWhatsappSettings() {
+            let phone = document.getElementById('adminWhatsappPhone').value.trim();
+            if(!phone) { alert('الرجاء إدخال رقم الواتساب'); return; }
+            localStorage.setItem('adminWhatsappNumber', phone);
+            loadWhatsappSettings();
+            alert('تم حفظ رقم الواتساب بنجاح');
+        }
+
+        function loadWhatsappSettings() {
+            let phone = localStorage.getItem('adminWhatsappNumber');
+            let display = document.getElementById('displayWhatsappPhone');
+            if (phone) {
+                display.innerText = phone;
+                document.getElementById('adminWhatsappPhone').value = phone;
+            } else {
+                display.innerText = 'غير مسجل';
             }
         }
 
@@ -499,6 +630,7 @@
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             resetCustomerForm();
             loadCustomers();
+            loadAdminOrders();
         }
 
         function editCustomer(index) {
@@ -545,11 +677,15 @@
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
                 resetCustomerForm();
                 loadCustomers();
+                loadAdminOrders();
             }
         }
 
         window.onload = function() {
             initDefaultCustomers(); 
+            loadAdminOrders();
+            loadPricingSettings();
+            loadWhatsappSettings();
             loadEmployees();
             loadDelivery();
             loadBaseCurrency();
