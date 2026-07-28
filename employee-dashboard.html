@@ -3,41 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الموظف - إدارة وتحويل الطلبات</title>
+    <title>لوحة تحكم الموظف - إدارة وتحويل الطلبات والدردشة</title>
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { max-width: 1300px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         h2 { color: #2c3e50; display: inline-block; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; font-size: 14px; }
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; float: left; text-decoration: none; font-weight: bold; }
-        select, input[type="text"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
+        select, input[type="text"], input[type="number"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
         .action-bar { background: #eef2f3; padding: 12px; border-radius: 6px; margin-top: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         button.action-btn { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button.btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button.btn-purple { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.btn-whatsapp { background: #25d366; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        button.btn-chat { background: #e67e22; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        
+        /* Modal Chat Styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 500px; border-radius: 8px; }
+        .close { color: #aaa; float: left; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+        .chat-box { height: 250px; border: 1px solid #ccc; background: #f9f9f9; overflow-y: scroll; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        .chat-msg { margin-bottom: 8px; padding: 5px 10px; border-radius: 4px; max-width: 75%; }
+        .chat-msg.employee { background: #d1e7dd; margin-right: auto; text-align: right; }
+        .chat-msg.customer { background: #cfe2ff; margin-left: auto; text-align: left; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="login.html" class="btn-red">تسجيل الخروج</a>
-        <h2>لوحة تحكم الموظف - إدارة الطلبات وتحويلها للفروع</h2>
-        <p>متابعة الطلبات، توجيهها وإرسالها إلى الفروع بشكل فردي أو جماعي، وتحديث حالتها.</p>
+        <h2>لوحة تحكم الموظف - إدارة الطلبات، الأسعار والدردشة</h2>
+        <p>متابعة الطلبات، تعديل الأسعار الفعلية، توجيهها للفروع، إرسال إشعارات الواتساب، والدردشة المباشرة مع العملاء.</p>
 
-        <!-- شريط الإجراء الجماعي (الحالة والتحويل للفرع) -->
+        <!-- شريط الإجراء الجماعي -->
         <div class="action-bar">
             <span><b>الإجراء الجماعي للمحدد:</b></span>
-            
-            <!-- تحويل جماعي للفرع -->
             <select id="bulkBranchSelect">
                 <option value="" disabled selected>اختر الفرع للتحويل الجماعي...</option>
             </select>
             <button class="btn-purple" onclick="applyBulkBranch()">تحويل المختار للفرع</button>
-
             <span style="border-right: 2px solid #ccc; margin: 0 5px;"></span>
-
-            <!-- تحديث حالة جماعي -->
             <select id="bulkStatusSelect" onchange="checkBulkReason()">
                 <option value="" disabled selected>اختر الحالة الجماعية...</option>
                 <option value="انتظار الدفع">انتظار الدفع</option>
@@ -60,16 +67,29 @@
                     <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"> تحديد الكل</th>
                     <th>رقم الطلب</th>
                     <th>العميل ورقم الهاتف</th>
-                    <th>التفاصيل والمبلغ</th>
-                    <th>الحالة الحالية والسبب</th>
-                    <th>الفرع المسؤول (إرسال / تغيير / إرجاع)</th>
-                    <th>تحديث الحالة الفردية</th>
+                    <th>التفاصيل والمبلغ الفعلي ($)</th>
+                    <th>الحالة والسبب</th>
+                    <th>الفرع المسؤول</th>
+                    <th>إجراءات التحديث والتواصل</th>
                 </tr>
             </thead>
             <tbody id="empOrdersBody">
                 <tr><td colspan="7">جاري تحميل الطلبات...</td></tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- نافذة الدردشة المنبثقة -->
+    <div id="chatModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeChatModal()">&times;</span>
+            <h3 id="chatTitle">محادثة العميل</h3>
+            <div id="chatMessages" class="chat-box"></div>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="chatInput" placeholder="اكتب رد الموظف هنا..." style="flex: 1;" onkeypress="handleChatKeyPress(event)">
+                <button class="action-btn" onclick="sendChatMessage()">إرسال</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -85,6 +105,9 @@
             <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
         `;
 
+        let currentActiveCustIndex = null;
+        let currentActiveOrdIndex = null;
+
         function loadEmployeeOrders() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let branchList = JSON.parse(localStorage.getItem('branchList')) || [];
@@ -93,7 +116,6 @@
             
             tbody.innerHTML = '';
 
-            // تعبئة قائمة التحويل الجماعي للفروع
             let bulkBranchOptions = `<option value="" disabled selected>اختر الفرع للتحويل الجماعي...</option>`;
             branchList.forEach(br => {
                 bulkBranchOptions += `<option value="${br.name}">${br.name}</option>`;
@@ -107,8 +129,7 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         hasOrders = true;
 
-                        // تعبئة قائمة الفروع الفردية مع خيار الإلغاء/الإرجاع
-                        let branchOptions = `<option value="">--- غير محدد (بدون فرع) ---</option>`;
+                        let branchOptions = `<option value="">--- غير محدد ---</option>`;
                         branchList.forEach(br => {
                             let selected = (ord.assignedBranch === br.name) ? 'selected' : '';
                             branchOptions += `<option value="${br.name}" ${selected}>${br.name}</option>`;
@@ -116,15 +137,20 @@
 
                         let reasonDisplay = ord.reason ? `<br><span style="color: #c0392b; font-size: 11px;">السبب: ${ord.reason}</span>` : '';
                         let currentOptionsHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
-                        
-                        let branchBadge = ord.assignedBranch ? `<span style="color: #27ae60; font-weight: bold; font-size: 12px;">(الفرع الحالي: ${ord.assignedBranch})</span>` : `<span style="color: #c0392b; font-size: 11px;">غير محدد لفرع</span>`;
+                        let branchBadge = ord.assignedBranch ? `<span style="color: #27ae60; font-weight: bold; font-size: 12px;">(${ord.assignedBranch})</span>` : `<span style="color: #c0392b; font-size: 11px;">غير محدد</span>`;
+
+                        // معالجة عرض السعر (حتى يتمكن الموظف من تعديل 0.00 إلى السعر الحقيقي)
+                        let rawPrice = ord.price ? ord.price.toString().replace('$', '').trim() : '0.00';
 
                         tbody.innerHTML += `
                             <tr>
                                 <td><input type="checkbox" class="order-checkbox" data-cust="${custIndex}" data-ord="${ordIndex}"></td>
                                 <td><b>${ord.id}</b></td>
                                 <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;" dir="ltr">${cust.phone}</span></td>
-                                <td><b style="color: #2980b9;">${ord.price || '$0.00'}</b></td>
+                                <td>
+                                    <input type="text" id="price_${custIndex}_${ordIndex}" value="${rawPrice}" style="width: 70px; text-align: center; font-weight: bold; color: #2980b9;"> $
+                                    <button class="action-btn" onclick="updateOrderPrice(${custIndex}, ${ordIndex})" style="padding: 2px 6px; font-size: 11px; margin-top: 3px;">حفظ السعر</button>
+                                </td>
                                 <td><span style="padding: 3px 8px; background: #fff3cd; border-radius: 4px; font-weight: bold; font-size: 12px;">${ord.status}</span>${reasonDisplay}</td>
                                 <td>
                                     ${branchBadge}<br>
@@ -136,8 +162,12 @@
                                     <select id="status_${custIndex}_${ordIndex}" onchange="checkIndividualReason(${custIndex}, ${ordIndex})">
                                         ${currentOptionsHtml}
                                     </select>
-                                    <input type="text" id="reason_${custIndex}_${ordIndex}" placeholder="سبب الرفض/عدم التسليم" style="display: ${ord.status === 'تم رفض الطلب أو عدم التسليم' ? 'block' : 'none'}; margin-top: 5px; width: 100%;" value="${ord.reason || ''}">
-                                    <button class="action-btn" onclick="updateOrderStatus(${custIndex}, ${ordIndex})" style="margin-top: 5px;">حفظ الحالة</button>
+                                    <input type="text" id="reason_${custIndex}_${ordIndex}" placeholder="سبب الرفض" style="display: ${ord.status === 'تم رفض الطلب أو عدم التسليم' ? 'block' : 'none'}; margin-top: 5px; width: 100%;" value="${ord.reason || ''}">
+                                    <div style="margin-top: 5px; display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+                                        <button class="action-btn" onclick="updateOrderStatus(${custIndex}, ${ordIndex})">حفظ الحالة</button>
+                                        <button class="btn-whatsapp" onclick="sendWhatsAppNotification(${custIndex}, ${ordIndex})" title="إرسال إشعار واتساب للعميل">واتساب</button>
+                                        <button class="btn-chat" onclick="openChatModal(${custIndex}, ${ordIndex})">الدردشة</button>
+                                    </div>
                                 </td>
                             </tr>
                         `;
@@ -158,59 +188,46 @@
         function checkBulkReason() {
             let status = document.getElementById('bulkStatusSelect').value;
             let reasonInput = document.getElementById('bulkReasonInput');
-            if (status === 'تم رفض الطلب أو عدم التسليم') {
-                reasonInput.style.display = 'inline-block';
-            } else {
-                reasonInput.style.display = 'none';
-                reasonInput.value = '';
-            }
+            reasonInput.style.display = (status === 'تم رفض الطلب أو عدم التسليم') ? 'inline-block' : 'none';
         }
 
         function checkIndividualReason(custIndex, ordIndex) {
             let status = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
             let reasonInput = document.getElementById(`reason_${custIndex}_${ordIndex}`);
-            if (status === 'تم رفض الطلب أو عدم التسليم') {
-                reasonInput.style.display = 'block';
-            } else {
-                reasonInput.style.display = 'none';
-                reasonInput.value = '';
-            }
+            reasonInput.style.display = (status === 'تم رفض الطلب أو عدم التسليم') ? 'block' : 'none';
         }
 
-        // إسناد وتغيير أو إرجاع الطلب لفردي
+        // تحديث السعر الفعلي للطلب
+        function updateOrderPrice(custIndex, ordIndex) {
+            let val = document.getElementById(`price_${custIndex}_${ordIndex}`).value;
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            customers[custIndex].orders[ordIndex].price = '$' + parseFloat(val || 0).toFixed(2);
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            alert('تم تحديث سعر الطلب بنجاح');
+            loadEmployeeOrders();
+        }
+
         function assignBranch(custIndex, ordIndex) {
             let selectedBranch = document.getElementById(`branch_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].assignedBranch = selectedBranch;
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert(selectedBranch ? 'تم تحديث وتحويل الفرع بنجاح' : 'تم إلغاء وإرجاع الطلب من الفرع');
+            alert(selectedBranch ? 'تم تحويل الفرع بنجاح' : 'تم إلغاء الفرع للطلب');
             loadEmployeeOrders();
         }
 
-        // التحويل الجماعي للفرع
         function applyBulkBranch() {
             let targetBranch = document.getElementById('bulkBranchSelect').value;
-            if (!targetBranch) {
-                alert('الرجاء اختيار الفرع المراد التحويل إليه أولاً');
-                return;
-            }
-
+            if (!targetBranch) { alert('الرجاء اختيار الفرع'); return; }
             let checkboxes = document.querySelectorAll('.order-checkbox:checked');
-            if (checkboxes.length === 0) {
-                alert('الرجاء تحديد طلب واحد على الأقل من الجدول');
-                return;
-            }
+            if (checkboxes.length === 0) { alert('الرجاء تحديد طلبات'); return; }
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-
             checkboxes.forEach(cb => {
-                let cIdx = cb.getAttribute('data-cust');
-                let oIdx = cb.getAttribute('data-ord');
-                customers[cIdx].orders[oIdx].assignedBranch = targetBranch;
+                customers[cb.getAttribute('data-cust')].orders[cb.getAttribute('data-ord')].assignedBranch = targetBranch;
             });
-
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تحويل الطلبات المحددة إلى الفرع بنجاح');
+            alert('تم التحويل الجماعي بنجاح');
             loadEmployeeOrders();
         }
 
@@ -230,30 +247,100 @@
         function applyBulkUpdate() {
             let selectedStatus = document.getElementById('bulkStatusSelect').value;
             let bulkReason = document.getElementById('bulkReasonInput').value;
-
-            if (!selectedStatus) {
-                alert('الرجاء اختيار الحالة المراد تطبيقها أولاً');
-                return;
-            }
-
+            if (!selectedStatus) { alert('الرجاء اختيار الحالة'); return; }
             let checkboxes = document.querySelectorAll('.order-checkbox:checked');
-            if (checkboxes.length === 0) {
-                alert('الرجاء تحديد طلب واحد على الأقل من الجدول');
-                return;
-            }
+            if (checkboxes.length === 0) { alert('الرجاء تحديد طلبات'); return; }
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-
             checkboxes.forEach(cb => {
-                let cIdx = cb.getAttribute('data-cust');
-                let oIdx = cb.getAttribute('data-ord');
-                customers[cIdx].orders[oIdx].status = selectedStatus;
-                customers[cIdx].orders[oIdx].reason = (selectedStatus === 'تم رفض الطلب أو عدم التسليم') ? bulkReason : '';
+                let c = cb.getAttribute('data-cust');
+                let o = cb.getAttribute('data-ord');
+                customers[c].orders[o].status = selectedStatus;
+                customers[c].orders[o].reason = (selectedStatus === 'تم رفض الطلب أو عدم التسليم') ? bulkReason : '';
             });
 
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تطبيق التحديث الجماعي للحالات بنجاح');
+            alert('تم تطبيق التحديث الجماعي بنجاح');
             loadEmployeeOrders();
+        }
+
+        // إشعار الواتساب التلقائي
+        function sendWhatsAppNotification(custIndex, ordIndex) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cust = customers[custIndex];
+            let ord = cust.orders[ordIndex];
+
+            let phone = cust.phone.replace(/[^0-9]/g, '');
+            let msg = `عزيزي العميل ${cust.name}،\nنحيطكم علماً بأن حالة طلبكم رقم (${ord.id}) أصبحت الآن: *${ord.status}*.`;
+            if (ord.reason) msg += `\nالسبب: ${ord.reason}`;
+            if (ord.price) msg += `\nالمبلغ الإجمالي: ${ord.price}`;
+
+            let url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
+
+        // نظام الدردشة المباشرة مع العميل
+        function openChatModal(custIndex, ordIndex) {
+            currentActiveCustIndex = custIndex;
+            currentActiveOrdIndex = ordIndex;
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cust = customers[custIndex];
+            let ord = cust.orders[ordIndex];
+
+            document.getElementById('chatTitle').innerText = `محادثة العميل: ${cust.name} (طلب: ${ord.id})`;
+            renderChatMessages();
+            document.getElementById('chatModal').style.display = 'block';
+        }
+
+        function closeChatModal() {
+            document.getElementById('chatModal').style.display = 'none';
+        }
+
+        function renderChatMessages() {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let ord = customers[currentActiveCustIndex].orders[currentActiveOrdIndex];
+            if (!ord.chat) ord.chat = [];
+
+            let chatBox = document.getElementById('chatMessages');
+            chatBox.innerHTML = '';
+
+            if (ord.chat.length === 0) {
+                chatBox.innerHTML = `<p style="text-align: center; color: #888;">لا توجد رسائل سابقة في هذه المحادثة.</p>`;
+                return;
+            }
+
+            ord.chat.forEach(msg => {
+                let senderClass = (msg.sender === 'employee') ? 'employee' : 'customer';
+                let senderName = (msg.sender === 'employee') ? 'الموظف' : 'العميل';
+                chatBox.innerHTML += `
+                    <div class="chat-msg ${senderClass}">
+                        <b style="font-size: 11px; display: block; color: #555;">${senderName} (${msg.time}):</b>
+                        <span>${msg.text}</span>
+                    </div>
+                `;
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function sendChatMessage() {
+            let input = document.getElementById('chatInput');
+            let text = input.value.trim();
+            if (!text) return;
+
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let ord = customers[currentActiveCustIndex].orders[currentActiveOrdIndex];
+            if (!ord.chat) ord.chat = [];
+
+            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            ord.chat.push({ sender: 'employee', text: text, time: timeStr });
+
+            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            input.value = '';
+            renderChatMessages();
+        }
+
+        function handleChatKeyPress(e) {
+            if (e.key === 'Enter') sendChatMessage();
         }
 
         window.onload = function() {
