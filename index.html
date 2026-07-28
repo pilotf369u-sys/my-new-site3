@@ -242,82 +242,90 @@
             window.location.reload();
         }
 
-        // دالة إرسال الطلب (سحب بيانات العميل، الحفظ في لوحة العميل، الإرسال للواتساب، وتفريغ الحقول)
-        function submitOrder() {
-            const userDataString = localStorage.getItem('loggedInUser');
-            let userName = "";
-            let userCode = "";
-            let userAddress = "";
+     function submitOrder() {
+    const userDataString = localStorage.getItem('loggedInUser');
+    let userName = "";
+    let userCode = "";
+    let userAddress = "";
 
-            if (userDataString) {
-                try {
-                    const userData = JSON.parse(userDataString);
-                    userName = userData.name || "";
-                    userCode = userData.code || userData.id || "";
-                    userAddress = userData.address || "";
-                } catch (e) {
-                    console.error("خطأ في جلب بيانات المستخدم", e);
-                }
-            }
-
-            const urlField = document.getElementById('pUrl');
-            const colorField = document.getElementById('pColor');
-            const sizeField = document.getElementById('pSize');
-            const quantityField = document.getElementById('pQuantity');
-
-            const url = urlField.value.trim();
-            const color = colorField.value.trim();
-            const size = sizeField.value.trim();
-            const quantity = quantityField.value.trim();
-
-            if (!url) {
-                alert('الرجاء إدخال رابط المنتج على الأقل.');
-                return;
-            }
-
-            // 1. حفظ الطلب في لوحة التحكم الخاصة بالعميل (localStorage)
-            const newOrder = {
-                id: 'ORD-' + Date.now(),
-                date: new Date().toLocaleDateString('ar-SA'),
-                url: url,
-                color: color || 'غير محدد',
-                size: size || 'غير محدد',
-                quantity: quantity || 1,
-                status: 'قيد المعالجة'
-            };
-
-            if (userCode || userName) {
-                const storageKey = 'user_orders_' + (userCode || userName);
-                let existingOrders = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                existingOrders.push(newOrder);
-                localStorage.setItem(storageKey, JSON.stringify(existingOrders));
-            }
-
-            // 2. تجهيز رسالة الواتساب
-            let message = `*طلب جديد عبر منصة MeshWar* 🛒\n\n`;
-            message += `👤 *الاسم:* ${userName || 'غير مسجل'}\n`;
-            if (userCode) message += `🆔 *كود العميل:* ${userCode}\n`;
-            message += `🔗 *رابط المنتج:* ${url}\n`;
-            if (color) message += `🎨 *اللون:* ${color}\n`;
-            if (size) message += `📏 *المقاس:* ${size}\n`;
-            message += `📦 *العدد:* ${quantity || 1}\n`;
-            if (userAddress) message += `📍 *العنوان:* ${userAddress}\n`;
-
-            const whatsappNumber = "905521855554";
-            const encodedMessage = encodeURIComponent(message);
-            const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-
-            // 3. فتح الواتساب
-            window.open(whatsappURL, '_blank');
-
-            // 4. تفريغ الحقول وإغلاق النافذة
-            urlField.value = '';
-            colorField.value = '';
-            sizeField.value = '';
-            quantityField.value = '1';
-
-            document.getElementById('orderModal').style.display = 'none';
+    if (userDataString) {
+        try {
+            const userData = JSON.parse(userDataString);
+            userName = userData.name || "";
+            userCode = userData.code || userData.id || "";
+            userAddress = userData.address || "";
+        } catch (e) {
+            console.error("خطأ في جلب بيانات المستخدم", e);
         }
+    }
+
+    const urlField = document.getElementById('pUrl');
+    const colorField = document.getElementById('pColor');
+    const sizeField = document.getElementById('pSize');
+    const quantityField = document.getElementById('pQuantity');
+
+    const url = urlField.value.trim();
+    const color = colorField.value.trim();
+    const size = sizeField.value.trim();
+    const quantity = quantityField.value.trim();
+
+    if (!url) {
+        alert('الرجاء إدخال رابط المنتج على الأقل.');
+        return;
+    }
+
+    // 1. بناء كائن الطلب الجديد
+    const newOrder = {
+        id: 'ORD-' + Date.now(),
+        date: new Date().toLocaleDateString('ar-SA'),
+        url: url,
+        color: color || 'غير محدد',
+        size: size || 'غير محدد',
+        quantity: quantity || 1,
+        status: 'قيد المعالجة'
+    };
+
+    // 2. الحفظ في مفتاح العميل الخاص
+    if (userCode || userName) {
+        const storageKey = 'user_orders_' + (userCode || userName);
+        let existingOrders = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        existingOrders.push(newOrder);
+        localStorage.setItem(storageKey, JSON.stringify(existingOrders));
+    }
+
+    // 3. الحفظ في مفتاح عام شامل (لضمان ظهوره في لوحة التحكم في حال كانت تقرأ الكشف العام)
+    let globalOrders = JSON.parse(localStorage.getItem('meshwar_all_orders') || '[]');
+    globalOrders.push(newOrder);
+    localStorage.setItem('meshwar_all_orders', JSON.stringify(globalOrders));
+
+    // 4. تجهيز رسالة الواتساب
+    let message = `*طلب جديد عبر منصة MeshWar* 🛒\n\n`;
+    message += `👤 *الاسم:* ${userName || 'غير مسجل'}\n`;
+    if (userCode) message += `🆔 *كود العميل:* ${userCode}\n`;
+    message += `🔗 *رابط المنتج:* ${url}\n`;
+    if (color) message += `🎨 *اللون:* ${color}\n`;
+    if (size) message += `📏 *المقاس:* ${size}\n`;
+    message += `📦 *العدد:* ${quantity || 1}\n`;
+    if (userAddress) message += `📍 *العنوان:* ${userAddress}\n`;
+
+    const whatsappNumber = "905521855554";
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+    // 5. فتح الواتساب
+    window.open(whatsappURL, '_blank');
+
+    // 6. تفريغ الحقول وإغلاق النافذة
+    urlField.value = '';
+    colorField.value = '';
+    sizeField.value = '';
+    quantityField.value = '1';
+
+    document.getElementById('orderModal').style.display = 'none';
+    
+    // تنبيه بسيط للتاكيد
+    alert('تم حفظ الطلب في لوحة التحكم وإرساله عبر الواتساب بنجاح!');
+}
     </script>
 </body>
 </html>
