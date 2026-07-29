@@ -46,14 +46,13 @@
             <h2>لوحة تحكم الموظف - إدارة وتجهيز الطلبات والدردشة</h2>
             <a href="login.html" class="btn-red">تسجيل الخروج</a>
         </div>
-        <p style="color: #666; font-size: 13px;">متابعة الطلبات، تعديل الأسعار واختيار العملة، تحديد الفرع، التواصل عبر الواتساب والدردشة المباشرة.</p>
+        <p style="color: #666; font-size: 13px;">متابعة الطلبات، تعديل الأسعار واختيار العملة، تحديد الفرع، والتواصل الفوري مع العملاء عبر الدردشة والإشعارات.</p>
 
         <div class="tabs-bar">
             <button class="tab-btn active" onclick="switchTab('customersTab', this)">1. معالجة طلبات الزبائن والأسعار</button>
             <button class="tab-btn" onclick="switchTab('branchesTab', this)">2. معالجة وتوجيه الفروع والشحن</button>
         </div>
 
-        <!-- القسم الأول: طلبات الزبائن -->
         <div id="customersTab" class="section-panel active">
             <table>
                 <thead>
@@ -73,7 +72,6 @@
             </table>
         </div>
 
-        <!-- القسم الثاني: الفروع والشحن -->
         <div id="branchesTab" class="section-panel">
             <table>
                 <thead>
@@ -93,7 +91,6 @@
         </div>
     </div>
 
-    <!-- نافذة الدردشة المباشرة -->
     <div id="chatModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeChatModal()">&times;</span>
@@ -263,8 +260,17 @@
             customers[custIndex].orders[ordIndex].numericPrice = parseFloat(val || 0);
             customers[custIndex].orders[ordIndex].currency = curr;
             customers[custIndex].orders[ordIndex].price = `${parseFloat(val || 0).toFixed(2)} ${curr}`;
+            
+            // إضافة إشعار تلقائي للعميل عند تحديث السعر
+            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
+            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            customers[custIndex].orders[ordIndex].notifications.unshift({
+                text: `تم تحديث سعر الطلب (${customers[custIndex].orders[ordIndex].id}) إلى ${val} ${curr}`,
+                time: timeStr
+            });
+
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تحديث المبلغ والعملة بنجاح');
+            alert('تم تحديث المبلغ والعملة وإرسال إشعار للعميل بنجاح');
             loadCustomerProcessingOrders();
         }
 
@@ -272,6 +278,15 @@
             let newStatus = document.getElementById(`status_cust_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].status = newStatus;
+
+            // إضافة إشعار تلقائي للعميل بتغيير الحالة
+            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
+            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            customers[custIndex].orders[ordIndex].notifications.unshift({
+                text: `تم تحديث حالة طلبك (${customers[custIndex].orders[ordIndex].id}) إلى: ${newStatus}`,
+                time: timeStr
+            });
+
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
         }
 
@@ -307,6 +322,14 @@
             let newStatus = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].status = newStatus;
+
+            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
+            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            customers[custIndex].orders[ordIndex].notifications.unshift({
+                text: `تحديث شحن الطلب (${customers[custIndex].orders[ordIndex].id}): ${newStatus}`,
+                time: timeStr
+            });
+
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             alert('تم تحديث حالة الفرع والشحن بنجاح');
             loadBranchProcessingOrders();
@@ -347,7 +370,17 @@
             let ord = customers[currentActiveCustIndex].orders[currentActiveOrdIndex];
             if (!ord.chat) ord.chat = [];
             let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // إضافة الرسالة للدردشة
             ord.chat.push({ sender: 'employee', text: text, time: timeStr });
+
+            // إضافة إشعار تلقائي للعميل بأن هناك رسالة جديدة من الموظف
+            if (!ord.notifications) ord.notifications = [];
+            ord.notifications.unshift({
+                text: `رسالة جديدة من الموظف بخصوص الطلب (${ord.id})`,
+                time: timeStr
+            });
+
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             input.value = '';
             renderChatMessages();
