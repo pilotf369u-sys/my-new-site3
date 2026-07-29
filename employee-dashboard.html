@@ -10,7 +10,8 @@
         .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         h2 { color: #2c3e50; margin: 0; }
         
-        .tabs-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        /* نقل الأزرار إلى اليمين لتتلاءم مع واجهة المستخدم العربية */
+        .tabs-bar { display: flex; gap: 10px; margin-bottom: 20px; justify-content: flex-start; }
         .tab-btn { background: #bdc3c7; color: #2c3e50; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
         .tab-btn.active { background: #2980b9; color: white; }
 
@@ -21,10 +22,11 @@
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; font-size: 13px; }
         
-        /* تلوين الصفوف حسب الحالة لتمييزها بوضوح */
-        tr.row-transferred { background-color: #d1f2eb !important; } /* أخضر أعمق وأوضح للطلبات المحولة */
-        tr.row-branch-processing { background-color: #fcf3cf !important; } /* أصفر هادئ لحالة قيد المعالجة للفرع */
-        tr.row-canceled { background-color: #fadbd8 !important; /* أحمر فاتح للطلبات الملغية / لم يتم الاتفاق */ }
+        /* تلوين الصفوف بألوان أعمق وأوضح بناءً على طلبك */
+        tr.row-transferred { background-color: #abebc6 !important; } /* أخضر أعمق وأوضح للطلبات المحولة */
+        tr.row-branch-processing { background-color: #d4efdf !important; } /* أخضر فاتح هادئ لحالة قيد معالجة الفرع */
+        tr.row-canceled { background-color: #f5b7b1 !important; } /* أحمر أعمق وأوضح للطلبات الملغية / لم يتم الاتفاق */
+        /* حالة قيد المعالجة تبقى بدون تظليل (خلفية بيضاء افتراضية) */
 
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; }
         .btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -111,7 +113,7 @@
     <script>
         const statusListOptions = `
             <option value="قيد المعالجة">قيد المعالجة</option>
-            <option value="قيد المعالجة للفرع">قيد المعالجة للفرع</option>
+            <option value="قيد معالجة الفرع">قيد معالجة الفرع</option>
             <option value="جاهز للشحن">جاهز للشحن</option>
             <option value="تم الشحن">تم الشحن</option>
             <option value="مخزن محلي">مخزن محلي</option>
@@ -164,11 +166,11 @@
                         let isTransferred = ord.transferredToBranch === true;
                         let orderStatus = ord.status || 'قيد المعالجة';
 
-                        // تحديد لون الصف بناءً على الحالة بدقة
+                        // تحديد لون الصف بناءً على الحالة (قيد المعالجة بدون لون، قيد معالجة الفرع أخضر، الإلغاء أحمر أعمق)
                         let rowClass = '';
-                        if (orderStatus === "لم يتم الاتفاق - ملغي من الزبون") {
+                        if (orderStatus === "لم يتم الاتفاق - ملغي من الزبون" || orderStatus === "تم رفض الطلب أو عدم التسليم") {
                             rowClass = 'row-canceled';
-                        } else if (orderStatus === "قيد المعالجة للفرع") {
+                        } else if (orderStatus === "قيد معالجة الفرع") {
                             rowClass = 'row-branch-processing';
                         } else if (isTransferred) {
                             rowClass = 'row-transferred';
