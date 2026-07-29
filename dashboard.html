@@ -2,414 +2,282 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الموظف - إدارة وتجهيز الطلبات والدردشة</title>
+    <title>لوحة تحكم العميل - MeshWar</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="customers_db.js"></script>
     <style>
-        body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 1350px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        h2 { color: #2c3e50; margin: 0; }
+        :root { --primary-red: #cc0000; --dark-blue: #003366; --bg-light: #f4f6f9; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-light); margin: 0; padding: 20px; }
+        .dashboard-header { background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .info-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .address-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-top: 5px; box-sizing: border-box; }
+        .btn-action { background: var(--dark-blue); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+        .btn-wa { background: #25D366; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 12px; margin-left: 5px; display: inline-block; }
+        .btn-msg { background: var(--dark-blue); color: white; padding: 5px 10px; border-radius: 5px; border: none; font-size: 12px; cursor: pointer; }
+        .btn-cancel { background: #e53935; color: white; padding: 5px 10px; border-radius: 5px; border: none; font-size: 12px; cursor: pointer; }
+        .orders-container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 15px; text-align: right; border-bottom: 2px solid #edf2f7; }
+        td { padding: 18px 15px; border-bottom: 1px solid #edf2f7; }
+        .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .section-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         
-        .tabs-bar { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { background: #bdc3c7; color: #2c3e50; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .tab-btn.active { background: #2980b9; color: white; }
-
-        .section-panel { display: none; }
-        .section-panel.active { display: block; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background: #f2f2f2; font-size: 13px; }
-        
-        /* تلوين الصف عند اكتماله أو إرساله للفرع */
-        tr.row-transferred { background-color: #e8f8f5 !important; }
-        tr.row-canceled { background-color: #ffadad40 !important; }
-
-        .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; }
-        .btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-green { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-purple { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-whatsapp { background: #25d366; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; text-decoration: none; display: inline-block; }
-        .btn-chat { background: #e67e22; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
-        
-        select, input[type="text"], input[type="number"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 500px; border-radius: 8px; }
-        .close { color: #aaa; float: left; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close:hover { color: black; }
-        .chat-box { height: 250px; border: 1px solid #ccc; background: #f9f9f9; overflow-y: scroll; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
-        .chat-msg { margin-bottom: 8px; padding: 5px 10px; border-radius: 4px; max-width: 75%; }
-        .chat-msg.employee { background: #d1e7dd; margin-right: auto; text-align: right; }
-        .chat-msg.customer { background: #cfe2ff; margin-left: auto; text-align: left; }
+        /* تنسيقات نافذة الدردشة والرسائل المضافة */
+        .chat-box-container { height: 180px; border: 1px solid #ddd; background: #fafafa; overflow-y: scroll; padding: 10px; margin-bottom: 10px; border-radius: 8px; text-align: right; }
+        .chat-bubble { margin-bottom: 8px; padding: 6px 10px; border-radius: 6px; font-size: 13px; max-width: 80%; }
+        .chat-bubble.employee { background: #e2e8f0; color: #1e293b; margin-right: auto; text-align: right; }
+        .chat-bubble.customer { background: #dbeafe; color: #1e40af; margin-left: auto; text-align: left; }
+        .notifications-list { max-height: 180px; overflow-y: auto; font-size: 13px; }
+        .notification-item { padding: 6px 0; border-bottom: 1px solid #f1f5f9; color: #334155; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="top-nav">
-            <h2>لوحة تحكم الموظف - إدارة وتجهيز الطلبات والدردشة</h2>
-            <a href="login.html" class="btn-red">تسجيل الخروج</a>
-        </div>
-        <p style="color: #666; font-size: 13px;">متابعة الطلبات، تعديل الأسعار واختيار العملة، تحديد الفرع، والتواصل الفوري مع العملاء عبر الدردشة والإشعارات.</p>
 
-        <div class="tabs-bar">
-            <button class="tab-btn active" onclick="switchTab('customersTab', this)">1. معالجة طلبات الزبائن والأسعار</button>
-            <button class="tab-btn" onclick="switchTab('branchesTab', this)">2. معالجة وتوجيه الفروع والشحن</button>
-        </div>
+    <div class="dashboard-header">
+        <div style="font-weight: 800; color: var(--primary-red); font-size: 20px;"><i class="fa-solid fa-gauge-high"></i> أهلاً بك يا <span id="userName">عزيزي العميل</span></div>
+        <a href="index.html" style="color: #64748b; text-decoration: none;">العودة للرئيسية</a>
+    </div>
 
-        <div id="customersTab" class="section-panel active">
-            <table>
-                <thead>
-                    <tr>
-                        <th>رقم الطلب</th>
-                        <th>العميل ورقم الهاتف</th>
-                        <th>المبلغ الفعلي والعملة</th>
-                        <th>الحالة الأولية</th>
-                        <th>الفرع المسؤول</th>
-                        <th>إجراءات التواصل</th>
-                        <th>الخطوة النهائية</th>
-                    </tr>
-                </thead>
-                <tbody id="customerOrdersBody">
-                    <tr><td colspan="7">جاري التحميل...</td></tr>
-                </tbody>
-            </table>
+    <div class="grid-layout">
+        <div class="info-card" style="border-right: 5px solid #25D366;">
+            <h3>🌟 مكافآت MeshWar</h3>
+            <div style="background: #e2e8f0; height: 10px; border-radius: 5px; margin: 15px 0;">
+                <div style="background: #25D366; height: 100%; width: 70%;"></div>
+            </div>
+            <p>أنت على بعد 3 طلبات من مكافأة الخصم الذهبية!</p>
         </div>
 
-        <div id="branchesTab" class="section-panel">
-            <table>
-                <thead>
-                    <tr>
-                        <th>رقم الطلب</th>
-                        <th>العميل والعنوان</th>
-                        <th>المبلغ والعملة</th>
-                        <th>الفرع المسؤول</th>
-                        <th>حالة الطلب مع الفرع</th>
-                        <th>إجراءات التحديث</th>
-                    </tr>
-                </thead>
-                <tbody id="branchOrdersBody">
-                    <tr><td colspan="6">جاري التحميل...</td></tr>
-                </tbody>
-            </table>
+        <div class="info-card" style="border-right: 5px solid var(--primary-red);">
+            <h3><i class="fa-solid fa-warehouse"></i> عنوان المستودع</h3>
+            <div style="background: #fff3f3; padding: 10px; border-radius: 8px; font-size: 13px; margin-top: 10px; border: 1px dashed var(--primary-red);">
+                Şenlik mahallesi ürgüp Sokak no:21A - Keçiören / Ankara<br>
+                <strong>Alıcı: OMAR AL JAMMAS</strong>
+            </div>
         </div>
     </div>
 
-    <div id="chatModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeChatModal()">&times;</span>
-            <h3 id="chatTitle">محادثة العميل</h3>
-            <div id="chatMessages" class="chat-box"></div>
+    <div class="info-card" style="margin-bottom: 25px;">
+        <h3><i class="fa-solid fa-house-user"></i> عنوانك الخاص</h3>
+        <input type="text" class="address-input" id="userAddress" style="width: 70%;">
+        <button class="btn-action" onclick="saveAddress()">حفظ العنوان</button>
+    </div>
+
+    <div class="orders-container">
+        <h2><i class="fa-solid fa-box-open"></i> طلباتي النشطة</h2>
+        <table id="ordersTable">
+            <tr>
+                <th>رقم الطلب</th>
+                <th>تاريخ ووقت الطلب</th>
+                <th>الحالة</th>
+                <th>السعر</th>
+                <th>إجراءات التواصل</th>
+                <th>إلغاء</th>
+            </tr>
+        </table>
+    </div>
+
+    <div style="margin-bottom: 25px;">
+        <button onclick="toggleArchive()" style="background: #f8fafc; border: 1px solid #ddd; padding: 12px 25px; cursor: pointer; border-radius: 8px; font-weight: bold;">
+            <i class="fa-solid fa-clock-rotate-left"></i> عرض أرشيف الطلبات
+        </button>
+    </div>
+
+    <div id="archiveContent" class="orders-container" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; margin-bottom: 25px;">
+        <h2><i class="fa-solid fa-clock-rotate-left"></i> أرشيف الطلبات</h2>
+        <p>لا توجد طلبات سابقة في الأرشيف حالياً.</p>
+    </div>
+
+    <div class="bottom-grid">
+        <div class="section-box">
+            <h3><i class="fa-solid fa-bell" style="color: var(--primary-red);"></i> آخر الإشعارات</h3>
+            <div id="notificationsContainer" class="notifications-list">
+                <p style="color: #646f79;">• لا توجد إشعارات جديدة.</p>
+            </div>
+        </div>
+        <div class="section-box">
+            <h3><i class="fa-solid fa-comment-dots" style="color: var(--dark-blue);"></i> رسائل الموظف</h3>
+            <div id="customerChatBox" class="chat-box-container">
+                <p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">اختر طلبك أو ابدأ الدردشة مع الموظف...</p>
+            </div>
             <div style="display: flex; gap: 5px;">
-                <input type="text" id="chatInput" placeholder="اكتب رد الموظف هنا..." style="flex: 1;" onkeypress="handleChatKeyPress(event)">
-                <button class="btn-green" onclick="sendChatMessage()">إرسال</button>
+                <input type="text" id="userMsg" placeholder="ردك هنا للـموظف..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px;" onkeypress="handleCustomerMsgEnter(event)">
+                <button class="btn-action" onclick="sendCustomerMessage()">إرسال</button>
             </div>
         </div>
     </div>
 
     <script>
-        const statusListOptions = `
-            <option value="قيد المعالجة">قيد المعالجة</option>
-            <option value="قيد المعالجة للفرع">قيد المعالجة للفرع</option>
-            <option value="جاهز للشحن">جاهز للشحن</option>
-            <option value="تم الشحن">تم الشحن</option>
-            <option value="مخزن محلي">مخزن محلي</option>
-            <option value="توزيع داخلي">توزيع داخلي</option>
-            <option value="تم التسليم">تم التسليم</option>
-            <option value="لم يتم الاتفاق - ملغي من الزبون">لم يتم الاتفاق - ملغي من الزبون</option>
-            <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
-        `;
-
-        let currentActiveCustIndex = null;
-        let currentActiveOrdIndex = null;
-
-        function switchTab(tabId, btnElement) {
-            document.querySelectorAll('.section-panel').forEach(panel => panel.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            
-            document.getElementById(tabId).classList.add('active');
-            btnElement.classList.add('active');
-
-            if(tabId === 'customersTab') loadCustomerProcessingOrders();
-            if(tabId === 'branchesTab') loadBranchProcessingOrders();
-        }
-
-        function loadCustomerProcessingOrders() {
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let branchList = JSON.parse(localStorage.getItem('branchList')) || [];
-            let tbody = document.getElementById('customerOrdersBody');
-            tbody.innerHTML = '';
-            let hasOrders = false;
-
-            customers.forEach((cust, custIndex) => {
-                if (cust.orders && cust.orders.length > 0) {
-                    cust.orders.forEach((ord, ordIndex) => {
-                        hasOrders = true;
-                        
-                        // تعديل هنا: إذا كان المبلغ صفر أو غير موجود، اجعل الحقل فارغاً تماماً لتجنب الإرباك
-                        let rawPrice = (ord.numericPrice !== undefined && ord.numericPrice !== 0 && ord.numericPrice !== '') ? ord.numericPrice : '';
-                        let currentCurrency = ord.currency || '$';
-                        let isTransferred = ord.transferredToBranch === true;
-                        let isCanceled = ord.status === "لم يتم الاتفاق - ملغي من الزبون";
-
-                        let rowClass = '';
-                        if (isCanceled) rowClass = 'row-canceled';
-                        else if (isTransferred) rowClass = 'row-transferred';
-
-                        let branchOptions = `<option value="">--- اختر الفرع ---</option>`;
-                        branchList.forEach(br => {
-                            let selected = (ord.assignedBranch === br.name) ? 'selected' : '';
-                            branchOptions += `<option value="${br.name}" ${selected}>${br.name}</option>`;
-                        });
-
-                        let currentStatusHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
-                        let phoneClean = cust.phone ? cust.phone.replace(/[^0-9]/g, '') : '';
-                        let waMsg = `عزيزي العميل ${cust.name}،\nطلبكم رقم (${ord.id}) قيد المعالجة.\nالمبلغ: ${rawPrice || 0} ${currentCurrency}`;
-                        let waLink = `https://api.whatsapp.com/send?phone=${phoneClean}&text=${encodeURIComponent(waMsg)}`;
-
-                        tbody.innerHTML += `
-                            <tr class="${rowClass}">
-                                <td><b>${ord.id}</b></td>
-                                <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;" dir="ltr">${cust.phone}</span></td>
-                                <td>
-                                    <input type="number" id="price_${custIndex}_${ordIndex}" value="${rawPrice}" placeholder="أدخل المبلغ" style="width: 80px; text-align: center; font-weight: bold; color: #2980b9;" step="0.01">
-                                    <select id="curr_${custIndex}_${ordIndex}" style="width: 55px;">
-                                        <option value="$" ${currentCurrency === '$' ? 'selected' : ''}>$</option>
-                                        <option value="TL" ${currentCurrency === 'TL' ? 'selected' : ''}>TL</option>
-                                        <option value="IQD" ${currentCurrency === 'IQD' ? 'selected' : ''}>IQD</option>
-                                    </select>
-                                    <button class="btn-green" onclick="updateOrderPriceAndCurrency(${custIndex}, ${ordIndex})" style="padding: 2px 5px; font-size: 11px; margin-top: 3px;">حفظ</button>
-                                </td>
-                                <td>
-                                    <select id="status_cust_${custIndex}_${ordIndex}" onchange="updateCustomerOrderStatus(${custIndex}, ${ordIndex})" style="width: 100%;">
-                                        ${currentStatusHtml}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select id="branch_cust_${custIndex}_${ordIndex}" onchange="assignBranchQuick(${custIndex}, ${ordIndex})" style="width: 100%;">
-                                        ${branchOptions}
-                                    </select>
-                                </td>
-                                <td>
-                                    <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
-                                        <a href="${waLink}" target="_blank" class="btn-whatsapp">واتساب</a>
-                                        <button class="btn-chat" onclick="openChatModal(${custIndex}, ${ordIndex})">الدردشة</button>
-                                    </div>
-                                </td>
-                                <td>
-                                    ${isTransferred ? 
-                                        '<span style="color: #27ae60; font-weight: bold;">تم الإرسال للفرع ✓</span>' : 
-                                        `<button class="btn-purple" onclick="sendToBranchStage(${custIndex}, ${ordIndex})">إرسال إلى الفرع</button>`
-                                    }
-                                </td>
-                            </tr>
-                        `;
-                    });
-                }
-            });
-
-            if (!hasOrders) {
-                tbody.innerHTML = `<tr><td colspan="7">لا توجد طلبات واردة حالياً</td></tr>`;
-            }
-        }
-
-        function loadBranchProcessingOrders() {
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let branchList = JSON.parse(localStorage.getItem('branchList')) || [];
-            let tbody = document.getElementById('branchOrdersBody');
-            tbody.innerHTML = '';
-            let hasOrders = false;
-
-            customers.forEach((cust, custIndex) => {
-                if (cust.orders && cust.orders.length > 0) {
-                    cust.orders.forEach((ord, ordIndex) => {
-                        if (ord.transferredToBranch === true) {
-                            hasOrders = true;
-
-                            let branchOptions = `<option value="">--- اختر الفرع ---</option>`;
-                            branchList.br.forEach ? '' : branchList.forEach(br => {
-                                let selected = (ord.assignedBranch === br.name) ? 'selected' : '';
-                                branchOptions += `<option value="${br.name}" ${selected}>${br.name}</option>`;
-                            });
-
-                            let currentOptionsHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
-                            let numericP = ord.numericPrice !== undefined ? ord.numericPrice : 0;
-                            let displayPrice = numericP ? numericP + ' ' + (ord.currency || '$') : 'غير محدد';
-
-                            tbody.innerHTML += `
-                                <tr class="row-transferred">
-                                    <td><b>${ord.id}</b></td>
-                                    <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;">${cust.country} - ${cust.state || ''}</span></td>
-                                    <td><b style="color: #2980b9;">${displayPrice}</b></td>
-                                    <td>
-                                        <select id="branch_${custIndex}_${ordIndex}" onchange="assignBranch(${custIndex}, ${ordIndex})" style="width: 100%;">
-                                            ${branchOptions}
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select id="status_${custIndex}_${ordIndex}" style="width: 100%;">
-                                            ${currentOptionsHtml}
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <button class="btn-blue" onclick="updateBranchOrderStatus(${custIndex}, ${ordIndex})">حفظ وتحديث</button>
-                                    </td>
-                                </tr>
-                            `;
-                        }
-                    });
-                }
-            });
-
-            if (!hasOrders) {
-                tbody.innerHTML = `<tr><td colspan="6" style="color: #777;">لا توجد طلبات محولة إلى الفروع حالياً.</td></tr>`;
-            }
-        }
-
-        function updateOrderPriceAndCurrency(custIndex, ordIndex) {
-            let val = document.getElementById(`price_${custIndex}_${ordIndex}`).value;
-            let curr = document.getElementById(`curr_${custIndex}_${ordIndex}`).value;
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            
-            let numVal = val === '' ? 0 : parseFloat(val);
-            customers[custIndex].orders[ordIndex].numericPrice = numVal;
-            customers[custIndex].orders[ordIndex].currency = curr;
-            customers[custIndex].orders[ordIndex].price = numVal ? `${numVal.toFixed(2)} ${curr}` : `0 ${curr}`;
-            
-            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
-            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            customers[custIndex].orders[ordIndex].notifications.unshift({
-                text: `تم تحديث سعر الطلب (${customers[custIndex].orders[ordIndex].id}) إلى ${numVal} ${curr}`,
-                time: timeStr
-            });
-
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تحديث المبلغ والعملة وإرسال إشعار للعميل بنجاح');
-            loadCustomerProcessingOrders();
-        }
-
-        function updateCustomerOrderStatus(custIndex, ordIndex) {
-            let newStatus = document.getElementById(`status_cust_${custIndex}_${ordIndex}`).value;
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers[custIndex].orders[ordIndex].status = newStatus;
-
-            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
-            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            customers[custIndex].orders[ordIndex].notifications.unshift({
-                text: `تم تحديث حالة طلبك (${customers[custIndex].orders[ordIndex].id}) إلى: ${newStatus}`,
-                time: timeStr
-            });
-
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            loadCustomerProcessingOrders(); // لتحديث لون الصف فوراً
-        }
-
-        function assignBranchQuick(custIndex, ordIndex) {
-            let selectedBranch = document.getElementById(`branch_cust_${custIndex}_${ordIndex}`).value;
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers[custIndex].orders[ordIndex].assignedBranch = selectedBranch;
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-        }
-
-        function sendToBranchStage(custIndex, ordIndex) {
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let branchSelected = document.getElementById(`branch_cust_${custIndex}_${ordIndex}`).value;
-            if(!branchSelected) {
-                alert('الرجاء اختيار الفرع المسؤول قبل الإرسال!');
-                return;
-            }
-            customers[custIndex].orders[ordIndex].transferredToBranch = true;
-            customers[custIndex].orders[ordIndex].assignedBranch = branchSelected;
-            
-            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
-            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            customers[custIndex].orders[ordIndex].notifications.unshift({
-                text: `تم توجيه طلبك (${customers[custIndex].orders[ordIndex].id}) إلى الفرع (${branchSelected})`,
-                time: timeStr
-            });
-
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم نقل الطلب بنجاح إلى قسم معالجة الفروع والشحن!');
-            loadCustomerProcessingOrders();
-        }
-
-        function assignBranch(custIndex, ordIndex) {
-            let selectedBranch = document.getElementById(`branch_${custIndex}_${ordIndex}`).value;
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers[custIndex].orders[ordIndex].assignedBranch = selectedBranch;
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-        }
-
-        function updateBranchOrderStatus(custIndex, ordIndex) {
-            let newStatus = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers[custIndex].orders[ordIndex].status = newStatus;
-
-            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
-            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            customers[custIndex].orders[ordIndex].notifications.unshift({
-                text: `تحديث الشحن للطلب (${customers[custIndex].orders[ordIndex].id}): ${newStatus}`,
-                time: timeStr
-            });
-
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            alert('تم تحديث حالة الفرع والشحن بنجاح');
-            loadBranchProcessingOrders();
-        }
-
-        function openChatModal(custIndex, ordIndex) {
-            currentActiveCustIndex = custIndex;
-            currentActiveOrdIndex = ordIndex;
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cust = customers[custIndex];
-            let ord = cust.orders[ordIndex];
-            document.getElementById('chatTitle').innerText = `محادثة العميل: ${cust.name} (طلب: ${ord.id})`;
-            renderChatMessages();
-            document.getElementById('chatModal').style.display = 'block';
-        }
-
-        function closeChatModal() { document.getElementById('chatModal').style.display = 'none'; }
-
-        function renderChatMessages() {
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let ord = customers[currentActiveCustIndex].orders[currentActiveOrdIndex];
-            if (!ord.chat) ord.chat = [];
-            let chatBox = document.getElementById('chatMessages');
-            chatBox.innerHTML = ord.chat.length === 0 ? `<p style="text-align: center; color: #888;">لا توجد رسائل سابقة.</p>` : '';
-            ord.chat.forEach(msg => {
-                let senderClass = (msg.sender === 'employee') ? 'employee' : 'customer';
-                let senderName = (msg.sender === 'employee') ? 'الموظف' : 'العميل';
-                chatBox.innerHTML += `<div class="chat-msg ${senderClass}"><b style="font-size: 11px; display: block; color: #555;">${senderName} (${msg.time}):</b><span>${msg.text}</span></div>`;
-            });
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        function sendChatMessage() {
-            let input = document.getElementById('chatInput');
-            let text = input.value.trim();
-            if (!text) return;
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let ord = customers[currentActiveCustIndex].orders[currentActiveOrdIndex];
-            if (!ord.chat) ord.chat = [];
-            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            ord.chat.push({ sender: 'employee', text: text, time: timeStr });
-
-            if (!ord.notifications) ord.notifications = [];
-            ord.notifications.unshift({
-                text: `رسالة جديدة من الموظف بخصوص الطلب (${ord.id})`,
-                time: timeStr
-            });
-
-            localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            input.value = '';
-            renderChatMessages();
-        }
-
-        function handleChatKeyPress(e) { if (e.key === 'Enter') sendChatMessage(); }
+        let activeSelectedOrderIndex = 0; // لتعيين الطلب النشط للدردشة التلقائية
 
         window.onload = function() {
-            loadCustomerProcessingOrders();
+            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (!userData) { window.location.href = 'login.html'; return; }
+            
+            document.getElementById('userName').innerText = userData.name || userData.username;
+            if(document.getElementById('userAddress')) {
+                document.getElementById('userAddress').value = userData.address || '';
+            }
+
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            
+            let currentCustomer = currentCustomerIndex !== -1 ? adminCustomersList[currentCustomerIndex] : null;
+            if (!currentCustomer && typeof customersDB !== 'undefined') {
+                currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
+            }
+
+            const table = document.getElementById('ordersTable');
+            table.innerHTML = `<tr>
+                <th>رقم الطلب</th>
+                <th>تاريخ ووقت الطلب</th>
+                <th>الحالة</th>
+                <th>السعر</th>
+                <th>إجراءات التواصل</th>
+                <th>إلغاء</th>
+            </tr>`;
+            
+            let total = 0;
+            if (currentCustomer && currentCustomer.orders && currentCustomer.orders.length > 0) {
+                currentCustomer.orders.forEach((order, index) => {
+                    let priceStr = order.price || '$0.00';
+                    const priceValue = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+                    total += priceValue;
+                    
+                    const orderId = order.id || order.productCode || 'طلب';
+                    const orderDate = order.date || 'غير محدد';
+                    const phoneClean = currentCustomer.phone ? currentCustomer.phone.replace(/[^0-9]/g, '') : '905521855554';
+                    const waLink = "https://wa.me/" + phoneClean + "?text=" + encodeURIComponent("مرحبا بخصوص الطلب " + orderId);
+                    
+                    table.innerHTML += `<tr>
+                        <td><b>${orderId}</b></td>
+                        <td style="font-size: 13px; color: #555;">${orderDate}</td>
+                        <td><span style="padding: 4px 8px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-size: 12px; font-weight: bold;">${order.status || 'قيد المعالجة'}</span></td>
+                        <td><b style="color: #003366;">${priceStr}</b></td>
+                        <td>
+                            <a href="${waLink}" class="btn-wa" target="_blank"><i class="fa-brands fa-whatsapp"></i> واتساب</a> 
+                            <button class="btn-msg" onclick="selectOrderForChat(${index})">الدردشة</button>
+                        </td>
+                        <td><button class="btn-cancel" onclick="cancelOrder(${index})">إلغاء</button></td>
+                    </tr>`;
+                });
+                
+                table.innerHTML += `<tr style="font-weight: bold; color: var(--primary-red);">
+                    <td colspan="3" style="text-align: left;">الإجمالي المطلوب دفعه:</td>
+                    <td colspan="3">$${total.toFixed(2)}</td>
+                </tr>`;
+
+                // تحميل واجهة الدردشة والإشعارات لأول طلب بشكل افتراضي
+                loadCustomerChatAndNotifications(currentCustomerIndex, 0);
+            } else {
+                table.innerHTML += `<tr><td colspan="6" style="text-align:center;">لا توجد طلبات نشطة حالياً.</td></tr>`;
+                document.getElementById('notificationsContainer').innerHTML = `<p style="color: #666;">• لا توجد إشعارات جديدة.</p>`;
+                document.getElementById('customerChatBox').innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">لا توجد طلبات نشطة للمحادثة.</p>`;
+            }
+        };
+
+        function selectOrderForChat(ordIndex) {
+            activeSelectedOrderIndex = ordIndex;
+            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            if (cIndex !== -1) {
+                loadCustomerChatAndNotifications(cIndex, ordIndex);
+                alert('تم تحديد الطلب للدردشة، يمكنك متابعة الرسائل في الأسفل.');
+            }
+        }
+
+        function loadCustomerChatAndNotifications(cIndex, ordIndex) {
+            activeSelectedOrderIndex = ordIndex;
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            if (cIndex === -1 || !adminCustomersList[cIndex] || !adminCustomersList[cIndex].orders[ordIndex]) return;
+
+            let order = adminCustomersList[cIndex].orders[ordIndex];
+
+            // 1. عرض الرسائل (Chat)
+            let chatBox = document.getElementById('customerChatBox');
+            chatBox.innerHTML = '';
+            if (!order.chat || order.chat.length === 0) {
+                chatBox.innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">ابدأ المحادثة مع الموظف بخصوص الطلب (${order.id})...</p>`;
+            } else {
+                order.chat.forEach(msg => {
+                    let bubbleClass = (msg.sender === 'employee') ? 'employee' : 'customer';
+                    let senderLabel = (msg.sender === 'employee') ? 'الموظف' : 'أنت';
+                    chatBox.innerHTML += `<div class="chat-bubble ${bubbleClass}"><b style="font-size: 10px; display: block; color: #555;">${senderLabel} (${msg.time}):</b><span>${msg.text}</span></div>`;
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            // 2. عرض الإشعارات (Notifications)
+            let notifContainer = document.getElementById('notificationsContainer');
+            notifContainer.innerHTML = '';
+            if (!order.notifications || order.notifications.length === 0) {
+                notifContainer.innerHTML = `<p style="color: #666;">• لا توجد إشعارات جديدة.</p>`;
+            } else {
+                order.notifications.forEach(n => {
+                    notifContainer.innerHTML += `<div class="notification-item">• <b>[${n.time}]</b> ${n.text}</div>`;
+                });
+            }
+        }
+
+        function sendCustomerMessage() {
+            let input = document.getElementById('userMsg');
+            let text = input.value.trim();
+            if (!text) return;
+
+            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+
+            if (cIndex !== -1 && adminCustomersList[cIndex].orders && adminCustomersList[cIndex].orders[activeSelectedOrderIndex]) {
+                let order = adminCustomersList[cIndex].orders[activeSelectedOrderIndex];
+                if (!order.chat) order.chat = [];
+                
+                let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                // إضافة رسالة العميل
+                order.chat.push({ sender: 'customer', text: text, time: timeStr });
+                
+                // حفظ البيانات في LocalStorage لتظهر فوراً عند الموظف
+                localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
+                
+                input.value = '';
+                loadCustomerChatAndNotifications(cIndex, activeSelectedOrderIndex);
+            } else {
+                alert('حدث خطأ أثناء إرسال الرسالة، تأكد من وجود طلب نشط.');
+            }
+        }
+
+        function handleCustomerMsgEnter(e) {
+            if (e.key === 'Enter') sendCustomerMessage();
+        }
+
+        function cancelOrder(index) {
+            if(confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
+                const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+                let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+                let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+                
+                if(cIndex !== -1 && adminCustomersList[cIndex].orders) {
+                    adminCustomersList[cIndex].orders.splice(index, 1);
+                    localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
+                    location.reload(); 
+                } else {
+                    alert('عذراً، لا يمكن إلغاء هذا الطلب مباشرة.');
+                }
+            }
+        }
+
+        function saveAddress() {
+            let userData = JSON.parse(localStorage.getItem('loggedInUser'));
+            userData.address = document.getElementById('userAddress').value;
+            localStorage.setItem('loggedInUser', JSON.stringify(userData));
+            alert('تم حفظ العنوان بنجاح!');
+        }
+
+        function toggleArchive() {
+            var x = document.getElementById("archiveContent");
+            x.style.display = (x.style.display === "none") ? "block" : "none";
         }
     </script>
 </body>
