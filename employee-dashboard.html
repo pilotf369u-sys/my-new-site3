@@ -21,11 +21,11 @@
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; font-size: 13px; }
         
-        /* تلوين دقيق بناءً على طلبك */
-        tr.row-branch-processing { background-color: #d4efdf !important; } /* أخضر فاتح مميز لحالة قيد معالجة الفرع */
-        tr.row-transferred { background-color: #abebc6 !important; } /* أخضر أعمق للطلبات المرسلة للفرع */
-        tr.row-canceled { background-color: #f5b7b1 !important; } /* أحمر أعمق للطلبات الملغية */
-        /* حالة "قيد المعالجة" الافتراضية تبقى بدون لون (خلفية بيضاء عادية تماماً) */
+        /* الألوان المعتمدة بدقة */
+        tr.row-branch-processing { background-color: #d4efdf !important; } /* أخضر فاتح مميز فقط لحالة قيد معالجة الفرع */
+        tr.row-canceled { background-color: #f5b7b1 !important; } /* أحمر للطلبات الملغية */
+        tr.row-other { background-color: #e8f8f5 !important; } /* تدرج هادئ للحالات الأخرى مثل تم التسليم */
+        /* حالة "قيد المعالجة" لا تمتلك أي كلاس لون (تكون بيضاء بالكامل افتراضياً) */
 
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; }
         .btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -165,16 +165,17 @@
                         let isTransferred = ord.transferredToBranch === true;
                         let orderStatus = ord.status || 'قيد المعالجة';
 
-                        // تطبيق الألوان بدقة: قيد المعالجة بدون لون، قيد معالجة الفرع أخضر فاتح، الإلغاء أحمر
+                        // التلوين الصارم بناءً على طلبك تماماً:
+                        // 1. إذا كانت الحالة "قيد المعالجة" تبقى فارغة تماماً (بدون أي لون - خلفية بيضاء عادية)
+                        // 2. إذا كانت "قيد معالجة الفرع" تأخذ اللون الأخضر الفاتح المميز
                         let rowClass = '';
-                        if (orderStatus === "لم يتم الاتفاق - ملغي من الزبون" || orderStatus === "تم رفض الطلب أو عدم التسليم") {
-                            rowClass = 'row-canceled';
-                        } else if (orderStatus === "قيد معالجة الفرع") {
+                        if (orderStatus === "قيد معالجة الفرع") {
                             rowClass = 'row-branch-processing';
-                        } else if (isTransferred) {
-                            rowClass = 'row-transferred';
+                        } else if (orderStatus === "لم يتم الاتفاق - ملغي من الزبون" || orderStatus === "تم رفض الطلب أو عدم التسليم") {
+                            rowClass = 'row-canceled';
+                        } else if (orderStatus !== "قيد المعالجة") {
+                            rowClass = 'row-other';
                         }
-                        // إذا كانت الحالة "قيد المعالجة"، فتبقى rowClass فارغة تماماً بدون أي تلوين
 
                         let branchOptions = `<option value="">--- اختر الفرع ---</option>`;
                         branchList.forEach(br => {
@@ -257,7 +258,7 @@
                             let numericP = ord.numericPrice !== undefined ? ord.numericPrice : 0;
                             let displayPrice = numericP ? numericP + ' ' + (ord.currency || '$') : 'غير محدد';
 
-                            let rowClass = (orderStatus === "لم يتم الاتفاق - ملغي من الزبون") ? 'row-canceled' : 'row-transferred';
+                            let rowClass = (orderStatus === "لم يتم الاتفاق - ملغي من الزبون") ? 'row-canceled' : '';
 
                             tbody.innerHTML += `
                                 <tr class="${rowClass}">
