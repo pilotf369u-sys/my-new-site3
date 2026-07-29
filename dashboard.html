@@ -19,16 +19,17 @@
         .orders-container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px; }
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8fafc; padding: 15px; text-align: right; border-bottom: 2px solid #edf2f7; }
-        td { padding: 18px 15px; border-bottom: 1px solid #edf2f7; }
+        td { padding: 18px 15px; border-bottom: 1px solid #edf2f7; text-align: center; }
+        th:first-child, td:first-child { text-align: right; }
         .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .section-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         
-        /* تنسيقات نافذة الدردشة والرسائل المضافة */
+        /* تنسيقات نافذة الدردشة والرسائل */
         .chat-box-container { height: 180px; border: 1px solid #ddd; background: #fafafa; overflow-y: scroll; padding: 10px; margin-bottom: 10px; border-radius: 8px; text-align: right; }
         .chat-bubble { margin-bottom: 8px; padding: 6px 10px; border-radius: 6px; font-size: 13px; max-width: 80%; }
         .chat-bubble.employee { background: #e2e8f0; color: #1e293b; margin-right: auto; text-align: right; }
         .chat-bubble.customer { background: #dbeafe; color: #1e40af; margin-left: auto; text-align: left; }
-        .notifications-list { max-height: 180px; overflow-y: auto; font-size: 13px; }
+        .notifications-list { max-height: 180px; overflow-y: auto; font-size: 13px; text-align: right; }
         .notification-item { padding: 6px 0; border-bottom: 1px solid #f1f5f9; color: #334155; }
     </style>
 </head>
@@ -66,14 +67,17 @@
     <div class="orders-container">
         <h2><i class="fa-solid fa-box-open"></i> طلباتي النشطة</h2>
         <table id="ordersTable">
-            <tr>
-                <th>رقم الطلب</th>
-                <th>تاريخ ووقت الطلب</th>
-                <th>الحالة</th>
-                <th>السعر</th>
-                <th>إجراءات التواصل</th>
-                <th>إلغاء</th>
-            </tr>
+            <thead>
+                <tr>
+                    <th>رقم الطلب</th>
+                    <th>تاريخ ووقت الطلب</th>
+                    <th>الحالة</th>
+                    <th>السعر</th>
+                    <th>إجراءات التواصل</th>
+                    <th>إلغاء</th>
+                </tr>
+            </thead>
+            <tbody id="customerOrdersTableBody"></tbody>
         </table>
     </div>
 
@@ -101,14 +105,14 @@
                 <p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">اختر طلبك أو ابدأ الدردشة مع الموظف...</p>
             </div>
             <div style="display: flex; gap: 5px;">
-                <input type="text" id="userMsg" placeholder="ردك هنا للـموظف..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px;" onkeypress="handleCustomerMsgEnter(event)">
+                <input type="text" id="userMsg" placeholder="ردك هنا للموظف..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px;" onkeypress="handleCustomerMsgEnter(event)">
                 <button class="btn-action" onclick="sendCustomerMessage()">إرسال</button>
             </div>
         </div>
     </div>
 
     <script>
-        let activeSelectedOrderIndex = 0; // لتعيين الطلب النشط للدردشة التلقائية
+        let activeSelectedOrderIndex = 0;
 
         window.onload = function() {
             const userData = JSON.parse(localStorage.getItem('loggedInUser'));
@@ -127,15 +131,8 @@
                 currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
             }
 
-            const table = document.getElementById('ordersTable');
-            table.innerHTML = `<tr>
-                <th>رقم الطلب</th>
-                <th>تاريخ ووقت الطلب</th>
-                <th>الحالة</th>
-                <th>السعر</th>
-                <th>إجراءات التواصل</th>
-                <th>إلغاء</th>
-            </tr>`;
+            const tbody = document.getElementById('customerOrdersTableBody');
+            tbody.innerHTML = '';
             
             let total = 0;
             if (currentCustomer && currentCustomer.orders && currentCustomer.orders.length > 0) {
@@ -144,15 +141,29 @@
                     const priceValue = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
                     total += priceValue;
                     
+                    let st = order.status ? order.status.trim() : 'قيد المعالجة';
+                    
+                    // توحيد الألوان بناءً على نفس شروط لوحة الأدمن والموظف
+                    let statusBg = "#e0f2fe", statusColor = "#0369a1"; // أزرق افتراضي
+                    if(st === "تم التوصيل" || st === "تم التسليم") { 
+                        statusBg = "#d4edda"; statusColor = "#155724"; // أخضر
+                    }
+                    else if(st === "ملغي" || st.includes("ملغي") || st.includes("رفض")) { 
+                        statusBg = "#f8d7da"; statusColor = "#721c24"; // أحمر
+                    }
+                    else if(st === "قيد الشحن" || st === "جاهز للشحن" || st === "تم الشحن" || st === "مخزن محلي" || st === "توزيع داخلي") { 
+                        statusBg = "#cce5ff"; statusColor = "#004085"; // أزرق غامق مرحلي
+                    }
+
                     const orderId = order.id || order.productCode || 'طلب';
                     const orderDate = order.date || 'غير محدد';
                     const phoneClean = currentCustomer.phone ? currentCustomer.phone.replace(/[^0-9]/g, '') : '905521855554';
                     const waLink = "https://wa.me/" + phoneClean + "?text=" + encodeURIComponent("مرحبا بخصوص الطلب " + orderId);
                     
-                    table.innerHTML += `<tr>
+                    tbody.innerHTML += `<tr>
                         <td><b>${orderId}</b></td>
                         <td style="font-size: 13px; color: #555;">${orderDate}</td>
-                        <td><span style="padding: 4px 8px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-size: 12px; font-weight: bold;">${order.status || 'قيد المعالجة'}</span></td>
+                        <td><span style="padding: 5px 10px; background: ${statusBg}; color: ${statusColor}; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block;">${st}</span></td>
                         <td><b style="color: #003366;">${priceStr}</b></td>
                         <td>
                             <a href="${waLink}" class="btn-wa" target="_blank"><i class="fa-brands fa-whatsapp"></i> واتساب</a> 
@@ -162,15 +173,14 @@
                     </tr>`;
                 });
                 
-                table.innerHTML += `<tr style="font-weight: bold; color: var(--primary-red);">
+                tbody.innerHTML += `<tr style="font-weight: bold; color: var(--primary-red);">
                     <td colspan="3" style="text-align: left;">الإجمالي المطلوب دفعه:</td>
-                    <td colspan="3">$${total.toFixed(2)}</td>
+                    <td colspan="3" style="text-align: center;">$${total.toFixed(2)}</td>
                 </tr>`;
 
-                // تحميل واجهة الدردشة والإشعارات لأول طلب بشكل افتراضي
                 loadCustomerChatAndNotifications(currentCustomerIndex, 0);
             } else {
-                table.innerHTML += `<tr><td colspan="6" style="text-align:center;">لا توجد طلبات نشطة حالياً.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #777;">لا توجد طلبات نشطة حالياً.</td></tr>`;
                 document.getElementById('notificationsContainer').innerHTML = `<p style="color: #666;">• لا توجد إشعارات جديدة.</p>`;
                 document.getElementById('customerChatBox').innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">لا توجد طلبات نشطة للمحادثة.</p>`;
             }
@@ -194,7 +204,7 @@
 
             let order = adminCustomersList[cIndex].orders[ordIndex];
 
-            // 1. عرض الرسائل (Chat)
+            // 1. عرض الرسائل
             let chatBox = document.getElementById('customerChatBox');
             chatBox.innerHTML = '';
             if (!order.chat || order.chat.length === 0) {
@@ -208,7 +218,7 @@
                 chatBox.scrollTop = chatBox.scrollHeight;
             }
 
-            // 2. عرض الإشعارات (Notifications)
+            // 2. عرض الإشعارات
             let notifContainer = document.getElementById('notificationsContainer');
             notifContainer.innerHTML = '';
             if (!order.notifications || order.notifications.length === 0) {
@@ -234,13 +244,9 @@
                 if (!order.chat) order.chat = [];
                 
                 let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                
-                // إضافة رسالة العميل
                 order.chat.push({ sender: 'customer', text: text, time: timeStr });
                 
-                // حفظ البيانات في LocalStorage لتظهر فوراً عند الموظف
                 localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
-                
                 input.value = '';
                 loadCustomerChatAndNotifications(cIndex, activeSelectedOrderIndex);
             } else {
@@ -254,13 +260,15 @@
 
         function cancelOrder(index) {
             if(confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
-                const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+                const userData = JSON.parse(loggedInUserCheck());
                 let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
                 let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
                 
                 if(cIndex !== -1 && adminCustomersList[cIndex].orders) {
-                    adminCustomersList[cIndex].orders.splice(index, 1);
+                    // تحديث الحالة إلى ملغي بدل حذفه كلياً ليراها الموظف والأدمن باللون الأحمر
+                    adminCustomersList[cIndex].orders[index].status = "لم يتم الاتفاق - ملغي من الزبون";
                     localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
+                    alert('تم إلغاء الطلب بنجاح وإبلاغ الإدارة');
                     location.reload(); 
                 } else {
                     alert('عذراً، لا يمكن إلغاء هذا الطلب مباشرة.');
@@ -268,11 +276,25 @@
             }
         }
 
+        function loggedInUserCheck() {
+            return localStorage.getItem('loggedInUser');
+        }
+
         function saveAddress() {
-            let userData = JSON.parse(localStorage.getItem('loggedInUser'));
-            userData.address = document.getElementById('userAddress').value;
+            let newAddress = document.getElementById('userAddress').value.trim();
+            let userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
+            userData.address = newAddress;
             localStorage.setItem('loggedInUser', JSON.stringify(userData));
-            alert('تم حفظ العنوان بنجاح!');
+
+            // تحديث العنوان أيضاً في قائمة العملاء الرئيسية adminCustomersList ليتزامن مع لوحة الأدمن
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            if(cIndex !== -1) {
+                adminCustomersList[cIndex].address = newAddress;
+                localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
+            }
+
+            alert('تم حفظ العنوان بنجاح وتحديثه في النظام!');
         }
 
         function toggleArchive() {
