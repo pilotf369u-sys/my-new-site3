@@ -287,8 +287,8 @@
                         state: "بغداد",
                         address: "بغداد، حي المنصور، شارع 14 رمضان",
                         orders: [
-                            { id: "#MW-9014", status: "في انتظار الدفع", price: "$85.50" },
-                            { id: "#MW-8821", status: "قيد المعالجة", price: "$120.00" }
+                            { id: "#MW-9014", status: "لم يتم الاتفاق - ملغي من الزبون", price: "$85.50" },
+                            { id: "#MW-8821", status: "في انتظار الدفع", price: "$120.00" }
                         ]
                     },
                     { 
@@ -300,30 +300,8 @@
                         state: "بغداد",
                         address: "بغداد، حي العدل، شارع 14",
                         orders: [
-                            { id: "#MW-5520", status: "تم التوصيل", price: "$200.00" },
+                            { id: "#MW-5520", status: "تم التسليم", price: "$200.00" },
                             { id: "#MW-8822", status: "قيد المعالجة", price: "$120.00" }
-                        ]
-                    },
-                    { 
-                        code: "CUS-4366",
-                        name: "عمار الحمداني", 
-                        phone: "9647774366640", 
-                        password: "123",
-                        country: "العراق",
-                        state: "اربيل",
-                        address: "اربيل، سوق، شارع",
-                        orders: [] 
-                    },
-                    { 
-                        code: "CUS-3312",
-                        name: "اسيل", 
-                        phone: "9647718303382", 
-                        password: "123",
-                        country: "تركيا",
-                        state: "انقرة",
-                        address: "تركيا، انقرة، كيجوران",
-                        orders: [
-                            { id: "#MW-3312", status: "قيد الشحن", price: "$45.00" }
                         ]
                     }
                 ];
@@ -331,7 +309,7 @@
             }
         }
 
-        // --- إدارة الطلبات الحقيقية المربوطة بالعملاء (بألوان واضحة لسرعة המلاحظة) ---
+        // --- إدارة الطلبات الحقيقية المربوطة بالعملاء (متوافقة تماماً مع حالات الموظف) ---
         function loadAdminOrders() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('adminOrdersTableBody');
@@ -343,12 +321,21 @@
                     cust.orders.forEach((ord, oIndex) => {
                         hasOrders = true;
                         
-                        // تخصيص لون خلفية الحالة لتمييزها بصرياً بسرعة
-                        let statusBg = "#fff3cd";
+                        let st = ord.status ? ord.status.trim() : '';
+
+                        // تحديد لون خلفية الحالة لتمييزها بصرياً بناءً على كافة حالات لوحة الموظف
+                        let statusBg = "#fff3cd";   // أصفر/برتقالي افتراضي (قيد المعالجة/انتظار الدفع)
                         let statusColor = "#856404";
-                        if(ord.status === "تم التوصيل") { statusBg = "#d4edda"; statusColor = "#155724"; }
-                        else if(ord.status === "ملغي") { statusBg = "#f8d7da"; statusColor = "#721c24"; }
-                        else if(ord.status === "قيد الشحن") { statusBg = "#cce5ff"; statusColor = "#004085"; }
+
+                        if(st === "تم التوصيل" || st === "تم التسليم") { 
+                            statusBg = "#d4edda"; statusColor = "#155724"; // أخضر
+                        }
+                        else if(st === "ملغي" || st.includes("ملغي") || st.includes("رفض")) { 
+                            statusBg = "#f8d7da"; statusColor = "#721c24"; // أحمر
+                        }
+                        else if(st === "قيد الشحن" || st === "جاهز للشحن" || st === "تم الشحن" || st === "مخزن محلي" || st === "توزيع داخلي") { 
+                            statusBg = "#cce5ff"; statusColor = "#004085"; // أزرق
+                        }
 
                         tbody.innerHTML += `
                             <tr>
@@ -363,9 +350,14 @@
                                         <option value="" disabled selected>تغيير الحالة</option>
                                         <option value="في انتظار الدفع">في انتظار الدفع</option>
                                         <option value="قيد المعالجة">قيد المعالجة</option>
-                                        <option value="قيد الشحن">قيد الشحن</option>
-                                        <option value="تم التوصيل">تم التوصيل</option>
-                                        <option value="ملغي">ملغي</option>
+                                        <option value="قيد معالجة الفرع">قيد معالجة الفرع</option>
+                                        <option value="جاهز للشحن">جاهز للشحن</option>
+                                        <option value="تم الشحن">تم الشحن</option>
+                                        <option value="مخزن محلي">مخزن محلي</option>
+                                        <option value="توزيع داخلي">توزيع داخلي</option>
+                                        <option value="تم التسليم">تم التسليم</option>
+                                        <option value="لم يتم الاتفاق - ملغي من الزبون">لم يتم الاتفاق - ملغي من الزبون</option>
+                                        <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
                                     </select>
                                 </td>
                             </tr>
@@ -400,7 +392,7 @@
 
         function loadPricingSettings() {
             document.getElementById('siteCommission').value = localStorage.getItem('siteCommissionVal') || '';
-            document.getElementById('baseShippingFee').value = localStorage.getItem('baseShippingVal') || '';
+            document.getElementById('baseShippingFee').value = localStorage.getItem('baseShippingFee') || '';
         }
 
         // --- إعدادات إشعارات الواتساب ---
