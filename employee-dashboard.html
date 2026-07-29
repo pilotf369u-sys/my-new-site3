@@ -21,6 +21,9 @@
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; font-size: 13px; }
         
+        tr.row-transferred { background-color: #e8f8f5 !important; }
+        tr.row-canceled { background-color: #ffadad40 !important; }
+
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; }
         .btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-green { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -112,6 +115,7 @@
             <option value="مخزن محلي">مخزن محلي</option>
             <option value="توزيع داخلي">توزيع داخلي</option>
             <option value="تم التسليم">تم التسليم</option>
+            <option value="لم يتم الاتفاق - ملغي من الزبون">لم يتم الاتفاق - ملغي من الزبون</option>
             <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
         `;
 
@@ -140,9 +144,20 @@
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, ordIndex) => {
                         hasOrders = true;
-                        let rawPrice = ord.numericPrice !== undefined ? ord.numericPrice : (parseFloat(ord.price) || 0);
+                        
+                        // تعديل حاسم: إظهار الحقل فارغاً تماماً إذا كان المبلغ غير موجود أو مساوياً لصفر أو نصارً فارغاً
+                        let rawPrice = '';
+                        if (ord.numericPrice !== undefined && ord.numericPrice !== null && ord.numericPrice !== '' && ord.numericPrice !== 0) {
+                            rawPrice = ord.numericPrice;
+                        }
+
                         let currentCurrency = ord.currency || '$';
                         let isTransferred = ord.transferredToBranch === true;
+                        let isCanceled = ord.status === "لم يتم الاتفاق - ملغي من الزبون";
+
+                        let rowClass = '';
+                        if (isCanceled) rowClass = 'row-canceled';
+                        else if (isTransferred) rowClass = 'row-transferred';
 
                         let branchOptions = `<option value="">--- اختر الفرع ---</option>`;
                         branchList.forEach(br => {
@@ -152,15 +167,15 @@
 
                         let currentStatusHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
                         let phoneClean = cust.phone ? cust.phone.replace(/[^0-9]/g, '') : '';
-                        let waMsg = `عزيزي العميل ${cust.name}،\nطلبكم رقم (${ord.id}) قيد المعالجة.\nالمبلغ: ${rawPrice} ${currentCurrency}`;
+                        let waMsg = `عزيزي العميل ${cust.name}،\nطلبكم رقم (${ord.id}) قيد المعالجة.`;
                         let waLink = `https://api.whatsapp.com/send?phone=${phoneClean}&text=${encodeURIComponent(waMsg)}`;
 
                         tbody.innerHTML += `
-                            <tr>
+                            <tr class="${rowClass}">
                                 <td><b>${ord.id}</b></td>
                                 <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;" dir="ltr">${cust.phone}</span></td>
                                 <td>
-                                    <input type="number" id="price_${custIndex}_${ordIndex}" value="${rawPrice}" style="width: 65px; text-align: center; font-weight: bold; color: #2980b9;" step="0.01">
+                                    <input type="number" id="price_${custIndex}_${ordIndex}" value="${rawPrice}" placeholder="اكتب المبلغ" style="width: 80px; text-align: center; font-weight: bold; color: #2980b9;" step="0.01">
                                     <select id="curr_${custIndex}_${ordIndex}" style="width: 55px;">
                                         <option value="$" ${currentCurrency === '$' ? 'selected' : ''}>$</option>
                                         <option value="TL" ${currentCurrency === 'TL' ? 'selected' : ''}>TL</option>
@@ -221,10 +236,11 @@
                             });
 
                             let currentOptionsHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
-                            let displayPrice = (ord.numericPrice !== undefined ? ord.numericPrice : (parseFloat(ord.price) || 0)) + ' ' + (ord.currency || '$');
+                            let numericP = ord.numericPrice !== undefined ? ord.numericPrice : 0;
+                            let displayPrice = numericP ? numericP + ' ' + (ord.currency || '$') : 'غير محدد';
 
                             tbody.innerHTML += `
-                                <tr>
+                                <tr class="row-transferred">
                                     <td><b>${ord.id}</b></td>
                                     <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;">${cust.country} - ${cust.state || ''}</span></td>
                                     <td><b style="color: #2980b9;">${displayPrice}</b></td>
@@ -249,7 +265,7 @@
             });
 
             if (!hasOrders) {
-                tbody.innerHTML = `<tr><td colspan="6" style="color: #777;">لا توجد طلبات محولة إلى الفروع حالياً. قم بترحيل الطلبات من قسم طلبات الزبائن أولاً.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="color: #777;">لا توجد طلبات محولة إلى الفروع حالياً.</td></tr>`;
             }
         }
 
@@ -257,15 +273,16 @@
             let val = document.getElementById(`price_${custIndex}_${ordIndex}`).value;
             let curr = document.getElementById(`curr_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            customers[custIndex].orders[ordIndex].numericPrice = parseFloat(val || 0);
-            customers[custIndex].orders[ordIndex].currency = curr;
-            customers[custIndex].orders[ordIndex].price = `${parseFloat(val || 0).toFixed(2)} ${curr}`;
             
-            // إضافة إشعار تلقائي للعميل عند تحديث السعر
+            let numVal = val === '' ? 0 : parseFloat(val);
+            customers[custIndex].orders[ordIndex].numericPrice = numVal;
+            customers[custIndex].orders[ordIndex].currency = curr;
+            customers[custIndex].orders[ordIndex].price = numVal ? `${numVal.toFixed(2)} ${curr}` : `0 ${curr}`;
+            
             if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
             let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             customers[custIndex].orders[ordIndex].notifications.unshift({
-                text: `تم تحديث سعر الطلب (${customers[custIndex].orders[ordIndex].id}) إلى ${val} ${curr}`,
+                text: `تم تحديث سعر الطلب (${customers[custIndex].orders[ordIndex].id}) إلى ${numVal} ${curr}`,
                 time: timeStr
             });
 
@@ -279,7 +296,6 @@
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].status = newStatus;
 
-            // إضافة إشعار تلقائي للعميل بتغيير الحالة
             if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
             let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             customers[custIndex].orders[ordIndex].notifications.unshift({
@@ -288,6 +304,7 @@
             });
 
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            loadCustomerProcessingOrders(); 
         }
 
         function assignBranchQuick(custIndex, ordIndex) {
@@ -306,6 +323,14 @@
             }
             customers[custIndex].orders[ordIndex].transferredToBranch = true;
             customers[custIndex].orders[ordIndex].assignedBranch = branchSelected;
+            
+            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
+            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            customers[custIndex].orders[ordIndex].notifications.unshift({
+                text: `تم توجيه طلبك (${customers[custIndex].orders[ordIndex].id}) إلى الفرع (${branchSelected})`,
+                time: timeStr
+            });
+
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             alert('تم نقل الطلب بنجاح إلى قسم معالجة الفروع والشحن!');
             loadCustomerProcessingOrders();
@@ -326,7 +351,7 @@
             if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
             let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             customers[custIndex].orders[ordIndex].notifications.unshift({
-                text: `تحديث شحن الطلب (${customers[custIndex].orders[ordIndex].id}): ${newStatus}`,
+                text: `تحديث الشحن للطلب (${customers[custIndex].orders[ordIndex].id}): ${newStatus}`,
                 time: timeStr
             });
 
@@ -371,10 +396,8 @@
             if (!ord.chat) ord.chat = [];
             let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
-            // إضافة الرسالة للدردشة
             ord.chat.push({ sender: 'employee', text: text, time: timeStr });
 
-            // إضافة إشعار تلقائي للعميل بأن هناك رسالة جديدة من الموظف
             if (!ord.notifications) ord.notifications = [];
             ord.notifications.unshift({
                 text: `رسالة جديدة من الموظف بخصوص الطلب (${ord.id})`,
@@ -389,6 +412,23 @@
         function handleChatKeyPress(e) { if (e.key === 'Enter') sendChatMessage(); }
 
         window.onload = function() {
+            // تنظيف ساشي للبيانات القديمة التي تحتوي على أصفار ميتة في الذاكرة لتظهر الحقول فارغة فوراً
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let updated = false;
+            customers.forEach(cust => {
+                if(cust.orders) {
+                    cust.orders.forEach(ord => {
+                        if(ord.numericPrice === 0) {
+                            ord.numericPrice = '';
+                            updated = true;
+                        }
+                    });
+                }
+            });
+            if(updated) {
+                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+            }
+
             loadCustomerProcessingOrders();
         }
     </script>
