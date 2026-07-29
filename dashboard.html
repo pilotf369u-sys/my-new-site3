@@ -13,7 +13,7 @@
         .info-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .address-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-top: 5px; box-sizing: border-box; }
         .btn-action { background: var(--dark-blue); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
-        .btn-wa { background: #25D366; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 12px; margin-left: 5px; }
+        .btn-wa { background: #25D366; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 12px; margin-left: 5px; display: inline-block; }
         .btn-msg { background: var(--dark-blue); color: white; padding: 5px 10px; border-radius: 5px; border: none; font-size: 12px; cursor: pointer; }
         .btn-cancel { background: #e53935; color: white; padding: 5px 10px; border-radius: 5px; border: none; font-size: 12px; cursor: pointer; }
         .orders-container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px; }
@@ -22,6 +22,14 @@
         td { padding: 18px 15px; border-bottom: 1px solid #edf2f7; }
         .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .section-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        
+        /* تنسيقات نافذة الدردشة والرسائل المضافة */
+        .chat-box-container { height: 180px; border: 1px solid #ddd; background: #fafafa; overflow-y: scroll; padding: 10px; margin-bottom: 10px; border-radius: 8px; text-align: right; }
+        .chat-bubble { margin-bottom: 8px; padding: 6px 10px; border-radius: 6px; font-size: 13px; max-width: 80%; }
+        .chat-bubble.employee { background: #e2e8f0; color: #1e293b; margin-right: auto; text-align: right; }
+        .chat-bubble.customer { background: #dbeafe; color: #1e40af; margin-left: auto; text-align: left; }
+        .notifications-list { max-height: 180px; overflow-y: auto; font-size: 13px; }
+        .notification-item { padding: 6px 0; border-bottom: 1px solid #f1f5f9; color: #334155; }
     </style>
 </head>
 <body>
@@ -83,17 +91,26 @@
     <div class="bottom-grid">
         <div class="section-box">
             <h3><i class="fa-solid fa-bell" style="color: var(--primary-red);"></i> آخر الإشعارات</h3>
-            <p>• لا توجد إشعارات جديدة.</p>
+            <div id="notificationsContainer" class="notifications-list">
+                <p style="color: #646f79;">• لا توجد إشعارات جديدة.</p>
+            </div>
         </div>
         <div class="section-box">
             <h3><i class="fa-solid fa-comment-dots" style="color: var(--dark-blue);"></i> رسائل الموظف</h3>
-            <input type="text" id="userMsg" placeholder="ردك هنا..." style="width: 60%; padding: 8px;">
-            <button class="btn-action" onclick="alert('تم إرسال رسالتك!')">إرسال</button>
+            <div id="customerChatBox" class="chat-box-container">
+                <p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">اختر طلبك أو ابدأ الدردشة مع الموظف...</p>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="userMsg" placeholder="ردك هنا للـموظف..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px;" onkeypress="handleCustomerMsgEnter(event)">
+                <button class="btn-action" onclick="sendCustomerMessage()">إرسال</button>
+            </div>
         </div>
     </div>
 
     <script>
-       window.onload = function() {
+        let activeSelectedOrderIndex = 0; // لتعيين الطلب النشط للدردشة التلقائية
+
+        window.onload = function() {
             const userData = JSON.parse(localStorage.getItem('loggedInUser'));
             if (!userData) { window.location.href = 'login.html'; return; }
             
@@ -103,8 +120,9 @@
             }
 
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let currentCustomer = adminCustomersList.find(c => c.phone === userData.phone || c.name === userData.name);
+            let currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
             
+            let currentCustomer = currentCustomerIndex !== -1 ? adminCustomersList[currentCustomerIndex] : null;
             if (!currentCustomer && typeof customersDB !== 'undefined') {
                 currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
             }
@@ -123,21 +141,22 @@
             if (currentCustomer && currentCustomer.orders && currentCustomer.orders.length > 0) {
                 currentCustomer.orders.forEach((order, index) => {
                     let priceStr = order.price || '$0.00';
-                    const priceValue = parseFloat(priceStr.replace('$', '')) || 0;
+                    const priceValue = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
                     total += priceValue;
                     
                     const orderId = order.id || order.productCode || 'طلب';
-                    const orderDate = order.date || 'غير محدد'; // يعرض تاريخ ووقت الطلب
-                    const waLink = "https://wa.me/905521855554?text=" + encodeURIComponent("مرحبا بخصوص الطلب " + orderId);
+                    const orderDate = order.date || 'غير محدد';
+                    const phoneClean = currentCustomer.phone ? currentCustomer.phone.replace(/[^0-9]/g, '') : '905521855554';
+                    const waLink = "https://wa.me/" + phoneClean + "?text=" + encodeURIComponent("مرحبا بخصوص الطلب " + orderId);
                     
                     table.innerHTML += `<tr>
-                        <td>${orderId}</td>
+                        <td><b>${orderId}</b></td>
                         <td style="font-size: 13px; color: #555;">${orderDate}</td>
-                        <td><span style="padding: 4px 8px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-size: 12px;">${order.status || 'قيد المعالجة'}</span></td>
-                        <td>${priceStr}</td>
+                        <td><span style="padding: 4px 8px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-size: 12px; font-weight: bold;">${order.status || 'قيد المعالجة'}</span></td>
+                        <td><b style="color: #003366;">${priceStr}</b></td>
                         <td>
                             <a href="${waLink}" class="btn-wa" target="_blank"><i class="fa-brands fa-whatsapp"></i> واتساب</a> 
-                            <button class="btn-msg" onclick="alert('مُرسل للموظف')">رسالة</button>
+                            <button class="btn-msg" onclick="selectOrderForChat(${index})">الدردشة</button>
                         </td>
                         <td><button class="btn-cancel" onclick="cancelOrder(${index})">إلغاء</button></td>
                     </tr>`;
@@ -147,16 +166,97 @@
                     <td colspan="3" style="text-align: left;">الإجمالي المطلوب دفعه:</td>
                     <td colspan="3">$${total.toFixed(2)}</td>
                 </tr>`;
+
+                // تحميل واجهة الدردشة والإشعارات لأول طلب بشكل افتراضي
+                loadCustomerChatAndNotifications(currentCustomerIndex, 0);
             } else {
                 table.innerHTML += `<tr><td colspan="6" style="text-align:center;">لا توجد طلبات نشطة حالياً.</td></tr>`;
+                document.getElementById('notificationsContainer').innerHTML = `<p style="color: #666;">• لا توجد إشعارات جديدة.</p>`;
+                document.getElementById('customerChatBox').innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">لا توجد طلبات نشطة للمحادثة.</p>`;
             }
         };
 
+        function selectOrderForChat(ordIndex) {
+            activeSelectedOrderIndex = ordIndex;
+            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            if (cIndex !== -1) {
+                loadCustomerChatAndNotifications(cIndex, ordIndex);
+                alert('تم تحديد الطلب للدردشة، يمكنك متابعة الرسائل في الأسفل.');
+            }
+        }
+
+        function loadCustomerChatAndNotifications(cIndex, ordIndex) {
+            activeSelectedOrderIndex = ordIndex;
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            if (cIndex === -1 || !adminCustomersList[cIndex] || !adminCustomersList[cIndex].orders[ordIndex]) return;
+
+            let order = adminCustomersList[cIndex].orders[ordIndex];
+
+            // 1. عرض الرسائل (Chat)
+            let chatBox = document.getElementById('customerChatBox');
+            chatBox.innerHTML = '';
+            if (!order.chat || order.chat.length === 0) {
+                chatBox.innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">ابدأ المحادثة مع الموظف بخصوص الطلب (${order.id})...</p>`;
+            } else {
+                order.chat.forEach(msg => {
+                    let bubbleClass = (msg.sender === 'employee') ? 'employee' : 'customer';
+                    let senderLabel = (msg.sender === 'employee') ? 'الموظف' : 'أنت';
+                    chatBox.innerHTML += `<div class="chat-bubble ${bubbleClass}"><b style="font-size: 10px; display: block; color: #555;">${senderLabel} (${msg.time}):</b><span>${msg.text}</span></div>`;
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            // 2. عرض الإشعارات (Notifications)
+            let notifContainer = document.getElementById('notificationsContainer');
+            notifContainer.innerHTML = '';
+            if (!order.notifications || order.notifications.length === 0) {
+                notifContainer.innerHTML = `<p style="color: #666;">• لا توجد إشعارات جديدة.</p>`;
+            } else {
+                order.notifications.forEach(n => {
+                    notifContainer.innerHTML += `<div class="notification-item">• <b>[${n.time}]</b> ${n.text}</div>`;
+                });
+            }
+        }
+
+        function sendCustomerMessage() {
+            let input = document.getElementById('userMsg');
+            let text = input.value.trim();
+            if (!text) return;
+
+            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+
+            if (cIndex !== -1 && adminCustomersList[cIndex].orders && adminCustomersList[cIndex].orders[activeSelectedOrderIndex]) {
+                let order = adminCustomersList[cIndex].orders[activeSelectedOrderIndex];
+                if (!order.chat) order.chat = [];
+                
+                let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                // إضافة رسالة العميل
+                order.chat.push({ sender: 'customer', text: text, time: timeStr });
+                
+                // حفظ البيانات في LocalStorage لتظهر فوراً عند الموظف
+                localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
+                
+                input.value = '';
+                loadCustomerChatAndNotifications(cIndex, activeSelectedOrderIndex);
+            } else {
+                alert('حدث خطأ أثناء إرسال الرسالة، تأكد من وجود طلب نشط.');
+            }
+        }
+
+        function handleCustomerMsgEnter(e) {
+            if (e.key === 'Enter') sendCustomerMessage();
+        }
+
         function cancelOrder(index) {
             if(confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
-                const userData = JSON.parse(localStorage.Investment || localStorage.getItem('loggedInUser'));
+                const userData = JSON.parse(localStorage.getItem('loggedInUser'));
                 let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-                let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone);
+                let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
                 
                 if(cIndex !== -1 && adminCustomersList[cIndex].orders) {
                     adminCustomersList[cIndex].orders.splice(index, 1);
