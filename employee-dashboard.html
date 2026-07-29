@@ -21,8 +21,10 @@
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; font-size: 13px; }
         
-        tr.row-transferred { background-color: #e8f8f5 !important; }
-        tr.row-canceled { background-color: #ffadad40 !important; }
+        /* تلوين الصفوف حسب الحالة لتمييزها بوضوح */
+        tr.row-transferred { background-color: #d1f2eb !important; } /* أخضر أعمق وأوضح للطلبات المحولة */
+        tr.row-branch-processing { background-color: #fcf3cf !important; } /* أصفر هادئ لحالة قيد المعالجة للفرع */
+        tr.row-canceled { background-color: #fadbd8 !important; /* أحمر فاتح للطلبات الملغية / لم يتم الاتفاق */ }
 
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; }
         .btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -119,6 +121,14 @@
             <option value="تم رفض الطلب أو عدم التسليم">تم رفض الطلب أو عدم التسليم</option>
         `;
 
+        const currencyListOptions = `
+            <option value="$">$ (دولار)</option>
+            <option value="TL">TL (ليرة تركية)</option>
+            <option value="IQD">IQD (دينار عراقي)</option>
+            <option value="SYP">SYP (ليرة سورية)</option>
+            <option value="EUR">EUR (يورو)</option>
+        `;
+
         let currentActiveCustIndex = null;
         let currentActiveOrdIndex = null;
 
@@ -145,7 +155,6 @@
                     cust.orders.forEach((ord, ordIndex) => {
                         hasOrders = true;
                         
-                        // تعديل حاسم: إظهار الحقل فارغاً تماماً إذا كان المبلغ غير موجود أو مساوياً لصفر أو نصارً فارغاً
                         let rawPrice = '';
                         if (ord.numericPrice !== undefined && ord.numericPrice !== null && ord.numericPrice !== '' && ord.numericPrice !== 0) {
                             rawPrice = ord.numericPrice;
@@ -153,11 +162,17 @@
 
                         let currentCurrency = ord.currency || '$';
                         let isTransferred = ord.transferredToBranch === true;
-                        let isCanceled = ord.status === "لم يتم الاتفاق - ملغي من الزبون";
+                        let orderStatus = ord.status || 'قيد المعالجة';
 
+                        // تحديد لون الصف بناءً على الحالة بدقة
                         let rowClass = '';
-                        if (isCanceled) rowClass = 'row-canceled';
-                        else if (isTransferred) rowClass = 'row-transferred';
+                        if (orderStatus === "لم يتم الاتفاق - ملغي من الزبون") {
+                            rowClass = 'row-canceled';
+                        } else if (orderStatus === "قيد المعالجة للفرع") {
+                            rowClass = 'row-branch-processing';
+                        } else if (isTransferred) {
+                            rowClass = 'row-transferred';
+                        }
 
                         let branchOptions = `<option value="">--- اختر الفرع ---</option>`;
                         branchList.forEach(br => {
@@ -165,7 +180,9 @@
                             branchOptions += `<option value="${br.name}" ${selected}>${br.name}</option>`;
                         });
 
-                        let currentStatusHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
+                        let currentStatusHtml = statusListOptions.replace(`value="${orderStatus}"`, `value="${orderStatus}" selected`);
+                        let currentCurrHtml = currencyListOptions.replace(`value="${currentCurrency}"`, `value="${currentCurrency}" selected`);
+
                         let phoneClean = cust.phone ? cust.phone.replace(/[^0-9]/g, '') : '';
                         let waMsg = `عزيزي العميل ${cust.name}،\nطلبكم رقم (${ord.id}) قيد المعالجة.`;
                         let waLink = `https://api.whatsapp.com/send?phone=${phoneClean}&text=${encodeURIComponent(waMsg)}`;
@@ -175,11 +192,9 @@
                                 <td><b>${ord.id}</b></td>
                                 <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;" dir="ltr">${cust.phone}</span></td>
                                 <td>
-                                    <input type="number" id="price_${custIndex}_${ordIndex}" value="${rawPrice}" placeholder="اكتب المبلغ" style="width: 80px; text-align: center; font-weight: bold; color: #2980b9;" step="0.01">
-                                    <select id="curr_${custIndex}_${ordIndex}" style="width: 55px;">
-                                        <option value="$" ${currentCurrency === '$' ? 'selected' : ''}>$</option>
-                                        <option value="TL" ${currentCurrency === 'TL' ? 'selected' : ''}>TL</option>
-                                        <option value="IQD" ${currentCurrency === 'IQD' ? 'selected' : ''}>IQD</option>
+                                    <input type="number" id="price_${custIndex}_${ordIndex}" value="${rawPrice}" placeholder="المبلغ" style="width: 75px; text-align: center; font-weight: bold; color: #2980b9;" step="0.01">
+                                    <select id="curr_${custIndex}_${ordIndex}" style="width: 65px;">
+                                        ${currentCurrHtml}
                                     </select>
                                     <button class="btn-green" onclick="updateOrderPriceAndCurrency(${custIndex}, ${ordIndex})" style="padding: 2px 5px; font-size: 11px; margin-top: 3px;">حفظ</button>
                                 </td>
@@ -235,12 +250,15 @@
                                 branchOptions += `<option value="${br.name}" ${selected}>${br.name}</option>`;
                             });
 
-                            let currentOptionsHtml = statusListOptions.replace(`value="${ord.status}"`, `value="${ord.status}" selected`);
+                            let orderStatus = ord.status || 'قيد المعالجة';
+                            let currentOptionsHtml = statusListOptions.replace(`value="${orderStatus}"`, `value="${orderStatus}" selected`);
                             let numericP = ord.numericPrice !== undefined ? ord.numericPrice : 0;
                             let displayPrice = numericP ? numericP + ' ' + (ord.currency || '$') : 'غير محدد';
 
+                            let rowClass = (orderStatus === "لم يتم الاتفاق - ملغي من الزبون") ? 'row-canceled' : 'row-transferred';
+
                             tbody.innerHTML += `
-                                <tr class="row-transferred">
+                                <tr class="${rowClass}">
                                     <td><b>${ord.id}</b></td>
                                     <td style="text-align: right;"><b>${cust.name}</b><br><span style="font-size: 12px; color: #666;">${cust.country} - ${cust.state || ''}</span></td>
                                     <td><b style="color: #2980b9;">${displayPrice}</b></td>
@@ -412,23 +430,6 @@
         function handleChatKeyPress(e) { if (e.key === 'Enter') sendChatMessage(); }
 
         window.onload = function() {
-            // تنظيف ساشي للبيانات القديمة التي تحتوي على أصفار ميتة في الذاكرة لتظهر الحقول فارغة فوراً
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let updated = false;
-            customers.forEach(cust => {
-                if(cust.orders) {
-                    cust.orders.forEach(ord => {
-                        if(ord.numericPrice === 0) {
-                            ord.numericPrice = '';
-                            updated = true;
-                        }
-                    });
-                }
-            });
-            if(updated) {
-                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-            }
-
             loadCustomerProcessingOrders();
         }
     </script>
