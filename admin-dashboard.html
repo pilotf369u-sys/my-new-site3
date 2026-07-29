@@ -19,12 +19,17 @@
         .btn-green { background: #27ae60; }
         .btn-red { background: #c0392b; }
         .btn-blue { background: #2980b9; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background: #f2f2f2; color: #333; }
+        
+        /* تنسيقات متميزة ومحسنة لجدول إدارة الطلبات لسرعة الملاحظة */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
+        table, th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: center; }
+        th { background: #2c3e50; color: white; font-weight: bold; font-size: 14px; }
+        tr:nth-child(even) { background-color: #f9fbfb; }
+        tr:hover { background-color: #f1f8f6; }
+        
     </style>
 </head>
-<body>
+<body onload="initDefaultCustomers(); loadAdminOrders(); loadPricingSettings(); loadWhatsappSettings(); loadEmployees(); loadDelivery(); loadBaseCurrency(); loadCurrencies(); loadStoresAdmin(); loadCustomers();">
 
     <!-- القائمة الجانبية -->
     <div class="sidebar">
@@ -41,17 +46,17 @@
         <a onclick="showSection('stores')">إدارة المتاجر</a>
         <a onclick="showSection('customers')">إدارة العملاء</a>
         <a onclick="showSection('content')">إدارة المحتوى</a>
-        <a href="login.html" class="btn-red" style="text-align:center; margin-top: 30px;">تسجيل الخروج</a>
+        <a href="login.html" class="btn-red" style="text-align:center; margin-top: 30px; display:block;">تسجيل الخروج</a>
     </div>
 
     <!-- المحتوى الرئيسي -->
     <div class="main-content">
         <h1>مرحباً بك يا أدمن</h1>
         
-        <!-- 1. إدارة الطلبات المحدثة -->
+        <!-- 1. إدارة الطلبات المحدثة والمميزة -->
         <div class="card active-section" id="orders">
-            <h3>إدارة الطلبات الواردة من العملاء</h3>
-            <p>متابعة وتحديث حالة طلبات العملاء المسجلين في النظام.</p>
+            <h3 style="color: #2c3e50; border-bottom: 2px solid #1abc9c; padding-bottom: 10px;">إدارة الطلبات الواردة من العملاء</h3>
+            <p style="color: #666;">متابعة وتحديث حالة طلبات العملاء المسجلين في النظام بسرعة فائقة.</p>
             <table>
                 <thead>
                     <tr>
@@ -326,7 +331,7 @@
             }
         }
 
-        // --- إدارة الطلبات الحقيقية المربوطة بالعملاء ---
+        // --- إدارة الطلبات الحقيقية المربوطة بالعملاء (بألوان واضحة لسرعة המلاحظة) ---
         function loadAdminOrders() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('adminOrdersTableBody');
@@ -337,16 +342,24 @@
                 if (cust.orders && cust.orders.length > 0) {
                     cust.orders.forEach((ord, oIndex) => {
                         hasOrders = true;
+                        
+                        // تخصيص لون خلفية الحالة لتمييزها بصرياً بسرعة
+                        let statusBg = "#fff3cd";
+                        let statusColor = "#856404";
+                        if(ord.status === "تم التوصيل") { statusBg = "#d4edda"; statusColor = "#155724"; }
+                        else if(ord.status === "ملغي") { statusBg = "#f8d7da"; statusColor = "#721c24"; }
+                        else if(ord.status === "قيد الشحن") { statusBg = "#cce5ff"; statusColor = "#004085"; }
+
                         tbody.innerHTML += `
                             <tr>
-                                <td><b>${ord.id}</b></td>
-                                <td>${cust.name}</td>
+                                <td><b style="color: #2980b9;">${ord.id}</b></td>
+                                <td style="font-weight: bold; color: #2c3e50;">${cust.name}</td>
                                 <td dir="ltr" style="text-align: right;">${cust.phone}</td>
                                 <td>${cust.country} - ${cust.state || ''}</td>
-                                <td><span style="color: #27ae60; font-weight: bold;">${ord.price}</span></td>
-                                <td><span style="background: #fff3cd; padding: 3px 8px; border-radius: 4px;">${ord.status}</span></td>
+                                <td><span style="color: #27ae60; font-weight: bold; font-size: 15px;">${ord.price}</span></td>
+                                <td><span style="background: ${statusBg}; color: ${statusColor}; padding: 5px 10px; border-radius: 4px; font-weight: bold; display: inline-block;">${ord.status}</span></td>
                                 <td>
-                                    <select onchange="updateOrderStatus(${cIndex}, ${oIndex}, this.value)">
+                                    <select onchange="updateOrderStatus(${cIndex}, ${oIndex}, this.value)" style="padding: 6px; border-radius: 4px; border: 1px solid #1abc9c; background: #fff;">
                                         <option value="" disabled selected>تغيير الحالة</option>
                                         <option value="في انتظار الدفع">في انتظار الدفع</option>
                                         <option value="قيد المعالجة">قيد المعالجة</option>
@@ -362,7 +375,7 @@
             });
 
             if (!hasOrders) {
-                tbody.innerHTML = '<tr><td colspan="7" style="color: #777;">لا توجد طلبات مسجلة حتى الآن</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="color: #777; padding: 20px;">لا توجد طلبات مسجلة حتى الآن</td></tr>';
             }
         }
 
@@ -645,13 +658,12 @@
             document.getElementById('custPhone').value = cust.phone || '';
             document.getElementById('custState').value = cust.state || '';
             document.getElementById('custAddress').value = cust.address || '';
-            
             document.getElementById('editCustomerIndex').value = index;
-            document.getElementById('customerFormTitle').innerText = 'تعديل بيانات العميل';
+
+            document.getElementById('customerFormTitle').innerText = 'تعديل بيانات العميل: ' + cust.name;
             document.getElementById('saveCustomerBtn').innerText = 'حفظ التعديلات';
             document.getElementById('cancelEditBtn').style.display = 'inline-block';
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({top: document.getElementById('customers').offsetTop, behavior: 'smooth'});
         }
 
         function resetCustomerForm() {
@@ -659,12 +671,12 @@
             document.getElementById('custCode').value = '';
             document.getElementById('custEmail').value = '';
             document.getElementById('custPass').value = '';
-            document.getElementById('custCountry').selectedIndex = 0;
+            document.getElementById('custCountry').value = '';
             document.getElementById('custPhone').value = '';
             document.getElementById('custState').value = '';
             document.getElementById('custAddress').value = '';
             document.getElementById('editCustomerIndex').value = '-1';
-            
+
             document.getElementById('customerFormTitle').innerText = 'إضافة عميل جديد';
             document.getElementById('saveCustomerBtn').innerText = '+ حفظ وإضافة العميل';
             document.getElementById('cancelEditBtn').style.display = 'none';
@@ -675,23 +687,9 @@
                 let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
                 customers.splice(index, 1);
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-                resetCustomerForm();
                 loadCustomers();
                 loadAdminOrders();
             }
-        }
-
-        window.onload = function() {
-            initDefaultCustomers(); 
-            loadAdminOrders();
-            loadPricingSettings();
-            loadWhatsappSettings();
-            loadEmployees();
-            loadDelivery();
-            loadBaseCurrency();
-            loadCurrencies();
-            loadStoresAdmin();
-            loadCustomers();
         }
     </script>
 </body>
