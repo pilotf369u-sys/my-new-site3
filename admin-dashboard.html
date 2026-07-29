@@ -26,7 +26,6 @@
         th { background: #2c3e50; color: white; font-weight: bold; font-size: 14px; }
         tr:nth-child(even) { background-color: #f9fbfb; }
         tr:hover { background-color: #f1f8f6; }
-        
     </style>
 </head>
 <body onload="initDefaultCustomers(); loadAdminOrders(); loadPricingSettings(); loadWhatsappSettings(); loadEmployees(); loadDelivery(); loadBaseCurrency(); loadCurrencies(); loadStoresAdmin(); loadCustomers();">
@@ -309,7 +308,7 @@
             }
         }
 
-        // --- إدارة الطلبات الحقيقية المربوطة بالعملاء (متوافقة تماماً مع حالات الموظف) ---
+        // --- إدارة الطلبات الحقيقية المربوطة بالعملاء ---
         function loadAdminOrders() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('adminOrdersTableBody');
@@ -323,18 +322,17 @@
                         
                         let st = ord.status ? ord.status.trim() : '';
 
-                        // تحديد لون خلفية الحالة لتمييزها بصرياً بناءً على كافة حالات لوحة الموظف
-                        let statusBg = "#fff3cd";   // أصفر/برتقالي افتراضي (قيد المعالجة/انتظار الدفع)
+                        let statusBg = "#fff3cd";  
                         let statusColor = "#856404";
 
                         if(st === "تم التوصيل" || st === "تم التسليم") { 
-                            statusBg = "#d4edda"; statusColor = "#155724"; // أخضر
+                            statusBg = "#d4edda"; statusColor = "#155724"; 
                         }
                         else if(st === "ملغي" || st.includes("ملغي") || st.includes("رفض")) { 
-                            statusBg = "#f8d7da"; statusColor = "#721c24"; // أحمر
+                            statusBg = "#f8d7da"; statusColor = "#721c24"; 
                         }
                         else if(st === "قيد الشحن" || st === "جاهز للشحن" || st === "تم الشحن" || st === "مخزن محلي" || st === "توزيع داخلي") { 
-                            statusBg = "#cce5ff"; statusColor = "#004085"; // أزرق
+                            statusBg = "#cce5ff"; statusColor = "#004085"; 
                         }
 
                         tbody.innerHTML += `
@@ -553,7 +551,7 @@
             loadStoresAdmin();
         }
 
-        // --- إدارة العملاء المربوطة بنظام التسجيل والطلبات ---
+        // --- إدارة العملاء والمستخدمين ---
         function updateCountryCode() {
             let countrySelect = document.getElementById('custCountry');
             let selectedOption = countrySelect.options[countrySelect.selectedIndex];
@@ -598,38 +596,38 @@
             let editIndex = parseInt(document.getElementById('editCustomerIndex').value);
 
             if(!name || !password || !country || !phone || !address) { 
-                alert('الرجاء إدخال الحقول الإلزامية: الاسم، كلمة المرور، الدولة، رقم الهاتف، والعنوان التفصيلي'); 
-                return; 
+                alert('الرجاء إدخال الحقول الإلزامية المطلوبة (الاسم، كلمة المرور، الدولة، الهاتف، والعنوان).');
+                return;
             }
 
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
 
             if (editIndex === -1) {
+                if(!code) {
+                    code = 'CUS-' + Math.floor(1000 + Math.random() * 9000);
+                }
                 customers.push({
-                    code: code || ('CUS-' + Math.floor(1000 + Math.random() * 9000)),
-                    name, 
-                    email, 
-                    password, 
-                    country, 
-                    phone, 
-                    state, 
+                    code,
+                    name,
+                    email,
+                    password,
+                    country,
+                    phone,
+                    state,
                     address,
-                    orders: [] 
+                    orders: []
                 });
-                alert('تم إضافة العميل بنجاح وأصبح بإمكانه تسجيل الدخول');
+                alert('تم إضافة العميل بنجاح');
             } else {
-                customers[editIndex] = {
-                    ...customers[editIndex],
-                    code: code || customers[editIndex].code,
-                    name, 
-                    email, 
-                    password, 
-                    country, 
-                    phone, 
-                    state, 
-                    address
-                };
-                alert('تم تحديث بيانات العميل بنجاح');
+                customers[editIndex].name = name;
+                customers[editIndex].code = code || customers[editIndex].code;
+                customers[editIndex].email = email;
+                customers[editIndex].password = password;
+                customers[editIndex].country = country;
+                customers[editIndex].phone = phone;
+                customers[editIndex].state = state;
+                customers[editIndex].address = address;
+                alert('تم تعديل بيانات العميل بنجاح');
             }
 
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
@@ -641,6 +639,7 @@
         function editCustomer(index) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let cust = customers[index];
+            if(!cust) return;
 
             document.getElementById('custName').value = cust.name || '';
             document.getElementById('custCode').value = cust.code || '';
@@ -652,10 +651,10 @@
             document.getElementById('custAddress').value = cust.address || '';
             document.getElementById('editCustomerIndex').value = index;
 
-            document.getElementById('customerFormTitle').innerText = 'تعديل بيانات العميل: ' + cust.name;
+            document.getElementById('customerFormTitle').innerText = 'تعديل بيانات العميل';
             document.getElementById('saveCustomerBtn').innerText = 'حفظ التعديلات';
             document.getElementById('cancelEditBtn').style.display = 'inline-block';
-            window.scrollTo({top: document.getElementById('customers').offsetTop, behavior: 'smooth'});
+            window.scrollTo({top: 400, behavior: 'smooth'});
         }
 
         function resetCustomerForm() {
@@ -675,7 +674,7 @@
         }
 
         function deleteCustomer(index) {
-            if(confirm('هل أنت متأكد من حذف هذا العميل؟')) {
+            if(confirm('هل أنت متأكد من حذف هذا العميل نهائياً مع كافة طلباته؟')) {
                 let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
                 customers.splice(index, 1);
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
