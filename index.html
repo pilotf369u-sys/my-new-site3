@@ -242,112 +242,109 @@
             window.location.reload();
         }
 
- function submitOrder() {
-    // 1. جلب بيانات العميل المسجل حالياً
-    const userDataString = localStorage.getItem('loggedInUser');
-    if (!userDataString) {
-        alert('الرجاء تسجيل الدخول أولاً');
-        window.location.href = 'login.html';
-        return;
-    }
+        function submitOrder() {
+            // 1. جلب بيانات العميل المسجل حالياً
+            const userDataString = localStorage.getItem('loggedInUser');
+            if (!userDataString) {
+                alert('الرجاء تسجيل الدخول أولاً');
+                window.location.href = 'login.html';
+                return;
+            }
 
-    let userData;
-    try {
-        userData = JSON.parse(userDataString);
-    } catch (e) {
-        userData = {};
-    }
+            let userData;
+            try {
+                userData = JSON.parse(userDataString);
+            } catch (e) {
+                userData = {};
+            }
 
-    const userName = userData.name || userData.username || "عميل غير معروف";
-    const userPhone = userData.phone || "";
+            const userName = userData.name || userData.username || "عميل غير معروف";
+            const userPhone = userData.phone || "";
 
-    // 2. قراءة حقول الإدخال من نموذج الطلب
-    const urlField = document.getElementById('pUrl');
-    const colorField = document.getElementById('pColor');
-    const sizeField = document.getElementById('pSize');
-    const quantityField = document.getElementById('pQuantity');
-    const priceField = document.getElementById('pPrice'); // إذا كان السعر موجوداً كحقل، أو يمكن تحديد سعر افتراضي أو تقديري
+            // 2. قراءة حقول الإدخال من نموذج الطلب
+            const urlField = document.getElementById('pUrl');
+            const colorField = document.getElementById('pColor');
+            const sizeField = document.getElementById('pSize');
+            const quantityField = document.getElementById('pQuantity');
+            const priceField = document.getElementById('pPrice');
 
-    const url = urlField ? urlField.value.trim() : '';
-    const color = colorField ? colorField.value.trim() : 'غير محدد';
-    const size = sizeField ? sizeField.value.trim() : 'غير محدد';
-    const quantity = quantityField ? quantityField.value.trim() : '1';
-    const priceStr = priceField ? priceField.value.trim() : '$0.00'; // أو السعر الذي يحدده النظام/الموظف
+            const url = urlField ? urlField.value.trim() : '';
+            const color = colorField ? colorField.value.trim() : 'غير محدد';
+            const size = sizeField ? sizeField.value.trim() : 'غير محدد';
+            const quantity = quantityField ? quantityField.value.trim() : '1';
+            const priceStr = priceField ? priceField.value.trim() : '$0.00';
 
-    if (!url) {
-        alert('الرجاء إدخال رابط المنتج على الأقل.');
-        return;
-    }
+            if (!url) {
+                alert('الرجاء إدخال رابط المنتج على الأقل.');
+                return;
+            }
 
-    // 3. تجهيز كائن الطلب الجديد بالهيكل الذي تتوقعه لوحة التحكم
-    const newOrder = {
-        id: 'MW-' + Math.floor(1000 + Math.random() * 9000),
-        date: new Date().toLocaleString('ar-SA', { hour12: true }),
-        url: url,
-        color: color,
-        size: size,
-        quantity: quantity,
-        price: priceStr.includes('$') ? priceStr : '$' + priceStr,
-        status: 'قيد المعالجة'
-    };
+            // 3. تجهيز كائن الطلب الجديد بالهيكل الذي تتوقعه لوحة التحكم
+            const newOrder = {
+                id: 'MW-' + Math.floor(1000 + Math.random() * 9000),
+                date: new Date().toLocaleString('ar-SA', { hour12: true }),
+                url: url,
+                color: color,
+                size: size,
+                quantity: quantity,
+                price: priceStr.includes('$') ? priceStr : '$' + priceStr,
+                status: 'قيد المعالجة'
+            };
 
-    // 4. ربط الطلب بملف العميل في adminCustomersList لتظهر في لوحة التحكم تلقائياً
-    let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-    
-    // البحث عن العميل إما برقم الهاتـف أو بالاسم
-    let customerIndex = adminCustomersList.findIndex(c => (userPhone && c.phone === userPhone) || c.name === userName);
+            // 4. ربط الطلب بملف العميل في adminCustomersList لتظهر في لوحة التحكم تلقائياً
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            
+            // البحث عن العميل إما برقم الهاتـف أو بالاسم
+            let customerIndex = adminCustomersList.findIndex(c => (userPhone && c.phone === userPhone) || c.name === userName);
 
-    if (customerIndex !== -1) {
-        // إذا كان العميل موجوداً مسبقاً، نضيف الطلب لقائمته
-        if (!adminCustomersList[customerIndex].orders) {
-            adminCustomersList[customerIndex].orders = [];
+            if (customerIndex !== -1) {
+                // إذا كان العميل موجوداً مسبقاً، نضيف الطلب لقائمته
+                if (!adminCustomersList[customerIndex].orders) {
+                    adminCustomersList[customerIndex].orders = [];
+                }
+                adminCustomersList[customerIndex].orders.push(newOrder);
+            } else {
+                // إذا لم يكن موجوداً في القائمة، نقوم بإنشاء سجل جديد له مع طلبه الأول
+                adminCustomersList.push({
+                    name: userName,
+                    phone: userPhone,
+                    address: userData.address || '',
+                    orders: [newOrder]
+                });
+            }
+
+            // حفظ التحديثات في الـ localStorage
+            localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
+
+            // 5. تجهيز رسالة الواتساب وإرسالها
+            let message = `*طلب جديد عبر منصة MeshWar* 🛒\n\n`;
+            message += `👤 *الاسم:* ${userName}\n`;
+            if (userPhone) message += `📱 *الهاتف:* ${userPhone}\n`;
+            message += `🆔 *رقم الطلب:* ${newOrder.id}\n`;
+            message += `🔗 *رابط المنتج:* ${url}\n`;
+            message += `🎨 *اللون:* ${color}\n`;
+            message += `📏 *المقاس:* ${size}\n`;
+            message += `📦 *العدد:* ${quantity}\n`;
+            message += `💰 *السعر التقديري:* ${newOrder.price}\n`;
+
+            const whatsappNumber = "905521855554";
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+            // فتح واتساب
+            window.open(whatsappURL, '_blank');
+
+            // 6. تفريغ الحقول وإغلاق النافذة المنبثقة للطلب
+            if (urlField) urlField.value = '';
+            if (colorField) colorField.value = '';
+            if (sizeField) sizeField.value = '';
+            if (quantityField) quantityField.value = '1';
+
+            const orderModal = document.getElementById('orderModal');
+            if (orderModal) {
+                orderModal.style.display = 'none';
+            }
         }
-        adminCustomersList[customerIndex].orders.push(newOrder);
-    } else {
-        // إذا لم يكن موجوداً في القائمة، نقوم بإنشاء سجل جديد له مع طلبه الأول
-        adminCustomersList.push({
-            name: userName,
-            phone: userPhone,
-            address: userData.address || '',
-            orders: [newOrder]
-        });
-    }
-
-    // حفظ التحديثات في الـ localStorage
-    localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
-
-    // 5. تجهيز رسالة الواتساب وإرسالها
-    let message = `*طلب جديد عبر منصة MeshWar* 🛒\n\n`;
-    message += `👤 *الاسم:* ${userName}\n`;
-    if (userPhone) message += `📱 *الهاتف:* ${userPhone}\n`;
-    message += `🆔 *رقم الطلب:* ${newOrder.id}\n`;
-    message += `🔗 *رابط المنتج:* ${url}\n`;
-    message += `🎨 *اللون:* ${color}\n`;
-    message += `📏 *المقاس:* ${size}\n`;
-    message += `📦 *العدد:* ${quantity}\n`;
-    message += `💰 *السعر التقديري:* ${newOrder.price}\n`;
-
-    const whatsappNumber = "905521855554";
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-
-    // فتح واتساب
-    window.open(whatsappURL, '_blank');
-
-    // 6. تفريغ الحقول وإغلاق النافذة المنبثقة للطلب بصمت وبدون رسائل تنبيهية مزعجة
-    if (urlField) urlField.value = '';
-    if (colorField) colorField.value = '';
-    if (sizeField) sizeField.value = '';
-    if (quantityField) quantityField.value = '1';
-
-    const orderModal = document.getElementById('orderModal');
-    if (orderModal) {
-        orderModal.style.display = 'none';
-    }
-
-    // إعادة تحميل خفيفة أو توجيه للوحة التحكم إن أردت، أو اكتفاء بحفظه فوراً
-    // بمجرد فتح العميل لصفحة لوحة التحكم (dashboard.html) سيجد الطلب قد ظهر في جدوله مباشرة.
-}
     </script>
 </body>
 </html>
