@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم الموظف - إدارة وتجهيز الطلبات والدردشة</title>
+    <title>لوحة تحكم الموظف - إدارة وتجهيز الطلبات والمكافآت والدردشة</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body { font-family: Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { max-width: 1350px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -22,10 +23,9 @@
         th { background: #f2f2f2; font-size: 13px; }
         
         /* تلوين واضح ومميز حسب طلبك */
-        tr.row-branch-processing { background-color: #a9dfbf !important; } /* أخضر أوضح وأغمق قليلاً ليبرز مباشرة للعين */
+        tr.row-branch-processing { background-color: #a9dfbf !important; } /* أخضر أوضح وأغمق قليلًا */
         tr.row-canceled { background-color: #f5b7b1 !important; } /* أحمر للطلبات الملغية */
         tr.row-other { background-color: #e8f8f5 !important; } /* تدرج هادئ للحالات الأخرى */
-        /* حالة "قيد المعالجة" بدون كلاس (خلفية بيضاء افتراضية تماماً) */
 
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; }
         .btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -49,16 +49,18 @@
 <body>
     <div class="container">
         <div class="top-nav">
-            <h2>لوحة تحكم الموظف - إدارة وتجهيز الطلبات والدردشة</h2>
+            <h2>لوحة تحكم الموظف - إدارة وتجهيز الطلبات والمكافآت والدردشة</h2>
             <a href="login.html" class="btn-red">تسجيل الخروج</a>
         </div>
-        <p style="color: #666; font-size: 13px;">متابعة الطلبات، تعديل الأسعار واختيار العملة، تحديد الفرع، والتواصل الفوري مع العملاء عبر الدردشة والإشعارات.</p>
+        <p style="color: #666; font-size: 13px;">متابعة الطلبات، تعديل الأسعار واختيار العملة، تحديد الفرع، منح المكافآت، والتواصل الفوري مع العملاء عبر الدردشة والإشعارات.</p>
 
         <div class="tabs-bar">
             <button class="tab-btn active" onclick="switchTab('customersTab', this)">1. معالجة طلبات الزبائن والأسعار</button>
             <button class="tab-btn" onclick="switchTab('branchesTab', this)">2. معالجة وتوجيه الفروع والشحن</button>
+            <button class="tab-btn" onclick="switchTab('rewardsTab', this)"><i class="fa-solid fa-gift"></i> 3. إدارة مكافآت العملاء</button>
         </div>
 
+        <!-- التبويب الأول: طلبات الزبائن -->
         <div id="customersTab" class="section-panel active">
             <table>
                 <thead>
@@ -78,6 +80,7 @@
             </table>
         </div>
 
+        <!-- التبويب الثاني: الفروع والشحن -->
         <div id="branchesTab" class="section-panel">
             <table>
                 <thead>
@@ -95,8 +98,29 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- التبويب الثالث: نظام ومكافآت العملاء المدمج -->
+        <div id="rewardsTab" class="section-panel">
+            <h3 style="color: var(--dark-blue); margin-top: 0;"><i class="fa-solid fa-award"></i> نظام مكافآت العملاء المكتملة (دورات 5 طلبات)</h3>
+            <p style="font-size: 13px; color: #666;">يمكنك متابعة عدد الطلبات المكتملة لكل عميل، وتحديد قيمة مبلغ الخصم المالي ومنحه بضغطة زر واحدة لتحديث رصيده وسجله.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم العميل</th>
+                        <th>رقم الهاتف</th>
+                        <th>الطلبات المكتملة (الدورة الحالية)</th>
+                        <th>إجمالي المكافآت المستلمة سابقاً</th>
+                        <th>منح مكافأة الخصم للعميل</th>
+                    </tr>
+                </thead>
+                <tbody id="rewardsTableBody">
+                    <tr><td colspan="5">جاري التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
+    <!-- نافذة الدردشة -->
     <div id="chatModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeChatModal()">&times;</span>
@@ -142,6 +166,7 @@
 
             if(tabId === 'customersTab') loadCustomerProcessingOrders();
             if(tabId === 'branchesTab') loadBranchProcessingOrders();
+            if(tabId === 'rewardsTab') loadRewardsManagementTable();
         }
 
         function loadCustomerProcessingOrders() {
@@ -167,13 +192,12 @@
 
                         let rowClass = '';
                         if (orderStatus === "قيد معالجة الفرع") {
-                            rowClass = 'row-branch-processing'; // اللون الأخضر الأوضح والأغمق قليلاً
+                            rowClass = 'row-branch-processing';
                         } else if (orderStatus === "لم يتم الاتفاق - ملغي من الزبون" || orderStatus === "تم رفض الطلب أو عدم التسليم") {
                             rowClass = 'row-canceled';
                         } else if (orderStatus !== "قيد المعالجة") {
                             rowClass = 'row-other';
                         }
-                        // حالة "قيد المعالجة" تبقى بيضاء بالكامل بدون أي تلوين
 
                         let branchOptions = `<option value="">--- اختر الفرع ---</option>`;
                         branchList.forEach(br => {
@@ -285,6 +309,89 @@
 
             if (!hasOrders) {
                 tbody.innerHTML = `<tr><td colspan="6" style="color: #777;">لا توجد طلبات محولة إلى الفروع حالياً.</td></tr>`;
+            }
+        }
+
+        // --- دوال إدارة نظام المكافآت الجديد من لوحة الموظف ---
+        function loadRewardsManagementTable() {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let tbody = document.getElementById('rewardsTableBody');
+            tbody.innerHTML = '';
+
+            if (customers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="color: #777; padding: 15px;">لا يوجد عملاء مسجلون في النظام حالياً.</td></tr>`;
+                return;
+            }
+
+            customers.forEach((cust, custIndex) => {
+                let totalCompleted = cust.orders ? cust.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
+                let lastBaseline = cust.lastRewardAtCompletedCount || 0;
+                let currentCycleCount = totalCompleted - lastBaseline;
+                let usageCount = cust.usageCount || 0;
+
+                let statusBadge = currentCycleCount >= 5 
+                    ? `<span style="background: #27ae60; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold;">⭐ مستحق للمكافأة (${currentCycleCount}/5)</span>` 
+                    : `<span>(${currentCycleCount}/5 طلبات مكتملة)</span>`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight: bold; text-align: right;">${cust.name}</td>
+                        <td dir="ltr" style="text-align: right;">${cust.phone || 'غير متوفر'}</td>
+                        <td>${statusBadge}</td>
+                        <td><b style="color: #27ae60;">${usageCount}</b> مرات</td>
+                        <td>
+                            <div style="display: flex; gap: 5px; justify-content: center; align-items: center;">
+                                <input type="text" id="rewardValInput_${custIndex}" placeholder="قيمة الخصم (مثال: $10)" style="width: 130px; text-align: center;">
+                                <button class="btn-green" onclick="grantRewardToCustomer(${custIndex})">
+                                    <i class="fa-solid fa-gift"></i> منح المكافأة
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function grantRewardToCustomer(custIndex) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            if (!customers[custIndex]) return;
+
+            let customer = customers[custIndex];
+            let valInput = document.getElementById(`rewardValInput_${custIndex}`);
+            let rewardValue = valInput ? valInput.value.trim() : '';
+
+            if (!rewardValue) {
+                alert('الرجاء كتابة مبلغ أو قيمة الخصم المقدم للعميل أولاً!');
+                return;
+            }
+
+            if (confirm(`هل أنت متأكد من منح العميل (${customer.name}) مكافأة بقيمة (${rewardValue}) وتصفير عداد الدورة للبدء من جديد؟`)) {
+                let totalCompleted = customer.orders ? customer.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
+                
+                customer.lastRewardAtCompletedCount = totalCompleted;
+                customer.usageCount = (customer.usageCount || 0) + 1;
+
+                if (!customer.rewardsLog) customer.rewardsLog = [];
+                let timeStr = new Date().toLocaleString('ar-EG');
+                
+                customer.rewardsLog.push({
+                    amount: rewardValue,
+                    date: timeStr,
+                    employeeName: 'الموظف المختص'
+                });
+
+                // إرسال إشعار فوري للعميل في أول طلب نشط لديه
+                if (customer.orders && customer.orders.length > 0) {
+                    if (!customer.orders[0].notifications) customer.orders[0].notifications = [];
+                    customer.orders[0].notifications.unshift({
+                        text: `مبروك! لقد حصلت على مكافأة خصم جديدة بقيمة (${rewardValue}) من الإدارة.`,
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                }
+
+                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+                alert('تم منح المكافأة وتحديث سجل العميل بنجاح وتصفير الدورة بنجاح!');
+                loadRewardsManagementTable();
             }
         }
 
