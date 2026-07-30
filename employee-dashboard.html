@@ -32,11 +32,12 @@
         .btn-purple { background: #8e44ad; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-whatsapp { background: #25d366; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; text-decoration: none; display: inline-block; }
         .btn-chat { background: #e67e22; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-details { background: #16a085; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
         
         select, input[type="text"], input[type="number"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 500px; border-radius: 8px; }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 500px; border-radius: 8px; max-height: 85vh; overflow-y: auto; }
         .close { color: #aaa; float: left; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close:hover { color: black; }
         .chat-box { height: 250px; border: 1px solid #ccc; background: #f9f9f9; overflow-y: scroll; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
@@ -69,7 +70,7 @@
                         <th>المبلغ الفعلي والعملة</th>
                         <th>الحالة الأولية</th>
                         <th>الفرع المسؤول</th>
-                        <th>إجراءات التواصل</th>
+                        <th>إجراءات التواصل وتفاصيل الطلب</th>
                         <th>الخطوة النهائية</th>
                     </tr>
                 </thead>
@@ -128,6 +129,17 @@
             <div style="display: flex; gap: 5px;">
                 <input type="text" id="chatInput" placeholder="اكتب رد الموظف هنا..." style="flex: 1;" onkeypress="handleChatKeyPress(event)">
                 <button class="btn-green" onclick="sendChatMessage()">إرسال</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تفاصيل الطلب الكاملة (مشابهة للوحة الأدمن والعميل) -->
+    <div id="orderDetailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeOrderDetailsModal()">&times;</span>
+            <h3 style="margin-top: 0; color: #2c3e50;"><i class="fa-solid fa-box"></i> تفاصيل الطلب</h3>
+            <div id="modalOrderDetailsBody">
+                <!-- سيتم تعبئتها ديناميكياً -->
             </div>
         </div>
     </div>
@@ -236,6 +248,7 @@
                                     <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
                                         <a href="${waLink}" target="_blank" class="btn-whatsapp">واتساب</a>
                                         <button class="btn-chat" onclick="openChatModal(${custIndex}, ${ordIndex})">الدردشة</button>
+                                        <button class="btn-details" onclick="openEmployeeOrderDetailsModal(${custIndex}, ${ordIndex})">التفاصيل</button>
                                     </div>
                                 </td>
                                 <td>
@@ -297,7 +310,10 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <button class="btn-blue" onclick="updateBranchOrderStatus(${custIndex}, ${ordIndex})">حفظ وتحديث</button>
+                                        <div style="display: flex; gap: 5px; justify-content: center; align-items: center;">
+                                            <button class="btn-blue" onclick="updateBranchOrderStatus(${custIndex}, ${ordIndex})">حفظ وتحديث</button>
+                                            <button class="btn-details" onclick="openEmployeeOrderDetailsModal(${custIndex}, ${ordIndex})">التفاصيل</button>
+                                        </div>
                                     </td>
                                 </tr>
                             `;
@@ -309,6 +325,53 @@
             if (!hasOrders) {
                 tbody.innerHTML = `<tr><td colspan="6" style="color: #777;">لا توجد طلبات محولة إلى الفروع حالياً.</td></tr>`;
             }
+        }
+
+        // --- دوال فتح تفاصيل الطلب الكاملة للموظف ---
+        function openEmployeeOrderDetailsModal(cIndex, oIndex) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cust = customers[cIndex];
+            if(!cust || !cust.orders || !cust.orders[oIndex]) return;
+            let order = cust.orders[oIndex];
+
+            let modalBody = document.getElementById('modalOrderDetailsBody');
+            
+            // جلب نفس المفاتيح المستخدمة في لوحة العميل والأدمن بدقة
+            let prodUrl = order.url || order.productUrl || 'لا يوجد رابط مسجل';
+            let color = order.color || 'غير محدد';
+            let size = order.size || 'غير محدد';
+            let quantity = order.quantity || '1';
+            let orderId = order.id || order.productCode || 'غير محدد';
+            let orderDate = order.date || 'غير محدد';
+            let orderStatus = order.status || 'قيد المعالجة';
+
+            let linkDisplay = (prodUrl !== 'لا يوجد رابط مسجل') 
+                ? `<a href="${prodUrl}" target="_blank" style="color: #2980b9; word-break: break-all; text-decoration: underline;">${prodUrl}</a>` 
+                : 'لا يوجد رابط مسجل';
+
+            modalBody.innerHTML = `
+                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
+                    <p style="margin: 5px 0;"><b>رقم الطلب:</b> <span style="color: #2980b9;">${orderId}</span></p>
+                    <p style="margin: 5px 0;"><b>اسم العميل:</b> ${cust.name || '---'}</p>
+                    <p style="margin: 5px 0;"><b>رقم الهاتف:</b> <span dir="ltr">${cust.phone || '---'}</span></p>
+                    <p style="margin: 5px 0;"><b>العنوان:</b> ${cust.country || ''} - ${cust.state || ''} - ${cust.address || cust.userAddress || '---'}</p>
+                </div>
+                <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; color: #333; line-height: 1.8;">
+                    <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #eee; padding-bottom: 8px;"><i class="fa-solid fa-box"></i> تفاصيل الطلب الكاملة</h4>
+                    <p style="margin: 8px 0;"><strong>تاريخ الطلب:</strong> ${orderDate}</p>
+                    <p style="margin: 8px 0;"><strong>رابط المنتج:</strong> ${linkDisplay}</p>
+                    <p style="margin: 8px 0;"><strong>اللون:</strong> <span style="color: #c0392b; font-weight: bold;">${color}</span></p>
+                    <p style="margin: 8px 0;"><strong>المقاس:</strong> <span style="color: #c0392b; font-weight: bold;">${size}</span></p>
+                    <p style="margin: 8px 0;"><strong>العدد/الكمية:</strong> ${quantity}</p>
+                    <p style="margin: 8px 0;"><strong>حالة الطلب:</strong> <span style="padding: 3px 8px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-weight: bold;">${orderStatus}</span></p>
+                </div>
+            `;
+
+            document.getElementById('orderDetailsModal').style.display = 'flex';
+        }
+
+        function closeOrderDetailsModal() {
+            document.getElementById('orderDetailsModal').style.display = 'none';
         }
 
         // --- دوال إدارة نظام المكافآت مع اختيار العملة ---
@@ -500,7 +563,7 @@
             let ord = cust.orders[ordIndex];
             document.getElementById('chatTitle').innerText = `محادثة العميل: ${cust.name} (طلب: ${ord.id})`;
             renderChatMessages();
-            document.getElementById('chatModal').style.display = 'block';
+            document.getElementById('chatModal').style.display = 'flex';
         }
 
         function closeChatModal() { document.getElementById('chatModal').style.display = 'none'; }
@@ -522,7 +585,7 @@
         function sendChatMessage() {
             let input = document.getElementById('chatInput');
             let text = input.value.trim();
-            if (!text) return;
+            if (!Text) return;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let ord = customers[currentActiveCustIndex].orders[currentActiveOrdIndex];
             if (!ord.chat) ord.chat = [];
