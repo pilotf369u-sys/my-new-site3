@@ -181,11 +181,10 @@
             </table>
         </div>
 
-        <!-- 8. إدارة العملاء والمكافآت (المحدثة بفلتر التصفية الذكي) -->
+        <!-- 8. إدارة العملاء والمكافآت (مع شرط 5 طلبات وتصفير تلقائي) -->
         <div class="card" id="customers">
             <h3>إدارة العملاء ونظام المكافآت</h3>
             
-            <!-- أدوات الفلترة السريعة للتعامل مع المئات من العملاء -->
             <div style="background: #eef2f3; padding: 12px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
                     <label><b>تصفية العرض: </b></label>
@@ -195,7 +194,7 @@
                     </select>
                 </div>
                 <div style="color: #555; font-size: 13px;">
-                    <span>شرط الاستحقاق التلقائي: إتمام <b>3 طلبات</b> أو أكثر</span>
+                    <span>شرط الاستحقاق التلقائي: إتمام <b>5 طلبات مكتملة</b> (يعاد العد تصاعدياً بعد تطبيق المكافأة)</span>
                 </div>
             </div>
 
@@ -242,7 +241,7 @@
                         <th>الطلبات المكتملة</th>
                         <th>حالة الاستحقاق</th>
                         <th>منح المكافأة (تأشير)</th>
-                        <th>عدد الاستخدام</th>
+                        <th>عدد استخدام المكافأة</th>
                         <th>الإجراءات</th>
                     </tr>
                 </thead>
@@ -278,24 +277,13 @@
                         address: "الفاتح، شارع الأنس",
                         rewardActive: false,
                         usageCount: 0,
+                        lastRewardAtCompletedCount: 0, // لتتبع نقطة بداية تصفير العداد للدورة الجديدة
                         orders: [
                             { id: "#MW-9014", status: "تم التسليم", price: "$85.50" },
                             { id: "#MW-8821", status: "تم التسليم", price: "$120.00" },
-                            { id: "#MW-8933", status: "تم التسليم", price: "$50.00" }
-                        ]
-                    },
-                    { 
-                        code: "CUS-5520",
-                        name: "عبد العزيز", 
-                        phone: "9647772279773", 
-                        password: "123",
-                        country: "العراق",
-                        state: "بغداد",
-                        address: "حي المنصور",
-                        rewardActive: false,
-                        usageCount: 0,
-                        orders: [
-                            { id: "#MW-5520", status: "قيد المعالجة", price: "$200.00" }
+                            { id: "#MW-8933", status: "تم التسليم", price: "$50.00" },
+                            { id: "#MW-8934", status: "تم التسليم", price: "$40.00" },
+                            { id: "#MW-8935", status: "تم التسليم", price: "$60.00" }
                         ]
                     }
                 ];
@@ -483,7 +471,7 @@
             loadStoresAdmin();
         }
 
-        // --- إدارة العملاء الذكية ---
+        // --- إدارة العملاء ونظام المكافآت (5 طلبات وتصفير تلقائي) ---
         function updateCountryCode() {
             let select = document.getElementById('custCountry');
             let code = select.options[select.selectedIndex].getAttribute('data-code');
@@ -500,25 +488,29 @@
             tbody.innerHTML = '';
 
             customers.forEach((cust, index) => {
-                // حساب عدد الطلبات المكتملة تلقائياً
-                let completedOrders = cust.orders ? cust.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
+                // إجمالي الطلبات المكتملة كلياً
+                let totalCompleted = cust.orders ? cust.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
                 
-                // شرط الاستحقاق: وصول العميل إلى 3 طلبات مكتملة (يمكنك تعديل الرقم حسب رغبتك)
-                let isEligible = completedOrders >= 3;
+                // نقطة البداية للدورة الحالية بعد آخر تصفير
+                let lastBaseline = cust.lastRewardAtCompletedCount || 0;
+                
+                // العداد الحالي للدورة الحالية (يُحسب من آخر تصفير)
+                let currentCycleCount = totalCompleted - lastBaseline;
 
-                // التصفية بناءً على اختيار الأدمن في القائمة المنسدلة
+                // شرط الاستحقاق: وصول العداد الحالي إلى 5 طلبات
+                let isEligible = currentCycleCount >= 5;
+
                 if (filterType === 'eligible' && !isEligible) {
-                    return; // تخطي العملاء غير المستحقين إذا اخترنا عرض المستحقين فقط
+                    return;
                 }
 
                 let isChecked = cust.rewardActive ? 'checked' : '';
                 let usageCnt = cust.usageCount || 0;
-                
-                // تمييز بصري لصفوف العملاء المستحقين للمكافأة
                 let rowBackground = isEligible ? '#eafaf1' : '#ffffff';
+                
                 let eligibilityBadge = isEligible ? 
-                    '<span style="background: #27ae60; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">مستحق ⭐</span>' : 
-                    '<span style="background: #e0e0e0; color: #555; padding: 4px 8px; border-radius: 4px; font-size: 12px;">قيد التجميع</span>';
+                    '<span style="background: #27ae60; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">مستحق (5/5) ⭐</span>' : 
+                    `<span style="background: #e0e0e0; color: #555; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${currentCycleCount} / 5 طلبات</span>`;
 
                 tbody.innerHTML += `
                     <tr style="background-color: ${rowBackground};">
@@ -527,7 +519,7 @@
                         <td dir="ltr" style="text-align: right;">${cust.phone}</td>
                         <td>${cust.country || '---'} / ${cust.state || '---'}</td>
                         <td>${cust.address || '---'}</td>
-                        <td><span style="background: #e1f5fe; color: #0288d1; padding: 3px 8px; border-radius: 4px; font-weight: bold;">${completedOrders} مكتملة</span></td>
+                        <td><span style="background: #e1f5fe; color: #0288d1; padding: 3px 8px; border-radius: 4px; font-weight: bold;">${totalCompleted} كلي (${currentCycleCount} للدورة)</span></td>
                         <td>${eligibilityBadge}</td>
                         <td>
                             <input type="checkbox" ${isChecked} onchange="toggleCustomerReward(${index}, this.checked)" style="width: 20px; height: 20px; cursor: pointer;">
@@ -544,12 +536,25 @@
             });
         }
 
+        // دالة تطبيق المكافأة وتصفير العداد تلقائياً للدورة الجديدة
         function toggleCustomerReward(index, isChecked) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             if (customers[index]) {
                 customers[index].rewardActive = isChecked;
                 if (isChecked) {
+                    // زيادة عدد استخدام المكافأة
                     customers[index].usageCount = (customers[index].usageCount || 0) + 1;
+                    
+                    // تصفير العداد تلقائياً بجعل نقطة البداية تساوي إجمالي الطلبات الحالية المكتملة
+                    let totalCompleted = customers[index].orders ? customers[index].orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
+                    customers[index].lastRewardAtCompletedCount = totalCompleted;
+                    
+                    // إلغاء التأشير البصري بعد التطبيق ليصبح جاهزاً للدورة القادمة
+                    setTimeout(() => {
+                        customers[index].rewardActive = false;
+                        localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+                        loadCustomers();
+                    }, 500);
                 }
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
                 loadCustomers();
@@ -578,7 +583,7 @@
                 let newCode = code || ('CUS-' + Math.floor(1000 + Math.random() * 9000));
                 customers.push({
                     code: newCode, name, email, password, country, phone, state, address,
-                    rewardActive: false, usageCount: 0, orders: []
+                    rewardActive: false, usageCount: 0, lastRewardAtCompletedCount: 0, orders: []
                 });
                 alert('تم إضافة العميل بنجاح');
             } else {
