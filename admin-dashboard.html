@@ -251,6 +251,8 @@
                         <th>الدولة والمنطقة</th>
                         <th>العنوان</th>
                         <th>الطلبات</th>
+                        <th>المكافأة (تأشير)</th>
+                        <th>عدد الاستخدام</th>
                         <th>الإجراءات</th>
                     </tr>
                 </thead>
@@ -285,6 +287,8 @@
                         country: "العراق",
                         state: "بغداد",
                         address: "بغداد، حي المنصور، شارع 14 رمضان",
+                        rewardActive: false,
+                        usageCount: 0,
                         orders: [
                             { id: "#MW-9014", status: "لم يتم الاتفاق - ملغي من الزبون", price: "$85.50" },
                             { id: "#MW-8821", status: "في انتظار الدفع", price: "$120.00" }
@@ -298,6 +302,8 @@
                         country: "العراق",
                         state: "بغداد",
                         address: "بغداد، حي العدل، شارع 14",
+                        rewardActive: true,
+                        usageCount: 2,
                         orders: [
                             { id: "#MW-5520", status: "تم التسليم", price: "$200.00" },
                             { id: "#MW-8822", status: "قيد المعالجة", price: "$120.00" }
@@ -569,6 +575,9 @@
             tbody.innerHTML = '';
             customers.forEach((cust, index) => {
                 let ordersCount = cust.orders ? cust.orders.length : 0;
+                let isChecked = cust.rewardActive ? 'checked' : '';
+                let usageCnt = cust.usageCount || 0;
+
                 tbody.innerHTML += `<tr>
                     <td><b style="color: #2980b9;">${cust.code || '---'}</b></td>
                     <td>${cust.name}</td>
@@ -577,11 +586,31 @@
                     <td>${cust.address || '---'}</td>
                     <td><span style="background: #e1f5fe; color: #0288d1; padding: 3px 8px; border-radius: 4px; font-weight: bold;">${ordersCount} طلبات</span></td>
                     <td>
+                        <input type="checkbox" ${isChecked} onchange="toggleCustomerReward(${index}, this.checked)" style="width: 20px; height: 20px; cursor: pointer;">
+                    </td>
+                    <td>
+                        <span style="background: #e8f8f5; color: #16a085; padding: 4px 10px; border-radius: 4px; font-weight: bold;">${usageCnt} مرة</span>
+                    </td>
+                    <td>
                         <button class="btn-blue" onclick="editCustomer(${index})" style="margin-left: 5px;">تعديل</button>
                         <button class="btn-red" onclick="deleteCustomer(${index})">حذف</button>
                     </td>
                 </tr>`;
             });
+        }
+
+        // دالة تحديث حالة المكافأة وتحويلها لعدد الاستخدام عند تفعيلها بواسطة الموظف
+        function toggleCustomerReward(index, isChecked) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            if (customers[index]) {
+                customers[index].rewardActive = isChecked;
+                if (isChecked) {
+                    // عندما يتم تأشيرها (استخدامها من قبل الموظف)، تزيد أو تُحول لعداد الاستخدام
+                    customers[index].usageCount = (customers[index].usageCount || 0) + 1;
+                }
+                localStorage.setItem('adminCustomersList', JSON.stringify(customers));
+                loadCustomers();
+            }
         }
 
         function saveCustomerData() {
@@ -603,11 +632,10 @@
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
 
             if (editIndex === -1) {
-                if(!code) {
-                    code = 'CUS-' + Math.floor(1000 + Math.random() * 9000);
-                }
+                // إضافة عميل جديد
+                let newCode = code || ('CUS-' + Math.floor(1000 + Math.random() * 9000));
                 customers.push({
-                    code,
+                    code: newCode,
                     name,
                     email,
                     password,
@@ -615,10 +643,13 @@
                     phone,
                     state,
                     address,
+                    rewardActive: false,
+                    usageCount: 0,
                     orders: []
                 });
                 alert('تم إضافة العميل بنجاح');
             } else {
+                // تعديل عميل حالي مع الحفاظ على طلباته وحالة مكافآته واستخدامه
                 customers[editIndex].name = name;
                 customers[editIndex].code = code || customers[editIndex].code;
                 customers[editIndex].email = email;
@@ -627,7 +658,7 @@
                 customers[editIndex].phone = phone;
                 customers[editIndex].state = state;
                 customers[editIndex].address = address;
-                alert('تم تعديل بيانات العميل بنجاح');
+                alert('تم تحديث بيانات العميل بنجاح');
             }
 
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
@@ -639,7 +670,7 @@
         function editCustomer(index) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let cust = customers[index];
-            if(!cust) return;
+            if (!cust) return;
 
             document.getElementById('custName').value = cust.name || '';
             document.getElementById('custCode').value = cust.code || '';
@@ -651,10 +682,11 @@
             document.getElementById('custAddress').value = cust.address || '';
             document.getElementById('editCustomerIndex').value = index;
 
-            document.getElementById('customerFormTitle').innerText = 'تعديل بيانات العميل';
+            document.getElementById('customerFormTitle').innerText = 'تعديل بيانات العميل: ' + cust.name;
             document.getElementById('saveCustomerBtn').innerText = 'حفظ التعديلات';
             document.getElementById('cancelEditBtn').style.display = 'inline-block';
-            window.scrollTo({top: 400, behavior: 'smooth'});
+            
+            window.scrollTo({ top: document.getElementById('customers').offsetTop, behavior: 'smooth' });
         }
 
         function resetCustomerForm() {
@@ -674,12 +706,13 @@
         }
 
         function deleteCustomer(index) {
-            if(confirm('هل أنت متأكد من حذف هذا العميل نهائياً مع كافة طلباته؟')) {
+            if(confirm('هل أنت متأكد من حذف هذا العميل نهائياً؟')) {
                 let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
                 customers.splice(index, 1);
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
                 loadCustomers();
                 loadAdminOrders();
+                alert('تم حذف العميل بنجاح');
             }
         }
     </script>
