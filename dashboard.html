@@ -16,6 +16,7 @@
         .btn-wa { background: #25D366; color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 12px; margin-left: 5px; display: inline-block; }
         .btn-msg { background: var(--dark-blue); color: white; padding: 5px 10px; border-radius: 5px; border: none; font-size: 12px; cursor: pointer; }
         .btn-cancel { background: #e53935; color: white; padding: 5px 10px; border-radius: 5px; border: none; font-size: 12px; cursor: pointer; }
+        .btn-details { background: #6366f1; color: white; padding: 5px 10px; border-radius: 5px; border: none; font-size: 12px; cursor: pointer; margin-left: 5px; }
         .orders-container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px; }
         table { width: 100%; border-collapse: collapse; }
         th { background: #f8fafc; padding: 15px; text-align: right; border-bottom: 2px solid #edf2f7; }
@@ -32,7 +33,7 @@
         .notifications-list { max-height: 180px; overflow-y: auto; font-size: 13px; text-align: right; }
         .notification-item { padding: 6px 0; border-bottom: 1px solid #f1f5f9; color: #334155; }
 
-        /* تنسيق النافذة المنبثقة (Modal) لسجل المكافآت */
+        /* تنسيق النافذة المنبثقة (Modal) */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 500px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); text-align: right; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -88,6 +89,22 @@
         </div>
     </div>
 
+    <!-- نافذة منبثقة (Modal) لعرض تفاصيل الطلب للعميل -->
+    <div id="customerOrderDetailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: var(--dark-blue);"><i class="fa-solid fa-box"></i> تفاصيل الطلب الكاملة</h3>
+                <button onclick="closeCustomerOrderDetails()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #777;">&times;</button>
+            </div>
+            <div id="customerOrderDetailsContent" style="font-size: 14px; color: #333; line-height: 1.8;">
+                <!-- تفاصيل الطلب -->
+            </div>
+            <div style="text-align: left; margin-top: 20px;">
+                <button onclick="closeCustomerOrderDetails()" class="btn-action" style="background: #64748b; padding: 6px 15px;">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
     <div class="info-card" style="margin-bottom: 25px;">
         <h3><i class="fa-solid fa-house-user"></i> عنوانك الخاص</h3>
         <input type="text" class="address-input" id="userAddress" style="width: 70%;">
@@ -103,6 +120,7 @@
                     <th>تاريخ ووقت الطلب</th>
                     <th>الحالة</th>
                     <th>السعر</th>
+                    <th>تفاصيل الطلب</th>
                     <th>إجراءات التواصل</th>
                     <th>إلغاء</th>
                 </tr>
@@ -143,6 +161,7 @@
 
     <script>
         let activeSelectedOrderIndex = 0;
+        let currentCustomerOrdersGlobal = [];
 
         window.onload = function() {
             const userData = JSON.parse(localStorage.getItem('loggedInUser'));
@@ -210,6 +229,7 @@
             
             let total = 0;
             if (currentCustomer && currentCustomer.orders && currentCustomer.orders.length > 0) {
+                currentCustomerOrdersGlobal = currentCustomer.orders;
                 currentCustomer.orders.forEach((order, index) => {
                     let priceStr = order.price || '$0.00';
                     const priceValue = parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
@@ -238,6 +258,7 @@
                         <td style="font-size: 13px; color: #555;">${orderDate}</td>
                         <td><span style="padding: 5px 10px; background: ${statusBg}; color: ${statusColor}; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block;">${st}</span></td>
                         <td><b style="color: #003366;">${priceStr}</b></td>
+                        <td><button class="btn-details" onclick="openCustomerOrderDetails(${index})"><i class="fa-solid fa-eye"></i> عرض التفاصيل</button></td>
                         <td>
                             <a href="${waLink}" class="btn-wa" target="_blank"><i class="fa-brands fa-whatsapp"></i> واتساب</a> 
                             <button class="btn-msg" onclick="selectOrderForChat(${index})">الدردشة</button>
@@ -248,12 +269,12 @@
                 
                 tbody.innerHTML += `<tr style="font-weight: bold; color: var(--primary-red);">
                     <td colspan="3" style="text-align: left;">الإجمالي المطلوب دفعه:</td>
-                    <td colspan="3" style="text-align: center;">$${total.toFixed(2)}</td>
+                    <td colspan="4" style="text-align: center;">$${total.toFixed(2)}</td>
                 </tr>`;
 
                 loadCustomerChatAndNotifications(currentCustomerIndex, 0);
             } else {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #777;">لا توجد طلبات نشطة حالياً.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: #777;">لا توجد طلبات نشطة حالياً.</td></tr>`;
                 document.getElementById('notificationsContainer').innerHTML = `<p style="color: #666;">• لا توجد إشعارات جديدة.</p>`;
                 document.getElementById('customerChatBox').innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">لا توجد طلبات نشطة للمحادثة.</p>`;
             }
@@ -265,6 +286,34 @@
         }
         function closeRewardsModal() {
             document.getElementById('rewardsModal').style.display = 'none';
+        }
+
+        // دوال التحكم بنافذة تفاصيل الطلب للعميل
+        function openCustomerOrderDetails(index) {
+            let order = currentCustomerOrdersGlobal[index];
+            if (!order) return;
+
+            let contentDiv = document.getElementById('customerOrderDetailsContent');
+            let prodUrl = order.url || order.productUrl || 'لا يوجد رابط مسجل';
+            let color = order.color || 'غير محدد';
+            let size = order.size || 'غير محدد';
+            let quantity = order.quantity || '1';
+
+            contentDiv.innerHTML = `
+                <p><strong>رقم الطلب:</strong> ${order.id || 'غير محدد'}</p>
+                <p><strong>تاريخ الطلب:</strong> ${order.date || 'غير محدد'}</p>
+                <p><strong>رابط المنتج:</strong> ${prodUrl !== 'لا يوجد رابط مسجل' ? `<a href="${prodUrl}" target="_blank" style="color: #003366; word-break: break-all;">${prodUrl}</a>` : 'لا يوجد رابط مسجل'}</p>
+                <p><strong>اللون:</strong> ${color}</p>
+                <p><strong>المقاس:</strong> ${size}</p>
+                <p><strong>العدد/الكمية:</strong> ${quantity}</p>
+                <p><strong>حالة الطلب:</strong> ${order.status || 'قيد المعالجة'}</p>
+            `;
+
+            document.getElementById('customerOrderDetailsModal').style.display = 'flex';
+        }
+
+        function closeCustomerOrderDetails() {
+            document.getElementById('customerOrderDetailsModal').style.display = 'none';
         }
 
         function selectOrderForChat(ordIndex) {
