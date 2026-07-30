@@ -322,9 +322,10 @@
                         if(st === "تم التسليم" || st === "تم التوصيل") { statusBg = "#d4edda"; statusColor = "#155724"; }
                         else if(st.includes("ملغي")) { statusBg = "#f8d7da"; statusColor = "#721c24"; }
 
-                        // تجهيز جدول عرض تفاصيل المنتجات (الرابط، المواصفات، الملاحظات) داخل الطلب
+                        // معالجة ذكية لعرض تفاصيل المنتجات سواء كانت محفوظة بمصفوفة items أو روابط مباشرة بالطلب
                         let itemsHtml = '<span style="color: #777;">لا توجد منتجات مسجلة</span>';
-                        if (ord.items && ord.items.length > 0) {
+
+                        if (ord.items && Array.isArray(ord.items) && ord.items.length > 0) {
                             itemsHtml = `<table class="order-items-table">
                                 <thead>
                                     <tr>
@@ -335,7 +336,7 @@
                                 </thead>
                                 <tbody>`;
                             ord.items.forEach(it => {
-                                let linkDisplay = it.url ? `<a href="${it.url}" target="_blank" style="color: #2980b9; text-decoration: underline;">${it.name || 'رابط المنتج'}</a>` : (it.name || '---');
+                                let linkDisplay = it.url ? `<a href="${it.url}" target="_blank" style="color: #2980b9; text-decoration: underline; word-break: break-all;">${it.name || it.url}</a>` : (it.name || '---');
                                 itemsHtml += `<tr>
                                     <td><b>${linkDisplay}</b></td>
                                     <td>${it.specs || '---'}</td>
@@ -343,6 +344,25 @@
                                 </tr>`;
                             });
                             itemsHtml += `</tbody></table>`;
+                        } 
+                        // التقاط الروابط المباشرة في حال تم حفظها كحقول مستقلة في الطلب (مثل productUrl أو link أو product)
+                        else if (ord.productUrl || ord.link || ord.product) {
+                            let directLink = ord.productUrl || ord.link || ord.product;
+                            let linkDisplay = `<a href="${directLink}" target="_blank" style="color: #2980b9; text-decoration: underline; word-break: break-all;">${directLink}</a>`;
+                            itemsHtml = `<table class="order-items-table">
+                                <thead>
+                                    <tr>
+                                        <th>رابط المنتج</th>
+                                        <th>المواصفات / الملاحظات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><b>${linkDisplay}</b></td>
+                                        <td>${ord.notes || ord.specs || '---'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>`;
                         }
 
                         tbody.innerHTML += `
@@ -352,8 +372,8 @@
                                 <td dir="ltr" style="text-align: right;">${cust.phone}</td>
                                 <td>${cust.country} - ${cust.state || ''}</td>
                                 <td style="text-align: right; max-width: 350px;">${itemsHtml}</td>
-                                <td><span style="color: #27ae60; font-weight: bold;">${ord.price}</span></td>
-                                <td><span style="background: ${statusBg}; color: ${statusColor}; padding: 5px 10px; border-radius: 4px; font-weight: bold;">${ord.status}</span></td>
+                                <td><span style="color: #27ae60; font-weight: bold;">${ord.price || '$0.00'}</span></td>
+                                <td><span style="background: ${statusBg}; color: ${statusColor}; padding: 5px 10px; border-radius: 4px; font-weight: bold;">${ord.status || 'قيد المعالجة'}</span></td>
                                 <td>
                                     <select onchange="updateOrderStatus(${cIndex}, ${oIndex}, this.value)" style="padding: 6px; border-radius: 4px;">
                                         <option value="" disabled selected>تغيير الحالة</option>
