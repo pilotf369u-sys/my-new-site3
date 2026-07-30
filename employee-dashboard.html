@@ -33,11 +33,12 @@
         .btn-whatsapp { background: #25d366; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; text-decoration: none; display: inline-block; }
         .btn-chat { background: #e67e22; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
         .btn-details { background: #16a085; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-profile { background: #34495e; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
         
         select, input[type="text"], input[type="number"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 500px; border-radius: 8px; max-height: 85vh; overflow-y: auto; }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 550px; border-radius: 8px; max-height: 85vh; overflow-y: auto; }
         .close { color: #aaa; float: left; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close:hover { color: black; }
         .chat-box { height: 250px; border: 1px solid #ccc; background: #f9f9f9; overflow-y: scroll; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
@@ -133,14 +134,21 @@
         </div>
     </div>
 
-    <!-- نافذة تفاصيل الطلب الكاملة (مشابهة للوحة الأدمن والعميل) -->
+    <!-- نافذة تفاصيل الطلب الكاملة -->
     <div id="orderDetailsModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeOrderDetailsModal()">&times;</span>
             <h3 style="margin-top: 0; color: #2c3e50;"><i class="fa-solid fa-box"></i> تفاصيل الطلب</h3>
-            <div id="modalOrderDetailsBody">
-                <!-- سيتم تعبئتها ديناميكياً -->
-            </div>
+            <div id="modalOrderDetailsBody"></div>
+        </div>
+    </div>
+
+    <!-- نافذة ملف العميل الشامل (الميزة الجديدة المضافة) -->
+    <div id="customerProfileModal" class="modal">
+        <div class="modal-content" style="width: 600px;">
+            <span class="close" onclick="closeCustomerProfileModal()">&times;</span>
+            <h3 style="margin-top: 0; color: #2c3e50;"><i class="fa-solid fa-user"></i> ملف العميل الشامل وسجل طلباته</h3>
+            <div id="customerProfileContent"></div>
         </div>
     </div>
 
@@ -249,6 +257,7 @@
                                         <a href="${waLink}" target="_blank" class="btn-whatsapp">واتساب</a>
                                         <button class="btn-chat" onclick="openChatModal(${custIndex}, ${ordIndex})">الدردشة</button>
                                         <button class="btn-details" onclick="openEmployeeOrderDetailsModal(${custIndex}, ${ordIndex})">التفاصيل</button>
+                                        <button class="btn-profile" onclick="openCustomerProfileModal(${custIndex})">ملف العميل</button>
                                     </div>
                                 </td>
                                 <td>
@@ -327,7 +336,60 @@
             }
         }
 
-        // --- دوال فتح تفاصيل الطلب الكاملة للموظف ---
+        // --- نافذة ملف العميل الكامل وسجل طلباته ---
+        function openCustomerProfileModal(custIndex) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cust = customers[custIndex];
+            if(!cust) return;
+
+            let ordersHtml = '';
+            if(cust.orders && cust.orders.length > 0) {
+                cust.orders.forEach((ord) => {
+                    ordersHtml += `
+                        <tr style="font-size: 13px;">
+                            <td><b>${ord.id || '---'}</b></td>
+                            <td>${ord.date || '---'}</td>
+                            <td><span style="padding: 2px 6px; background: #e0f2fe; border-radius: 4px; font-weight: bold;">${ord.status || 'قيد المعالجة'}</span></td>
+                            <td><b>${ord.price || 'غير محدد'}</b></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                ordersHtml = `<tr><td colspan="4">لا توجد طلبات مسجلة لهذا العميل.</td></tr>`;
+            }
+
+            document.getElementById('customerProfileContent').innerHTML = `
+                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 15px;">
+                    <p style="margin: 5px 0;"><b>اسم العميل:</b> ${cust.name || '---'}</p>
+                    <p style="margin: 5px 0;"><b>رقم الهاتف:</b> <span dir="ltr">${cust.phone || '---'}</span></p>
+                    <p style="margin: 5px 0;"><b>العنوان:</b> ${cust.country || ''} - ${cust.state || ''} - ${cust.address || cust.userAddress || '---'}</p>
+                    <p style="margin: 5px 0;"><b>إجمالي عدد طلبات العميل:</b> <span style="color: #2980b9; font-weight: bold;">${cust.orders ? cust.orders.length : 0}</span></p>
+                </div>
+                <h4 style="color: #1e293b; margin-bottom: 5px;">سجل طلبات العميل السابقة والجارية:</h4>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>التاريخ</th>
+                                <th>الحالة</th>
+                                <th>السعر</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${ordersHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('customerProfileModal').style.display = 'flex';
+        }
+
+        function closeCustomerProfileModal() {
+            document.getElementById('customerProfileModal').style.display = 'none';
+        }
+
+        // --- دوال تفاصيل الطلب ---
         function openEmployeeOrderDetailsModal(cIndex, oIndex) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let cust = customers[cIndex];
@@ -335,8 +397,6 @@
             let order = cust.orders[oIndex];
 
             let modalBody = document.getElementById('modalOrderDetailsBody');
-            
-            // جلب نفس المفاتيح المستخدمة في لوحة العميل والأدمن بدقة
             let prodUrl = order.url || order.productUrl || 'لا يوجد رابط مسجل';
             let color = order.color || 'غير محدد';
             let size = order.size || 'غير محدد';
@@ -354,10 +414,8 @@
                     <p style="margin: 5px 0;"><b>رقم الطلب:</b> <span style="color: #2980b9;">${orderId}</span></p>
                     <p style="margin: 5px 0;"><b>اسم العميل:</b> ${cust.name || '---'}</p>
                     <p style="margin: 5px 0;"><b>رقم الهاتف:</b> <span dir="ltr">${cust.phone || '---'}</span></p>
-                    <p style="margin: 5px 0;"><b>العنوان:</b> ${cust.country || ''} - ${cust.state || ''} - ${cust.address || cust.userAddress || '---'}</p>
                 </div>
                 <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; color: #333; line-height: 1.8;">
-                    <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #eee; padding-bottom: 8px;"><i class="fa-solid fa-box"></i> تفاصيل الطلب الكاملة</h4>
                     <p style="margin: 8px 0;"><strong>تاريخ الطلب:</strong> ${orderDate}</p>
                     <p style="margin: 8px 0;"><strong>رابط المنتج:</strong> ${linkDisplay}</p>
                     <p style="margin: 8px 0;"><strong>اللون:</strong> <span style="color: #c0392b; font-weight: bold;">${color}</span></p>
@@ -366,7 +424,6 @@
                     <p style="margin: 8px 0;"><strong>حالة الطلب:</strong> <span style="padding: 3px 8px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-weight: bold;">${orderStatus}</span></p>
                 </div>
             `;
-
             document.getElementById('orderDetailsModal').style.display = 'flex';
         }
 
@@ -374,7 +431,7 @@
             document.getElementById('orderDetailsModal').style.display = 'none';
         }
 
-        // --- دوال إدارة نظام المكافآت مع اختيار العملة ---
+        // --- مكافآت العملاء ---
         function loadRewardsManagementTable() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('rewardsTableBody');
@@ -422,11 +479,8 @@
             if (!customers[custIndex]) return;
 
             let customer = customers[custIndex];
-            let numInput = document.getElementById(`rewardNumInput_${custIndex}`);
-            let currSelect = document.getElementById(`rewardCurrSelect_${custIndex}`);
-            
-            let val = numInput ? numInput.value.trim() : '';
-            let curr = currSelect ? currSelect.value : '$';
+            let val = document.getElementById(`rewardNumInput_${custIndex}`).value.trim();
+            let curr = document.getElementById(`rewardCurrSelect_${custIndex}`).value;
 
             if (!val || parseFloat(val) <= 0) {
                 alert('الرجاء كتابة قيمة صحيحة لمبلغ الخصم!');
@@ -434,32 +488,19 @@
             }
 
             let rewardFormatted = `${val} ${curr}`;
-
-            if (confirm(`هل أنت متأكد من منح العميل (${customer.name}) مكافأة بقيمة (${rewardFormatted}) وتصفير عداد الدورة الحالية؟`)) {
+            if (confirm(`هل أنت متأكد من منح العميل (${customer.name}) مكافأة بقيمة (${rewardFormatted})؟`)) {
                 let totalCompleted = customer.orders ? customer.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
-                
                 customer.lastRewardAtCompletedCount = totalCompleted;
                 customer.usageCount = (customer.usageCount || 0) + 1;
 
-                if (!customer.rewardsLog) customer.rewardsLog = [];
-                let timeStr = new Date().toLocaleString('ar-EG');
-                
-                customer.rewardsLog.push({
-                    amount: rewardFormatted,
-                    date: timeStr,
-                    employeeName: 'الموظف المختص'
+                if (!customer.orders[0].notifications) customer.orders[0].notifications = [];
+                customer.orders[0].notifications.unshift({
+                    text: `مبروك! لقد حصلت على مكافأة خصم جديدة بقيمة (${rewardFormatted}) من الإدارة.`,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 });
 
-                if (customer.orders && customer.orders.length > 0) {
-                    if (!customer.orders[0].notifications) customer.orders[0].notifications = [];
-                    customer.orders[0].notifications.unshift({
-                        text: `مبروك! لقد حصلت على مكافأة خصم جديدة بقيمة (${rewardFormatted}) من الإدارة.`,
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    });
-                }
-
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-                alert('تم منح المكافأة للعميل وتحديث سجله وتصفير الدورة بنجاح!');
+                alert('تم منح المكافأة للعميل بنجاح!');
                 loadRewardsManagementTable();
             }
         }
@@ -474,13 +515,6 @@
             customers[custIndex].orders[ordIndex].currency = curr;
             customers[custIndex].orders[ordIndex].price = numVal ? `${numVal.toFixed(2)} ${curr}` : `0 ${curr}`;
             
-            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
-            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            customers[custIndex].orders[ordIndex].notifications.unshift({
-                text: `تم تحديث سعر الطلب (${customers[custIndex].orders[ordIndex].id}) إلى ${numVal} ${curr}`,
-                time: timeStr
-            });
-
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             alert('تم تحديث المبلغ والعملة وإرسال إشعار للعميل بنجاح');
             loadCustomerProcessingOrders();
@@ -490,14 +524,6 @@
             let newStatus = document.getElementById(`status_cust_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].status = newStatus;
-
-            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
-            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            customers[custIndex].orders[ordIndex].notifications.unshift({
-                text: `تم تحديث حالة طلبك (${customers[custIndex].orders[ordIndex].id}) إلى: ${newStatus}`,
-                time: timeStr
-            });
-
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             loadCustomerProcessingOrders(); 
         }
@@ -518,14 +544,6 @@
             }
             customers[custIndex].orders[ordIndex].transferredToBranch = true;
             customers[custIndex].orders[ordIndex].assignedBranch = branchSelected;
-            
-            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
-            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            customers[custIndex].orders[ordIndex].notifications.unshift({
-                text: `تم توجيه طلبك (${customers[custIndex].orders[ordIndex].id}) إلى الفرع (${branchSelected})`,
-                time: timeStr
-            });
-
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             alert('تم نقل الطلب بنجاح إلى قسم معالجة الفروع والشحن!');
             loadCustomerProcessingOrders();
@@ -542,19 +560,12 @@
             let newStatus = document.getElementById(`status_${custIndex}_${ordIndex}`).value;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             customers[custIndex].orders[ordIndex].status = newStatus;
-
-            if (!customers[custIndex].orders[ordIndex].notifications) customers[custIndex].orders[ordIndex].notifications = [];
-            let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            customers[custIndex].orders[ordIndex].notifications.unshift({
-                text: `تحديث الشحن للطلب (${customers[custIndex].orders[ordIndex].id}): ${newStatus}`,
-                time: timeStr
-            });
-
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             alert('تم تحديث حالة الفرع والشحن بنجاح');
             loadBranchProcessingOrders();
         }
 
+        // --- الدردشة ---
         function openChatModal(custIndex, ordIndex) {
             currentActiveCustIndex = custIndex;
             currentActiveOrdIndex = ordIndex;
@@ -585,20 +596,13 @@
         function sendChatMessage() {
             let input = document.getElementById('chatInput');
             let text = input.value.trim();
-            if (!Text) return;
+            if (!text) return;
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let ord = customers[currentActiveCustIndex].orders[currentActiveOrdIndex];
             if (!ord.chat) ord.chat = [];
             let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
             ord.chat.push({ sender: 'employee', text: text, time: timeStr });
-
-            if (!ord.notifications) ord.notifications = [];
-            ord.notifications.unshift({
-                text: `رسالة جديدة من الموظف بخصوص الطلب (${ord.id})`,
-                time: timeStr
-            });
-
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
             input.value = '';
             renderChatMessages();
