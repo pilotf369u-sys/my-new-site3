@@ -41,12 +41,19 @@
     </div>
 
     <div class="grid-layout">
+        <!-- بطاقة نظام المكافآت المحدثة للعميل -->
         <div class="info-card" style="border-right: 5px solid #25D366;">
-            <h3>🌟 مكافآت MeshWar</h3>
-            <div style="background: #e2e8f0; height: 10px; border-radius: 5px; margin: 15px 0;">
-                <div style="background: #25D366; height: 100%; width: 70%;"></div>
+            <h3>🌟 نظام مكافآت MeshWar</h3>
+            <div id="rewardStatusBadge" style="margin: 10px 0; font-weight: bold; font-size: 14px; color: #2c3e50;">
+                جاري تحميل تفاصيل المكافآت...
             </div>
-            <p>أنت على بعد 3 طلبات من مكافأة الخصم الذهبية!</p>
+            <div style="background: #e2e8f0; height: 10px; border-radius: 5px; margin: 15px 0; overflow: hidden;">
+                <div id="rewardProgressBar" style="background: #25D366; height: 100%; width: 0%; transition: width 0.4s ease;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #555;">
+                <span>عدد مرات استلام المكافأة السابقة: <b id="customerUsageCount" style="color: #27ae60;">0</b> مرة</span>
+                <span>قيمة المكافأة المستحقة: <b style="color: #2980b9;">خصم شحن / خدمة خاص</b></span>
+            </div>
         </div>
 
         <div class="info-card" style="border-right: 5px solid var(--primary-red);">
@@ -131,6 +138,29 @@
                 currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
             }
 
+            // --- حساب وعرض تفاصيل نظام المكافآت للعميل ---
+            if (currentCustomer) {
+                let totalCompleted = currentCustomer.orders ? currentCustomer.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
+                let lastBaseline = currentCustomer.lastRewardAtCompletedCount || 0;
+                let currentCycleCount = totalCompleted - lastBaseline;
+                let usageCount = currentCustomer.usageCount || 0;
+
+                document.getElementById('customerUsageCount').innerText = usageCount;
+
+                let badgeEl = document.getElementById('rewardStatusBadge');
+                let barEl = document.getElementById('rewardProgressBar');
+                let progressPercent = Math.min((currentCycleCount / 5) * 100, 100);
+                barEl.style.width = progressPercent + '%';
+
+                if (currentCycleCount >= 5) {
+                    badgeEl.innerHTML = `<span style="background: #27ae60; color: white; padding: 4px 10px; border-radius: 4px;">🎉 مبروك! لقد استحققت مكافأة الخصم الذهبية (5/5 طلبات) ⭐</span>`;
+                    barEl.style.background = '#27ae60';
+                } else {
+                    badgeEl.innerHTML = `أنت على بعد <b>${5 - currentCycleCount} طلبات</b> من مكافأة الخصم الذهبية (${currentCycleCount}/5 طلبات مكتملة)`;
+                    barEl.style.background = '#25D366';
+                }
+            }
+
             const tbody = document.getElementById('customerOrdersTableBody');
             tbody.innerHTML = '';
             
@@ -143,16 +173,15 @@
                     
                     let st = order.status ? order.status.trim() : 'قيد المعالجة';
                     
-                    // توحيد الألوان بناءً على نفس شروط لوحة الأدمن والموظف
-                    let statusBg = "#e0f2fe", statusColor = "#0369a1"; // أزرق افتراضي
+                    let statusBg = "#e0f2fe", statusColor = "#0369a1";
                     if(st === "تم التوصيل" || st === "تم التسليم") { 
-                        statusBg = "#d4edda"; statusColor = "#155724"; // أخضر
+                        statusBg = "#d4edda"; statusColor = "#155724";
                     }
                     else if(st === "ملغي" || st.includes("ملغي") || st.includes("رفض")) { 
-                        statusBg = "#f8d7da"; statusColor = "#721c24"; // أحمر
+                        statusBg = "#f8d7da"; statusColor = "#721c24";
                     }
                     else if(st === "قيد الشحن" || st === "جاهز للشحن" || st === "تم الشحن" || st === "مخزن محلي" || st === "توزيع داخلي") { 
-                        statusBg = "#cce5ff"; statusColor = "#004085"; // أزرق غامق مرحلي
+                        statusBg = "#cce5ff"; statusColor = "#004085";
                     }
 
                     const orderId = order.id || order.productCode || 'طلب';
@@ -204,7 +233,6 @@
 
             let order = adminCustomersList[cIndex].orders[ordIndex];
 
-            // 1. عرض الرسائل
             let chatBox = document.getElementById('customerChatBox');
             chatBox.innerHTML = '';
             if (!order.chat || order.chat.length === 0) {
@@ -218,7 +246,6 @@
                 chatBox.scrollTop = chatBox.scrollHeight;
             }
 
-            // 2. عرض الإشعارات
             let notifContainer = document.getElementById('notificationsContainer');
             notifContainer.innerHTML = '';
             if (!order.notifications || order.notifications.length === 0) {
@@ -265,7 +292,6 @@
                 let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
                 
                 if(cIndex !== -1 && adminCustomersList[cIndex].orders) {
-                    // تحديث الحالة إلى ملغي بدل حذفه كلياً ليراها الموظف والأدمن باللون الأحمر
                     adminCustomersList[cIndex].orders[index].status = "لم يتم الاتفاق - ملغي من الزبون";
                     localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
                     alert('تم إلغاء الطلب بنجاح وإبلاغ الإدارة');
@@ -286,7 +312,6 @@
             userData.address = newAddress;
             localStorage.setItem('loggedInUser', JSON.stringify(userData));
 
-            // تحديث العنوان أيضاً في قائمة العملاء الرئيسية adminCustomersList ليتزامن مع لوحة الأدمن
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
             if(cIndex !== -1) {
