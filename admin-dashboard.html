@@ -362,43 +362,43 @@
             });
             if (!hasOrders) tbody.innerHTML = '<tr><td colspan="8" style="color: #777; padding: 20px;">لا توجد طلبات مسجلة</td></tr>';
         }
-// دالة فتح نافذة تفاصيل الطلب المُحدثة لتطابق لوحة العميل تماماً
+// دالة فتح نافذة تفاصيل الطلب في لوحة الأدمن مطابقة تماماً للوحة العميل
 function openOrderDetailsModalData(cIndex, oIndex) {
     let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
     let cust = customers[cIndex];
     if(!cust || !cust.orders || !cust.orders[oIndex]) return;
-    let ord = cust.orders[oIndex];
+    let order = cust.orders[oIndex];
 
     let modalBody = document.getElementById('modalOrderDetailsBody');
     
-    // جلب الرابط بالطريقة الصحيحة والمتوافقة مع بيانات العميل
-    let linkHtml = ord.productUrl || ord.link || ord.product || '';
-    let linkDisplay = linkHtml ? `<a href="${linkHtml}" target="_blank" style="color: #2980b9; word-break: break-all; text-decoration: underline;">${linkHtml}</a>` : 'لا يوجد رابط مسجل';
-    
-    let itemsDetails = '';
-    if (ord.items && Array.isArray(ord.items) && ord.items.length > 0) {
-        itemsDetails = `<ul style="padding-right: 20px; margin: 5px 0;">`;
-        ord.items.forEach(it => {
-            itemsDetails += `<li style="margin-bottom: 8px;"><b>المنتج:</b> ${it.name || '---'} | <b>الرابط:</b> <a href="${it.url}" target="_blank" style="color: #2980b9;">رابط المنتج</a> | <b>المواصفات:</b> <span style="color: #c0392b; font-weight: bold;">${it.specs || it.options || '---'}</span></li>`;
-        });
-        itemsDetails += `</ul>`;
-    } else {
-        itemsDetails = `
-            <p style="margin: 8px 0;"><b>رابط المنتج الأساسي:</b><br>${linkDisplay}</p>
-            <p style="margin: 8px 0;"><b>المواصفات / القيود / الألوان:</b> <span style="color: #c0392b; font-weight: bold;">${ord.notes || ord.specs || ord.options || 'لا توجد ملاحظات أو مواصفات إضافية'}</span></p>
-        `;
-    }
+    // جلب نفس المفاتيح المستخدمة في لوحة العميل بدقة
+    let prodUrl = order.url || order.productUrl || 'لا يوجد رابط مسجل';
+    let color = order.color || 'غير محدد';
+    let size = order.size || 'غير محدد';
+    let quantity = order.quantity || '1';
+    let orderId = order.id || order.productCode || 'غير محدد';
+    let orderDate = order.date || 'غير محدد';
+    let orderStatus = order.status || 'قيد المعالجة';
+
+    let linkDisplay = (prodUrl !== 'لا يوجد رابط مسجل') 
+        ? `<a href="${prodUrl}" target="_blank" style="color: #2980b9; word-break: break-all; text-decoration: underline;">${prodUrl}</a>` 
+        : 'لا يوجد رابط مسجل';
 
     modalBody.innerHTML = `
-        <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-            <p style="margin: 5px 0;"><b>رقم الطلب:</b> <span style="color: #2980b9;">${ord.id}</span></p>
-            <p style="margin: 5px 0;"><b>اسم العميل:</b> ${cust.name}</p>
-            <p style="margin: 5px 0;"><b>رقم الهاتف:</b> <span dir="ltr">${cust.phone}</span></p>
-            <p style="margin: 5px 0;"><b>العنوان:</b> ${cust.country} - ${cust.state || ''} - ${cust.address || ''}</p>
+        <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
+            <p style="margin: 5px 0;"><b>رقم الطلب:</b> <span style="color: #2980b9;">${orderId}</span></p>
+            <p style="margin: 5px 0;"><b>اسم العميل:</b> ${cust.name || '---'}</p>
+            <p style="margin: 5px 0;"><b>رقم الهاتف:</b> <span dir="ltr">${cust.phone || '---'}</span></p>
+            <p style="margin: 5px 0;"><b>العنوان:</b> ${cust.country || ''} - ${cust.state || ''} - ${cust.address || cust.userAddress || '---'}</p>
         </div>
-        <div style="background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
-            <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #eee; padding-bottom: 5px;">محتويات وتفاصيل الطلب:</h4>
-            ${itemsDetails}
+        <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; color: #333; line-height: 1.8;">
+            <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #eee; padding-bottom: 8px;"><i class="fa-solid fa-box"></i> تفاصيل الطلب الكاملة</h4>
+            <p style="margin: 8px 0;"><strong>تاريخ الطلب:</strong> ${orderDate}</p>
+            <p style="margin: 8px 0;"><strong>رابط المنتج:</strong> ${linkDisplay}</p>
+            <p style="margin: 8px 0;"><strong>اللون:</strong> <span style="color: #c0392b; font-weight: bold;">${color}</span></p>
+            <p style="margin: 8px 0;"><strong>المقاس:</strong> <span style="color: #c0392b; font-weight: bold;">${size}</span></p>
+            <p style="margin: 8px 0;"><strong>العدد/الكمية:</strong> ${quantity}</p>
+            <p style="margin: 8px 0;"><strong>حالة الطلب:</strong> <span style="padding: 3px 8px; background: #e0f2fe; color: #0369a1; border-radius: 4px; font-weight: bold;">${orderStatus}</span></p>
         </div>
     `;
 
