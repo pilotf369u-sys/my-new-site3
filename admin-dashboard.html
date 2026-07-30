@@ -29,6 +29,11 @@
         .rewards-list { text-align: right; font-size: 12px; background: #f9f9f9; padding: 5px; border-radius: 4px; max-height: 80px; overflow-y: auto; margin: 0; list-style-type: none; }
         .rewards-list li { border-bottom: 1px dashed #ddd; padding: 2px 0; }
         .rewards-list li:last-child { border-bottom: none; }
+        
+        /* تنسيق جدول تفاصيل المنتجات داخل الطلب */
+        .order-items-table { width: 100%; margin-top: 5px; background: #fff; font-size: 12px; }
+        .order-items-table th { background: #34495e; padding: 6px; font-size: 11px; }
+        .order-items-table td { padding: 6px; border: 1px solid #d2d6de; text-align: right; }
     </style>
 </head>
 <body onload="initDefaultCustomers(); loadAdminOrders(); loadPricingSettings(); loadWhatsappSettings(); loadEmployees(); loadDelivery(); loadBaseCurrency(); loadCurrencies(); loadStoresAdmin(); loadCustomers();">
@@ -65,6 +70,7 @@
                         <th>اسم العميل</th>
                         <th>الهاتف</th>
                         <th>العنوان</th>
+                        <th>تفاصيل المنتجات (الرابط، المواصفات، الملاحظات)</th>
                         <th>السعر الإجمالي</th>
                         <th>الحالة الحالية</th>
                         <th>تحديث الحالة</th>
@@ -285,11 +291,14 @@
                         lastRewardAtCompletedCount: 0,
                         rewardsLog: [],
                         orders: [
-                            { id: "#MW-9014", status: "تم التسليم", price: "$85.50" },
-                            { id: "#MW-8821", status: "تم التسليم", price: "$120.00" },
-                            { id: "#MW-8933", status: "تم التسليم", price: "$50.00" },
-                            { id: "#MW-8934", status: "تم التسليم", price: "$40.00" },
-                            { id: "#MW-8935", status: "تم التسليم", price: "$60.00" }
+                            { 
+                                id: "#MW-9014", 
+                                status: "تم التسليم", 
+                                price: "$85.50",
+                                items: [
+                                    { name: "قميص رجالي", url: "https://example.com/item1", specs: "لون أزرق، مقاس L", notes: "يرجى التأكد من المقاس" }
+                                ]
+                            }
                         ]
                     }
                 ];
@@ -313,12 +322,36 @@
                         if(st === "تم التسليم" || st === "تم التوصيل") { statusBg = "#d4edda"; statusColor = "#155724"; }
                         else if(st.includes("ملغي")) { statusBg = "#f8d7da"; statusColor = "#721c24"; }
 
+                        // تجهيز جدول عرض تفاصيل المنتجات (الرابط، المواصفات، الملاحظات) داخل الطلب
+                        let itemsHtml = '<span style="color: #777;">لا توجد منتجات مسجلة</span>';
+                        if (ord.items && ord.items.length > 0) {
+                            itemsHtml = `<table class="order-items-table">
+                                <thead>
+                                    <tr>
+                                        <th>المنتج / الرابط</th>
+                                        <th>المواصفات</th>
+                                        <th>الملاحظات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+                            ord.items.forEach(it => {
+                                let linkDisplay = it.url ? `<a href="${it.url}" target="_blank" style="color: #2980b9; text-decoration: underline;">${it.name || 'رابط المنتج'}</a>` : (it.name || '---');
+                                itemsHtml += `<tr>
+                                    <td><b>${linkDisplay}</b></td>
+                                    <td>${it.specs || '---'}</td>
+                                    <td>${it.notes || '---'}</td>
+                                </tr>`;
+                            });
+                            itemsHtml += `</tbody></table>`;
+                        }
+
                         tbody.innerHTML += `
                             <tr>
                                 <td><b style="color: #2980b9;">${ord.id}</b></td>
                                 <td style="font-weight: bold;">${cust.name}</td>
                                 <td dir="ltr" style="text-align: right;">${cust.phone}</td>
                                 <td>${cust.country} - ${cust.state || ''}</td>
+                                <td style="text-align: right; max-width: 350px;">${itemsHtml}</td>
                                 <td><span style="color: #27ae60; font-weight: bold;">${ord.price}</span></td>
                                 <td><span style="background: ${statusBg}; color: ${statusColor}; padding: 5px 10px; border-radius: 4px; font-weight: bold;">${ord.status}</span></td>
                                 <td>
@@ -335,7 +368,7 @@
                     });
                 }
             });
-            if (!hasOrders) tbody.innerHTML = '<tr><td colspan="7" style="color: #777; padding: 20px;">لا توجد طلبات مسجلة</td></tr>';
+            if (!hasOrders) tbody.innerHTML = '<tr><td colspan="8" style="color: #777; padding: 20px;">لا توجد طلبات مسجلة</td></tr>';
         }
 
         function updateOrderStatus(customerIndex, orderIndex, newStatus) {
@@ -509,7 +542,6 @@
                     '<span style="background: #27ae60; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">مستحق (5/5) ⭐</span>' : 
                     `<span style="background: #e0e0e0; color: #555; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${currentCycleCount} / 5 طلبات</span>`;
 
-                // عرض سجل المكافآت المرتبط الذي يتم منحه من الموظف/الأدمن
                 let rewardsHtml = `<span style="color: #888; font-style: italic; font-size: 11px;">لا توجد مكافآت</span>`;
                 if (cust.rewardsLog && cust.rewardsLog.length > 0) {
                     rewardsHtml = `<ul class="rewards-list">`;
@@ -609,7 +641,7 @@
                 customers[editIndex].country = country;
                 customers[editIndex].phone = phone;
                 customers[editIndex].state = state;
-                customers[editIndex],address = address;
+                customers[editIndex].address = address;
                 alert('تم تحديث بيانات العميل بنجاح');
             }
 
