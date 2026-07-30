@@ -25,6 +25,10 @@
         th { background: #2c3e50; color: white; font-weight: bold; font-size: 14px; }
         tr:nth-child(even) { background-color: #f9fbfb; }
         tr:hover { background-color: #f1f8f6; }
+
+        .rewards-list { text-align: right; font-size: 12px; background: #f9f9f9; padding: 5px; border-radius: 4px; max-height: 80px; overflow-y: auto; margin: 0; list-style-type: none; }
+        .rewards-list li { border-bottom: 1px dashed #ddd; padding: 2px 0; }
+        .rewards-list li:last-child { border-bottom: none; }
     </style>
 </head>
 <body onload="initDefaultCustomers(); loadAdminOrders(); loadPricingSettings(); loadWhatsappSettings(); loadEmployees(); loadDelivery(); loadBaseCurrency(); loadCurrencies(); loadStoresAdmin(); loadCustomers();">
@@ -181,7 +185,7 @@
             </table>
         </div>
 
-        <!-- 8. إدارة العملاء والمكافآت (مع شرط 5 طلبات وتصفير تلقائي) -->
+        <!-- 8. إدارة العملاء والمكافآت -->
         <div class="card" id="customers">
             <h3>إدارة العملاء ونظام المكافآت</h3>
             
@@ -242,6 +246,7 @@
                         <th>حالة الاستحقاق</th>
                         <th>منح المكافأة (تأشير)</th>
                         <th>عدد استخدام المكافأة</th>
+                        <th>سجل تفاصيل المكافآت</th>
                         <th>الإجراءات</th>
                     </tr>
                 </thead>
@@ -277,7 +282,8 @@
                         address: "الفاتح، شارع الأنس",
                         rewardActive: false,
                         usageCount: 0,
-                        lastRewardAtCompletedCount: 0, // لتتبع نقطة بداية تصفير العداد للدورة الجديدة
+                        lastRewardAtCompletedCount: 0,
+                        rewardsLog: [],
                         orders: [
                             { id: "#MW-9014", status: "تم التسليم", price: "$85.50" },
                             { id: "#MW-8821", status: "تم التسليم", price: "$120.00" },
@@ -343,7 +349,6 @@
             }
         }
 
-        // --- إدارة التسعير والاتصالات والعملات والمتاجر ---
         function savePricingSettings() {
             localStorage.setItem('siteCommissionVal', document.getElementById('siteCommission').value);
             localStorage.setItem('baseShippingVal', document.getElementById('baseShippingFee').value);
@@ -471,7 +476,6 @@
             loadStoresAdmin();
         }
 
-        // --- إدارة العملاء ونظام المكافآت (5 طلبات وتصفير تلقائي) ---
         function updateCountryCode() {
             let select = document.getElementById('custCountry');
             let code = select.options[select.selectedIndex].getAttribute('data-code');
@@ -488,16 +492,9 @@
             tbody.innerHTML = '';
 
             customers.forEach((cust, index) => {
-                // إجمالي الطلبات المكتملة كلياً
                 let totalCompleted = cust.orders ? cust.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
-                
-                // نقطة البداية للدورة الحالية بعد آخر تصفير
                 let lastBaseline = cust.lastRewardAtCompletedCount || 0;
-                
-                // العداد الحالي للدورة الحالية (يُحسب من آخر تصفير)
                 let currentCycleCount = totalCompleted - lastBaseline;
-
-                // شرط الاستحقاق: وصول العداد الحالي إلى 5 طلبات
                 let isEligible = currentCycleCount >= 5;
 
                 if (filterType === 'eligible' && !isEligible) {
@@ -511,6 +508,16 @@
                 let eligibilityBadge = isEligible ? 
                     '<span style="background: #27ae60; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">مستحق (5/5) ⭐</span>' : 
                     `<span style="background: #e0e0e0; color: #555; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${currentCycleCount} / 5 طلبات</span>`;
+
+                // عرض سجل المكافآت المرتبط الذي يتم منحه من الموظف/الأدمن
+                let rewardsHtml = `<span style="color: #888; font-style: italic; font-size: 11px;">لا توجد مكافآت</span>`;
+                if (cust.rewardsLog && cust.rewardsLog.length > 0) {
+                    rewardsHtml = `<ul class="rewards-list">`;
+                    cust.rewardsLog.forEach(rew => {
+                        rewardsHtml += `<li>🎁 <b>${rew.amount || ''}</b> - <span style="color: #555;">${rew.date || ''}</span></li>`;
+                    });
+                    rewardsHtml += `</ul>`;
+                }
 
                 tbody.innerHTML += `
                     <tr style="background-color: ${rowBackground};">
@@ -527,6 +534,7 @@
                         <td>
                             <span style="background: #e8f8f5; color: #16a085; padding: 4px 10px; border-radius: 4px; font-weight: bold;">${usageCnt} مرة</span>
                         </td>
+                        <td>${rewardsHtml}</td>
                         <td>
                             <button class="btn-blue" onclick="editCustomer(${index})" style="margin-left: 5px;">تعديل</button>
                             <button class="btn-red" onclick="deleteCustomer(${index})">حذف</button>
@@ -536,20 +544,16 @@
             });
         }
 
-        // دالة تطبيق المكافأة وتصفير العداد تلقائياً للدورة الجديدة
         function toggleCustomerReward(index, isChecked) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             if (customers[index]) {
                 customers[index].rewardActive = isChecked;
                 if (isChecked) {
-                    // زيادة عدد استخدام المكافأة
                     customers[index].usageCount = (customers[index].usageCount || 0) + 1;
                     
-                    // تصفير العداد تلقائياً بجعل نقطة البداية تساوي إجمالي الطلبات الحالية المكتملة
                     let totalCompleted = customers[index].orders ? customers[index].orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
                     customers[index].lastRewardAtCompletedCount = totalCompleted;
                     
-                    // إلغاء التأشير البصري بعد التطبيق ليصبح جاهزاً للدورة القادمة
                     setTimeout(() => {
                         customers[index].rewardActive = false;
                         localStorage.setItem('adminCustomersList', JSON.stringify(customers));
@@ -582,13 +586,31 @@
             if (editIndex === -1) {
                 let newCode = code || ('CUS-' + Math.floor(1000 + Math.random() * 9000));
                 customers.push({
-                    code: newCode, name, email, password, country, phone, state, address,
-                    rewardActive: false, usageCount: 0, lastRewardAtCompletedCount: 0, orders: []
+                    code: newCode,
+                    name,
+                    email,
+                    password,
+                    country,
+                    phone,
+                    state,
+                    address,
+                    rewardActive: false,
+                    usageCount: 0,
+                    lastRewardAtCompletedCount: 0,
+                    rewardsLog: [],
+                    orders: []
                 });
-                alert('تم إضافة العميل بنجاح');
+                alert('تمت إضافة العميل بنجاح');
             } else {
-                customers[editIndex] = { ...customers[editIndex], name, code: code || customers[editIndex].code, email, password, country, phone, state, address };
-                alert('تم تحديث بيانات العميل');
+                customers[editIndex].name = name;
+                customers[editIndex].code = code || customers[editIndex].code;
+                customers[editIndex].email = email;
+                customers[editIndex].password = password;
+                customers[editIndex].country = country;
+                customers[editIndex].phone = phone;
+                customers[editIndex].state = state;
+                customers[editIndex],address = address;
+                alert('تم تحديث بيانات العميل بنجاح');
             }
 
             localStorage.setItem('adminCustomersList', JSON.stringify(customers));
@@ -601,6 +623,7 @@
             let cust = customers[index];
             if (!cust) return;
 
+            document.getElementById('editCustomerIndex').value = index;
             document.getElementById('custName').value = cust.name || '';
             document.getElementById('custCode').value = cust.code || '';
             document.getElementById('custEmail').value = cust.email || '';
@@ -609,37 +632,36 @@
             document.getElementById('custPhone').value = cust.phone || '';
             document.getElementById('custState').value = cust.state || '';
             document.getElementById('custAddress').value = cust.address || '';
-            document.getElementById('editCustomerIndex').value = index;
 
-            document.getElementById('customerFormTitle').innerText = 'تعديل بيانات العميل: ' + cust.name;
-            document.getElementById('saveCustomerBtn').innerText = 'حفظ التعديلات';
-            document.getElementById('cancelEditBtn').style.display = 'inline-block';
-            window.scrollTo({ top: document.getElementById('customers').offsetTop, behavior: 'smooth' });
-        }
-
-        function resetCustomerForm() {
-            document.getElementById('custName').value = '';
-            document.getElementById('custCode').value = '';
-            document.getElementById('custEmail').value = '';
-            document.getElementById('custPass').value = '';
-            document.getElementById('custCountry').value = '';
-            document.getElementById('custPhone').value = '';
-            document.getElementById('custState').value = '';
-            document.getElementById('custAddress').value = '';
-            document.getElementById('editCustomerIndex').value = '-1';
-            document.getElementById('customerFormTitle').innerText = 'إضافة عميل جديد';
-            document.getElementById('saveCustomerBtn').innerText = '+ حفظ وإضافة العميل';
-            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.getElementById('customerFormTitle').innerText = "تعديل بيانات العميل: " + cust.name;
+            document.getElementById('saveCustomerBtn').innerText = "حفظ التعديلات";
+            document.getElementById('cancelEditBtn').style.display = "inline-block";
+            window.scrollTo({top: 400, behavior: 'smooth'});
         }
 
         function deleteCustomer(index) {
-            if(confirm('هل أنت متأكد من الحذف؟')) {
+            if (confirm('هل أنت متأكد من حذف هذا العميل؟')) {
                 let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
                 customers.splice(index, 1);
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
                 loadCustomers();
-                loadAdminOrders();
             }
+        }
+
+        function resetCustomerForm() {
+            document.getElementById('editCustomerIndex').value = "-1";
+            document.getElementById('custName').value = "";
+            document.getElementById('custCode').value = "";
+            document.getElementById('custEmail').value = "";
+            document.getElementById('custPass').value = "";
+            document.getElementById('custCountry').value = "";
+            document.getElementById('custPhone').value = "";
+            document.getElementById('custState').value = "";
+            document.getElementById('custAddress').value = "";
+
+            document.getElementById('customerFormTitle').innerText = "إضافة عميل جديد";
+            document.getElementById('saveCustomerBtn').innerText = "+ حفظ وإضافة العميل";
+            document.getElementById('cancelEditBtn').style.display = "none";
         }
     </script>
 </body>
