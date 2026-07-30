@@ -22,10 +22,9 @@
         table, th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
         th { background: #f2f2f2; font-size: 13px; }
         
-        /* تلوين واضح ومميز حسب طلبك */
-        tr.row-branch-processing { background-color: #a9dfbf !important; } /* أخضر أوضح وأغمق قليلًا */
-        tr.row-canceled { background-color: #f5b7b1 !important; } /* أحمر للطلبات الملغية */
-        tr.row-other { background-color: #e8f8f5 !important; } /* تدرج هادئ للحالات الأخرى */
+        tr.row-branch-processing { background-color: #a9dfbf !important; }
+        tr.row-canceled { background-color: #f5b7b1 !important; }
+        tr.row-other { background-color: #e8f8f5 !important; }
 
         .btn-red { background: #c0392b; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-weight: bold; }
         .btn-blue { background: #2980b9; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -101,8 +100,8 @@
 
         <!-- التبويب الثالث: نظام ومكافآت العملاء المدمج -->
         <div id="rewardsTab" class="section-panel">
-            <h3 style="color: var(--dark-blue); margin-top: 0;"><i class="fa-solid fa-award"></i> نظام مكافآت العملاء المكتملة (دورات 5 طلبات)</h3>
-            <p style="font-size: 13px; color: #666;">يمكنك متابعة عدد الطلبات المكتملة لكل عميل، وتحديد قيمة مبلغ الخصم المالي ومنحه بضغطة زر واحدة لتحديث رصيده وسجله.</p>
+            <h3 style="color: #2c3e50; margin-top: 0;"><i class="fa-solid fa-award"></i> نظام مكافآت العملاء المكتملة (دورات 5 طلبات)</h3>
+            <p style="font-size: 13px; color: #666;">يمكنك متابعة عدد الطلبات المكتملة لكل عميل، وتحديد قيمة مبلغ الخصم مع اختيار العملة ومنحه بضغطة زر واحدة.</p>
             <table>
                 <thead>
                     <tr>
@@ -110,7 +109,7 @@
                         <th>رقم الهاتف</th>
                         <th>الطلبات المكتملة (الدورة الحالية)</th>
                         <th>إجمالي المكافآت المستلمة سابقاً</th>
-                        <th>منح مكافأة الخصم للعميل</th>
+                        <th>منح مكافأة الخصم للعميل والعملة</th>
                     </tr>
                 </thead>
                 <tbody id="rewardsTableBody">
@@ -312,7 +311,7 @@
             }
         }
 
-        // --- دوال إدارة نظام المكافآت الجديد من لوحة الموظف ---
+        // --- دوال إدارة نظام المكافآت مع اختيار العملة ---
         function loadRewardsManagementTable() {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let tbody = document.getElementById('rewardsTableBody');
@@ -340,8 +339,11 @@
                         <td>${statusBadge}</td>
                         <td><b style="color: #27ae60;">${usageCount}</b> مرات</td>
                         <td>
-                            <div style="display: flex; gap: 5px; justify-content: center; align-items: center;">
-                                <input type="text" id="rewardValInput_${custIndex}" placeholder="قيمة الخصم (مثال: $10)" style="width: 130px; text-align: center;">
+                            <div style="display: flex; gap: 5px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                                <input type="number" id="rewardNumInput_${custIndex}" placeholder="القيمة" style="width: 70px; text-align: center;" step="0.01">
+                                <select id="rewardCurrSelect_${custIndex}" style="width: 70px;">
+                                    ${currencyListOptions}
+                                </select>
                                 <button class="btn-green" onclick="grantRewardToCustomer(${custIndex})">
                                     <i class="fa-solid fa-gift"></i> منح المكافأة
                                 </button>
@@ -357,15 +359,20 @@
             if (!customers[custIndex]) return;
 
             let customer = customers[custIndex];
-            let valInput = document.getElementById(`rewardValInput_${custIndex}`);
-            let rewardValue = valInput ? valInput.value.trim() : '';
+            let numInput = document.getElementById(`rewardNumInput_${custIndex}`);
+            let currSelect = document.getElementById(`rewardCurrSelect_${custIndex}`);
+            
+            let val = numInput ? numInput.value.trim() : '';
+            let curr = currSelect ? currSelect.value : '$';
 
-            if (!rewardValue) {
-                alert('الرجاء كتابة مبلغ أو قيمة الخصم المقدم للعميل أولاً!');
+            if (!val || parseFloat(val) <= 0) {
+                alert('الرجاء كتابة قيمة صحيحة لمبلغ الخصم!');
                 return;
             }
 
-            if (confirm(`هل أنت متأكد من منح العميل (${customer.name}) مكافأة بقيمة (${rewardValue}) وتصفير عداد الدورة للبدء من جديد؟`)) {
+            let rewardFormatted = `${val} ${curr}`;
+
+            if (confirm(`هل أنت متأكد من منح العميل (${customer.name}) مكافأة بقيمة (${rewardFormatted}) وتصفير عداد الدورة الحالية؟`)) {
                 let totalCompleted = customer.orders ? customer.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
                 
                 customer.lastRewardAtCompletedCount = totalCompleted;
@@ -375,22 +382,21 @@
                 let timeStr = new Date().toLocaleString('ar-EG');
                 
                 customer.rewardsLog.push({
-                    amount: rewardValue,
+                    amount: rewardFormatted,
                     date: timeStr,
                     employeeName: 'الموظف المختص'
                 });
 
-                // إرسال إشعار فوري للعميل في أول طلب نشط لديه
                 if (customer.orders && customer.orders.length > 0) {
                     if (!customer.orders[0].notifications) customer.orders[0].notifications = [];
                     customer.orders[0].notifications.unshift({
-                        text: `مبروك! لقد حصلت على مكافأة خصم جديدة بقيمة (${rewardValue}) من الإدارة.`,
+                        text: `مبروك! لقد حصلت على مكافأة خصم جديدة بقيمة (${rewardFormatted}) من الإدارة.`,
                         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     });
                 }
 
                 localStorage.setItem('adminCustomersList', JSON.stringify(customers));
-                alert('تم منح المكافأة وتحديث سجل العميل بنجاح وتصفير الدورة بنجاح!');
+                alert('تم منح المكافأة للعميل وتحديث سجله وتصفير الدورة بنجاح!');
                 loadRewardsManagementTable();
             }
         }
