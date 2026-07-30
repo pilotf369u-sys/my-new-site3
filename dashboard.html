@@ -153,7 +153,7 @@
                 <p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">اختر طلبك أو ابدأ الدردشة مع الموظف...</p>
             </div>
             <div style="display: flex; gap: 5px;">
-                <input type="text" id="userMsg" placeholder="ردك هنا للموظف..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px;" onkeypress="handleCustomerMsgEnter(event)">
+                <input type="text" id="userMsg" placeholder="ردك هنا..." style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px;" onkeypress="handleCustomerMsgEnter(event)">
                 <button class="btn-action" onclick="sendCustomerMessage()">إرسال</button>
             </div>
         </div>
@@ -162,19 +162,43 @@
     <script>
         let activeSelectedOrderIndex = 0;
         let currentCustomerOrdersGlobal = [];
+        let viewingAsEmployee = false;
 
         window.onload = function() {
-            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (!userData) { window.location.href = 'login.html'; return; }
+            let userData = null;
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let currentCustomerIndex = -1;
+
+            // التحقق مما إذا كان الموظف قد فتح صفحة هذا العميل
+            const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
             
-            document.getElementById('userName').innerText = userData.name || userData.username;
+            if (employeeTargetIndex !== null && employeeTargetIndex !== undefined && adminCustomersList[employeeTargetIndex]) {
+                currentCustomerIndex = parseInt(employeeTargetIndex);
+                let targetCustomer = adminCustomersList[currentCustomerIndex];
+                userData = {
+                    name: targetCustomer.name,
+                    phone: targetCustomer.phone,
+                    address: targetCustomer.address || ''
+                };
+                viewingAsEmployee = true;
+                
+                // تعديل زر العودة ليعيد الموظف إلى لوحة تحكمه
+                const headerLink = document.querySelector('.dashboard-header a');
+                if(headerLink) {
+                    headerLink.href = 'employee_dashboard.html';
+                    headerLink.innerHTML = '<i class="fa-solid fa-arrow-right"></i> العودة لوحة الموظف';
+                }
+            } else {
+                userData = JSON.parse(localStorage.getItem('loggedInUser'));
+                if (!userData) { window.location.href = 'login.html'; return; }
+                currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            }
+            
+            document.getElementById('userName').innerText = userData.name || userData.username || 'عزيزي العميل';
             if(document.getElementById('userAddress')) {
                 document.getElementById('userAddress').value = userData.address || '';
             }
 
-            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
-            
             let currentCustomer = currentCustomerIndex !== -1 ? adminCustomersList[currentCustomerIndex] : null;
             if (!currentCustomer && typeof customersDB !== 'undefined') {
                 currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
@@ -202,7 +226,6 @@
                     barEl.style.background = '#25D366';
                 }
 
-                // تعبئة سجل المكافآت في القائمة المنبثقة
                 let historyContainer = document.getElementById('rewardsHistoryList');
                 historyContainer.innerHTML = '';
                 if (currentCustomer.rewardsLog && currentCustomer.rewardsLog.length > 0) {
@@ -280,7 +303,6 @@
             }
         };
 
-        // دوال التحكم بالنافذة المنبثقة لسجل المكافآت
         function openRewardsModal() {
             document.getElementById('rewardsModal').style.display = 'flex';
         }
@@ -288,7 +310,6 @@
             document.getElementById('rewardsModal').style.display = 'none';
         }
 
-        // دوال التحكم بنافذة تفاصيل الطلب للعميل
         function openCustomerOrderDetails(index) {
             let order = currentCustomerOrdersGlobal[index];
             if (!order) return;
@@ -318,9 +339,17 @@
 
         function selectOrderForChat(ordIndex) {
             activeSelectedOrderIndex = ordIndex;
-            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            let cIndex = -1;
+            
+            const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+            if (employeeTargetIndex !== null) {
+                cIndex = parseInt(employeeTargetIndex);
+            } else {
+                const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+                cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            }
+
             if (cIndex !== -1) {
                 loadCustomerChatAndNotifications(cIndex, ordIndex);
                 alert('تم تحديد الطلب للدردشة، يمكنك متابعة الرسائل في الأسفل.');
@@ -337,11 +366,13 @@
             let chatBox = document.getElementById('customerChatBox');
             chatBox.innerHTML = '';
             if (!order.chat || order.chat.length === 0) {
-                chatBox.innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">ابدأ المحادثة مع الموظف بخصوص الطلب (${order.id})...</p>`;
+                chatBox.innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">ابدأ المحادثة بخصوص الطلب (${order.id})...</p>`;
             } else {
                 order.chat.forEach(msg => {
                     let bubbleClass = (msg.sender === 'employee') ? 'employee' : 'customer';
-                    let senderLabel = (msg.sender === 'employee') ? 'الموظف' : 'أنت';
+                    let senderLabel = (msg.sender === 'employee') ? 'الموظف' : 'العميل';
+                    if(!viewingAsEmployee && msg.sender === 'customer') senderLabel = 'أنت';
+                    
                     chatBox.innerHTML += `<div class="chat-bubble ${bubbleClass}"><b style="font-size: 10px; display: block; color: #555;">${senderLabel} (${msg.time}):</b><span>${msg.text}</span></div>`;
                 });
                 chatBox.scrollTop = chatBox.scrollHeight;
@@ -363,16 +394,26 @@
             let text = input.value.trim();
             if (!text) return;
 
-            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            let cIndex = -1;
+            let senderType = 'customer';
+
+            const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+            if (employeeTargetIndex !== null) {
+                cIndex = parseInt(employeeTargetIndex);
+                senderType = 'employee'; // يرسل كـ موظف
+            } else {
+                const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+                cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+                senderType = 'customer'; // يرسل كـ عميل
+            }
 
             if (cIndex !== -1 && adminCustomersList[cIndex].orders && adminCustomersList[cIndex].orders[activeSelectedOrderIndex]) {
                 let order = adminCustomersList[cIndex].orders[activeSelectedOrderIndex];
                 if (!order.chat) order.chat = [];
                 
                 let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                order.chat.push({ sender: 'customer', text: text, time: timeStr });
+                order.chat.push({ sender: senderType, text: text, time: timeStr });
                 
                 localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
                 input.value = '';
@@ -388,14 +429,21 @@
 
         function cancelOrder(index) {
             if(confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
-                const userData = JSON.parse(loggedInUserCheck());
                 let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-                let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+                let cIndex = -1;
+                
+                const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+                if (employeeTargetIndex !== null) {
+                    cIndex = parseInt(employeeTargetIndex);
+                } else {
+                    const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+                    cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+                }
                 
                 if(cIndex !== -1 && adminCustomersList[cIndex].orders) {
-                    adminCustomersList[cIndex].orders[index].status = "لم يتم الاتفاق - ملغي من الزبون";
+                    adminCustomersList[cIndex].orders[index].status = "لم يتم الاتفاق - ملغي";
                     localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
-                    alert('تم إلغاء الطلب بنجاح وإبلاغ الإدارة');
+                    alert('تم إلغاء الطلب بنجاح وتحديث النظام');
                     location.reload(); 
                 } else {
                     alert('عذراً، لا يمكن إلغاء هذا الطلب مباشرة.');
@@ -403,18 +451,21 @@
             }
         }
 
-        function loggedInUserCheck() {
-            return localStorage.getItem('loggedInUser');
-        }
-
         function saveAddress() {
             let newAddress = document.getElementById('userAddress').value.trim();
-            let userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
-            userData.address = newAddress;
-            localStorage.setItem('loggedInUser', JSON.stringify(userData));
-
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            let cIndex = -1;
+            
+            const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+            if (employeeTargetIndex !== null) {
+                cIndex = parseInt(employeeTargetIndex);
+            } else {
+                let userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
+                userData.address = newAddress;
+                localStorage.setItem('loggedInUser', JSON.stringify(userData));
+                cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            }
+
             if(cIndex !== -1) {
                 adminCustomersList[cIndex].address = newAddress;
                 localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
