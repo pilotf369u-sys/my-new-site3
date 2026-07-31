@@ -339,14 +339,14 @@
 
         // --- دالة الانتقال المباشر لصفحة العميل (مستقلة تماماً) ---
         function goToCustomerPortal(custIndex) {
-            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            if (!customers[custIndex]) {
-                alert('العميل غير موجود!');
-                return;
-            }
-            localStorage.setItem('viewingCustomerIndex', custIndex.toString());
-            window.location.href = 'customer.html';
-        }
+    let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+    if (!customers[custIndex]) {
+        alert('العميل غير موجود');
+        return;
+    }
+    localStorage.setItem('viewingCustomerIndex', custIndex.toString());
+    window.location.href = 'dashboard.html'; // <--- التعديل هنا لتوجيه الموظف إلى لوحة العميل الصحيحة
+}
 
         // --- نافذة ملف العميل الكامل وسجل طلباته ---
         function openCustomerProfileModal(custIndex) {
