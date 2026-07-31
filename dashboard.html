@@ -168,9 +168,11 @@
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let currentCustomerIndex = -1;
 
-            // --- التحقق المزدوج الذكي: هل تم فتح الصفحة خصيصاً بواسطة الموظف عبر زر الاستعراض؟ ---
+            // --- التحقق الذكي والدقيق: هل تم فتح الصفحة بواسطة الموظف أم دخول مباشر للعميل؟ ---
             const isOpenedByEmployee = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
             const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+
+            const backLink = document.getElementById('headerBackLink');
 
             if (isOpenedByEmployee && employeeTargetIndex !== null && employeeTargetIndex !== undefined && employeeTargetIndex !== "" && adminCustomersList[parseInt(employeeTargetIndex)]) {
                 currentCustomerIndex = parseInt(employeeTargetIndex);
@@ -182,23 +184,27 @@
                 };
                 
                 // زر العودة يوجه الموظف إلى لوحة تحكمه
-                const backLink = document.getElementById('headerBackLink');
                 if (backLink) {
                     backLink.href = 'employee-dashboard.html';
                     backLink.innerHTML = '<i class="fa-solid fa-arrow-right"></i> العودة لوحة الموظف';
                 }
             } else {
-                // إذا دخل العميل بنفسه (تسجيل دخول عادي)، نقوم بتنظيف أي آثار قديمة لكي لا تختلط الأمور
+                // دخول العميل الحقيقي بنفسه - تنظيف أي مخلفات موظف سابقة لضمان عدم تداخل البيانات
                 localStorage.removeItem('isEmployeeViewing');
                 sessionStorage.removeItem('openedByEmployee');
                 localStorage.removeItem('viewingCustomerIndex');
 
                 userData = JSON.parse(localStorage.getItem('loggedInUser'));
                 if (!userData) { window.location.href = 'login.html'; return; }
-                currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
                 
+                // البحث الدقيق برقم الهاتف حصرياً لتجنب تداخل الأسماء
+                currentCustomerIndex = adminCustomersList.findIndex(c => c.phone && userData.phone && c.phone.trim() === userData.phone.trim());
+                
+                if (currentCustomerIndex === -1) {
+                    currentCustomerIndex = adminCustomersList.findIndex(c => c.name && userData.name && c.name.trim() === userData.name.trim());
+                }
+
                 // زر العودة يوجه العميل حصرياً إلى الصفحة الرئيسية
-                const backLink = document.getElementById('headerBackLink');
                 if (backLink) {
                     backLink.href = 'index.html';
                     backLink.innerHTML = 'العودة للرئيسية';
@@ -212,7 +218,7 @@
 
             let currentCustomer = currentCustomerIndex !== -1 ? adminCustomersList[currentCustomerIndex] : null;
             if (!currentCustomer && typeof customersDB !== 'undefined') {
-                currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
+                currentCustomer = customersDB.find(c => c.phone === userData.phone || c.name === userData.name);
             }
 
             // --- حساب وعرض تفاصيل نظام المكافآت للعميل ---
