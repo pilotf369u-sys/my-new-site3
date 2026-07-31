@@ -43,7 +43,7 @@
 
     <div class="dashboard-header">
         <div style="font-weight: 800; color: var(--primary-red); font-size: 20px;"><i class="fa-solid fa-gauge-high"></i> أهلاً بك يا <span id="userName">عزيزي العميل</span></div>
-        <a href="index.html" style="color: #64748b; text-decoration: none;">العودة للرئيسية</a>
+        <a href="index.html" id="headerBackLink" style="color: #64748b; text-decoration: none;">العودة للرئيسية</a>
     </div>
 
     <div class="grid-layout">
@@ -164,17 +164,40 @@
         let currentCustomerOrdersGlobal = [];
 
         window.onload = function() {
-            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (!userData) { window.location.href = 'login.html'; return; }
+            let userData = null;
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let currentCustomerIndex = -1;
+
+            // --- التحقق مما إذا كان الموظف قد فتح صفحة العميل عبر زر لوحة الموظف ---
+            const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+
+            if (employeeTargetIndex !== null && employeeTargetIndex !== undefined && employeeTargetIndex !== "" && adminCustomersList[parseInt(employeeTargetIndex)]) {
+                currentCustomerIndex = parseInt(employeeTargetIndex);
+                let targetCustomer = adminCustomersList[currentCustomerIndex];
+                userData = {
+                    name: targetCustomer.name,
+                    phone: targetCustomer.phone,
+                    address: targetCustomer.address || ''
+                };
+                
+                // تعديل رابط زر العودة ليعيد الموظف إلى لوحة تحكمه بدلاً من الرئيسية
+                const backLink = document.getElementById('headerBackLink');
+                if (backLink) {
+                    backLink.href = 'employee-dashboard.html'; // تأكد من اسم صفحة الموظف لديك
+                    backLink.innerHTML = '<i class="fa-solid fa-arrow-right"></i> العودة لوحة الموظف';
+                }
+            } else {
+                // تسجيل الدخول العادي للزبون
+                userData = JSON.parse(localStorage.getItem('loggedInUser'));
+                if (!userData) { window.location.href = 'login.html'; return; }
+                currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            }
             
-            document.getElementById('userName').innerText = userData.name || userData.username;
+            document.getElementById('userName').innerText = userData.name || userData.username || 'عزيزي العميل';
             if(document.getElementById('userAddress')) {
                 document.getElementById('userAddress').value = userData.address || '';
             }
 
-            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
-            
             let currentCustomer = currentCustomerIndex !== -1 ? adminCustomersList[currentCustomerIndex] : null;
             if (!currentCustomer && typeof customersDB !== 'undefined') {
                 currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
@@ -318,9 +341,15 @@
 
         function selectOrderForChat(ordIndex) {
             activeSelectedOrderIndex = ordIndex;
-            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+            let cIndex = employeeTargetIndex !== null ? parseInt(employeeTargetIndex) : -1;
+            
+            if (cIndex === -1) {
+                const userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
+                cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            }
+
             if (cIndex !== -1) {
                 loadCustomerChatAndNotifications(cIndex, ordIndex);
                 alert('تم تحديد الطلب للدردشة، يمكنك متابعة الرسائل في الأسفل.');
@@ -363,9 +392,14 @@
             let text = input.value.trim();
             if (!text) return;
 
-            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+            let cIndex = employeeTargetIndex !== null ? parseInt(employeeTargetIndex) : -1;
+
+            if (cIndex === -1) {
+                const userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
+                cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            }
 
             if (cIndex !== -1 && adminCustomersList[cIndex].orders && adminCustomersList[cIndex].orders[activeSelectedOrderIndex]) {
                 let order = adminCustomersList[cIndex].orders[activeSelectedOrderIndex];
@@ -388,9 +422,14 @@
 
         function cancelOrder(index) {
             if(confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
-                const userData = JSON.parse(loggedInUserCheck());
                 let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-                let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+                const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+                let cIndex = employeeTargetIndex !== null ? parseInt(employeeTargetIndex) : -1;
+
+                if (cIndex === -1) {
+                    const userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
+                    cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+                }
                 
                 if(cIndex !== -1 && adminCustomersList[cIndex].orders) {
                     adminCustomersList[cIndex].orders[index].status = "لم يتم الاتفاق - ملغي من الزبون";
@@ -403,18 +442,19 @@
             }
         }
 
-        function loggedInUserCheck() {
-            return localStorage.getItem('loggedInUser');
-        }
-
         function saveAddress() {
             let newAddress = document.getElementById('userAddress').value.trim();
-            let userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
-            userData.address = newAddress;
-            localStorage.setItem('loggedInUser', JSON.stringify(userData));
-
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+            let cIndex = employeeTargetIndex !== null ? parseInt(employeeTargetIndex) : -1;
+
+            if (cIndex === -1) {
+                let userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
+                userData.address = newAddress;
+                localStorage.setItem('loggedInUser', JSON.stringify(userData));
+                cIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            }
+
             if(cIndex !== -1) {
                 adminCustomersList[cIndex].address = newAddress;
                 localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
