@@ -22,6 +22,10 @@
         .btn-blue { background: #2980b9; }
         .btn-details { background: #8e44ad; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 13px; border: none; }
         
+        /* تنسيق زر دخول لحساب العميل الجديد */
+        .btn-login { background: #8e44ad; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 13px; border: none; font-weight: bold; margin-left: 3px; }
+        .btn-login:hover { background: #732d91; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
         table, th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: center; }
         th { background: #2c3e50; color: white; font-weight: bold; font-size: 14px; }
@@ -281,7 +285,7 @@
     </div>
 
     <script>
-        function showSection(sectionId) {
+      function showSection(sectionId) {
             let sections = document.querySelectorAll('.card');
             sections.forEach(sec => sec.classList.remove('active-section'));
             let target = document.getElementById(sectionId);
@@ -362,6 +366,21 @@
             });
             if (!hasOrders) tbody.innerHTML = '<tr><td colspan="8" style="color: #777; padding: 20px;">لا توجد طلبات مسجلة</td></tr>';
         }
+
+// دالة تسجيل الدخول لحساب العميل من لوحة الأدمن
+function loginAsCustomer(index) {
+    let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+    let cust = customers[index];
+    if (!cust) return alert('العميل غير موجود');
+    
+    // تخزين بيانات الجلسة الحالية للعميل ليتم توجيهه وفتح حسابه مباشرة
+    localStorage.setItem('currentLoggedInCustomer', JSON.stringify(cust));
+    
+    // الانتقال إلى صفحة أو واجهة العميل (قم بتعديل الرابط أدناه بحسب اسم صفحة العميل لديك إن كانت منفصلة، أو توجيهه للقسم المخصص)
+    // مثال إذا كانت في نفس الملف أو صفحة مستقلة customer.html:
+    window.location.href = 'customer.html'; 
+}
+
 // دالة فتح نافذة تفاصيل الطلب في لوحة الأدمن مطابقة تماماً للوحة العميل
 function openOrderDetailsModalData(cIndex, oIndex) {
     let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
@@ -371,7 +390,6 @@ function openOrderDetailsModalData(cIndex, oIndex) {
 
     let modalBody = document.getElementById('modalOrderDetailsBody');
     
-    // جلب نفس المفاتيح المستخدمة في لوحة العميل بدقة
     let prodUrl = order.url || order.productUrl || 'لا يوجد رابط مسجل';
     let color = order.color || 'غير محدد';
     let size = order.size || 'غير محدد';
@@ -610,6 +628,8 @@ function openOrderDetailsModalData(cIndex, oIndex) {
                         </td>
                         <td>${rewardsHtml}</td>
                         <td>
+                            <!-- زر الدخول لحساب العميل -->
+                            <button class="btn-green" onclick="loginAsCustomer(${index})" style="margin-left: 5px; background-color: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-right-to-bracket"></i> دخول</button>
                             <button class="btn-blue" onclick="editCustomer(${index})" style="margin-left: 5px;">تعديل</button>
                             <button class="btn-red" onclick="deleteCustomer(${index})">حذف</button>
                         </td>
