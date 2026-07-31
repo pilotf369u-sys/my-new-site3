@@ -43,7 +43,7 @@
 
     <div class="dashboard-header">
         <div style="font-weight: 800; color: var(--primary-red); font-size: 20px;"><i class="fa-solid fa-gauge-high"></i> أهلاً بك يا <span id="userName">عزيزي العميل</span></div>
-        <a href="index.html" style="color: #64748b; text-decoration: none;">العودة للرئيسية</a>
+       <a href="index.html" id="backBtn" style="color: #64748b; text-decoration: none;">العودة للرئيسية</a>
     </div>
 
     <div class="grid-layout">
@@ -163,10 +163,27 @@
         let activeSelectedOrderIndex = 0;
         let currentCustomerOrdersGlobal = [];
 
-        window.onload = function() {
-            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (!userData) { window.location.href = 'login.html'; return; }
-            
+      window.onload = function() {
+    // --- التحقق مما إذا كان الدخول تم من طرف الموظف ---
+    const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+    const backBtn = document.getElementById('backBtn');
+    
+    if (backBtn) {
+        if (isEmpView) {
+            backBtn.innerText = "العودة لصفحة الموظف";
+            backBtn.href = "employee-dashboard.html"; // اسم صفحة الموظف الظاهر في مشروعك
+            backBtn.onclick = function() {
+                localStorage.removeItem('isEmployeeViewing');
+                sessionStorage.removeItem('openedByEmployee');
+            };
+        } else {
+            backBtn.innerText = "العودة للرئيسية";
+            backBtn.href = "index.html";
+        }
+    }
+
+    const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+    if (!userData && !isEmpView) { window.location.href = 'login.html'; return; }
             document.getElementById('userName').innerText = userData.name || userData.username;
             if(document.getElementById('userAddress')) {
                 document.getElementById('userAddress').value = userData.address || '';
