@@ -358,17 +358,14 @@
             } else {
                 ordersHtml = `<tr><td colspan="4">لا توجد طلبات مسجلة لهذا العميل.</td></tr>`;
             }
-           // --- ميزة الدخول المباشر لصفحة العميل للتحكم والدردشة ---
+         // --- ميزة الدخول المباشر لصفحة العميل للتحكم والدردشة ---
         function goToCustomerPortal(custIndex) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             if (!customers[custIndex]) {
                 alert('العميل غير موجود!');
                 return;
             }
-            // تخزين مؤشر العميل الحالي في localStorage ليتم فتحه في صفحة customer.html
             localStorage.setItem('viewingCustomerIndex', custIndex);
-            
-            // الانتقال الفوري لصفحة العميل
             window.location.href = 'customer.html';
         }
 
