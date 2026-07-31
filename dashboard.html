@@ -180,10 +180,10 @@
                     address: targetCustomer.address || ''
                 };
                 
-                // تعديل رابط زر العودة ليعيد الموظف إلى لوحة تحكمه بدلاً من الرئيسية
+                // تعديل رابط زر العودة ليعيد الموظف إلى لوحة تحكمه بدلاً من الرئيسية وتصحيح اسم الملف ليطابق employee.html أو employee-dashboard.html حسب النظام المعتمد
                 const backLink = document.getElementById('headerBackLink');
                 if (backLink) {
-                    backLink.href = 'employee-dashboard.html'; // تأكد من اسم صفحة الموظف لديك
+                    backLink.href = 'employee.html'; // تم تصحيح الاسم ليتوافق مع لوحة الموظف ومنع خطأ 404
                     backLink.innerHTML = '<i class="fa-solid fa-arrow-right"></i> العودة لوحة الموظف';
                 }
             } else {
