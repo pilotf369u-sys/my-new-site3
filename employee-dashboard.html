@@ -357,6 +357,18 @@
             } else {
                 ordersHtml = `<tr><td colspan="4">لا توجد طلبات مسجلة لهذا العميل.</td></tr>`;
             }
+            // --- الانتقال المباشر إلى صفحة العميل وصلاحية الدردشة كعميل ---
+        function openCustomerProfileModal(custIndex) {
+            let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cust = customers[custIndex];
+            if(!cust) return;
+
+            // تخزين مؤشر العميل الحالي في localStorage ليتم فتحه في صفحة customer.html
+            localStorage.setItem('viewingCustomerIndex', custIndex);
+            
+            // التوجيه الفوري لصفحة العميل
+            window.location.href = 'customer.html';
+        }
 
             document.getElementById('customerProfileContent').innerHTML = `
                 <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 15px;">
