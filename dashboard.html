@@ -169,7 +169,6 @@
             let currentCustomerIndex = -1;
 
             // --- التحقق المزدوج الذكي: هل تم فتح الصفحة خصيصاً بواسطة الموظف عبر زر الاستعراض؟ ---
-            // نتحقق من وجود إشارة واضحة تدل على أن الدخول تم من لوحة الموظف (مثل مفتاح قادم مع صفحة الموظف)
             const isOpenedByEmployee = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
             const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
 
