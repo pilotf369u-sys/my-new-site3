@@ -368,13 +368,13 @@
             if (!order.chat || order.chat.length === 0) {
                 chatBox.innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">ابدأ المحادثة مع الموظف بخصوص الطلب (${order.id})...</p>`;
             } else {
-             order.chat.forEach(msg => {
-            let isEmployee = (msg.sender === 'employee' || msg.sender === 'admin' || msg.sender === 'staff');
-            let bubbleClass = isEmployee ? 'employee' : 'customer';
-            let senderLabel = isEmployee ? 'موظف الدعم' : 'أنت (الزبون)';
-            
-            chatBox.innerHTML += `<div class="chat-bubble ${bubbleClass}"><b style="font-size: 10px; display: block; color: #555;">${senderLabel} (${msg.time}):</b><span>${msg.text}</span></div>`;
-        });
+                order.chat.forEach(msg => {
+                    let bubbleClass = (msg.sender === 'employee') ? 'employee' : 'customer';
+                    let senderLabel = (msg.sender === 'employee') ? 'الموظف' : 'أنت';
+                    chatBox.innerHTML += `<div class="chat-bubble ${bubbleClass}"><b style="font-size: 10px; display: block; color: #555;">${senderLabel} (${msg.time}):</b><span>${msg.text}</span></div>`;
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
 
             let notifContainer = document.getElementById('notificationsContainer');
             notifContainer.innerHTML = '';
