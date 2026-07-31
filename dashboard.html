@@ -168,13 +168,14 @@
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let currentCustomerIndex = -1;
 
-            // --- التحقق الذكي والدقيق: هل تم فتح الصفحة بواسطة الموظف أم دخول مباشر للعميل؟ ---
+            // --- التحقق الدقيق جداً: هل تم فتح الصفحة من قِبل الموظف لاستعراض حساب عميل؟ ---
             const isOpenedByEmployee = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
             const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
 
             const backLink = document.getElementById('headerBackLink');
 
             if (isOpenedByEmployee && employeeTargetIndex !== null && employeeTargetIndex !== undefined && employeeTargetIndex !== "" && adminCustomersList[parseInt(employeeTargetIndex)]) {
+                // حالة استعراض الموظف لحساب العميل
                 currentCustomerIndex = parseInt(employeeTargetIndex);
                 let targetCustomer = adminCustomersList[currentCustomerIndex];
                 userData = {
@@ -183,28 +184,34 @@
                     address: targetCustomer.address || ''
                 };
                 
-                // زر العودة يوجه الموظف إلى لوحة تحكمه
+                // زر العودة يوجه الموظف حصرياً إلى لوحة الموظف
                 if (backLink) {
                     backLink.href = 'employee-dashboard.html';
                     backLink.innerHTML = '<i class="fa-solid fa-arrow-right"></i> العودة لوحة الموظف';
                 }
             } else {
-                // دخول العميل الحقيقي بنفسه - تنظيف أي مخلفات موظف سابقة لضمان عدم تداخل البيانات
+                // حالة دخول العميل الحقيقي بنفسه (تفريغ أي مؤشرات موظف لضمان عدم التداخل)
                 localStorage.removeItem('isEmployeeViewing');
                 sessionStorage.removeItem('openedByEmployee');
                 localStorage.removeItem('viewingCustomerIndex');
 
                 userData = JSON.parse(localStorage.getItem('loggedInUser'));
-                if (!userData) { window.location.href = 'login.html'; return; }
+                if (!userData) { 
+                    window.location.href = 'login.html'; 
+                    return; 
+                }
                 
-                // البحث الدقيق برقم الهاتف حصرياً لتجنب تداخل الأسماء
-                currentCustomerIndex = adminCustomersList.findIndex(c => c.phone && userData.phone && c.phone.trim() === userData.phone.trim());
+                // البحث الدقيق جداً برقم الهاتف
+                if (userData.phone) {
+                    currentCustomerIndex = adminCustomersList.findIndex(c => c.phone && c.phone.trim() === userData.phone.trim());
+                }
                 
-                if (currentCustomerIndex === -1) {
-                    currentCustomerIndex = adminCustomersList.findIndex(c => c.name && userData.name && c.name.trim() === userData.name.trim());
+                // إذا لم يوجد برقم الهاتف، نبحث بالاسم الدقيق المسجل به الدخول
+                if (currentCustomerIndex === -1 && userData.name) {
+                    currentCustomerIndex = adminCustomersList.findIndex(c => c.name && c.name.trim() === userData.name.trim());
                 }
 
-                // زر العودة يوجه العميل حصرياً إلى الصفحة الرئيسية
+                // زر العودة يوجه العميل حصرياً إلى الصفحة الرئيسية للعملاء
                 if (backLink) {
                     backLink.href = 'index.html';
                     backLink.innerHTML = 'العودة للرئيسية';
