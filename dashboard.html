@@ -168,10 +168,12 @@
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let currentCustomerIndex = -1;
 
-            // --- التحقق مما إذا كان الموظف قد فتح صفحة العميل عبر زر لوحة الموظف ---
+            // --- التحقق المزدوج الذكي: هل تم فتح الصفحة خصيصاً بواسطة الموظف عبر زر الاستعراض؟ ---
+            // نتحقق من وجود إشارة واضحة تدل على أن الدخول تم من لوحة الموظف (مثل مفتاح قادم مع صفحة الموظف)
+            const isOpenedByEmployee = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
             const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
 
-            if (employeeTargetIndex !== null && employeeTargetIndex !== undefined && employeeTargetIndex !== "" && adminCustomersList[parseInt(employeeTargetIndex)]) {
+            if (isOpenedByEmployee && employeeTargetIndex !== null && employeeTargetIndex !== undefined && employeeTargetIndex !== "" && adminCustomersList[parseInt(employeeTargetIndex)]) {
                 currentCustomerIndex = parseInt(employeeTargetIndex);
                 let targetCustomer = adminCustomersList[currentCustomerIndex];
                 userData = {
@@ -180,17 +182,28 @@
                     address: targetCustomer.address || ''
                 };
                 
-                // تعديل رابط زر العودة ليعيد الموظف إلى لوحة تحكمه وتصحيح الاسم البرمجي بدقة
+                // زر العودة يوجه الموظف إلى لوحة تحكمه
                 const backLink = document.getElementById('headerBackLink');
                 if (backLink) {
                     backLink.href = 'employee-dashboard.html';
                     backLink.innerHTML = '<i class="fa-solid fa-arrow-right"></i> العودة لوحة الموظف';
                 }
             } else {
-                // تسجيل الدخول العادي للزبون
+                // إذا دخل العميل بنفسه (تسجيل دخول عادي)، نقوم بتنظيف أي آثار قديمة لكي لا تختلط الأمور
+                localStorage.removeItem('isEmployeeViewing');
+                sessionStorage.removeItem('openedByEmployee');
+                localStorage.removeItem('viewingCustomerIndex');
+
                 userData = JSON.parse(localStorage.getItem('loggedInUser'));
                 if (!userData) { window.location.href = 'login.html'; return; }
                 currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+                
+                // زر العودة يوجه العميل حصرياً إلى الصفحة الرئيسية
+                const backLink = document.getElementById('headerBackLink');
+                if (backLink) {
+                    backLink.href = 'index.html';
+                    backLink.innerHTML = 'العودة للرئيسية';
+                }
             }
             
             document.getElementById('userName').innerText = userData.name || userData.username || 'عزيزي العميل';
@@ -342,8 +355,9 @@
         function selectOrderForChat(ordIndex) {
             activeSelectedOrderIndex = ordIndex;
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            const isOpenedByEmployee = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
             const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
-            let cIndex = employeeTargetIndex !== null ? parseInt(employeeTargetIndex) : -1;
+            let cIndex = (isOpenedByEmployee && employeeTargetIndex !== null) ? parseInt(employeeTargetIndex) : -1;
             
             if (cIndex === -1) {
                 const userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
@@ -366,7 +380,7 @@
             let chatBox = document.getElementById('customerChatBox');
             chatBox.innerHTML = '';
             if (!order.chat || order.chat.length === 0) {
-                chatBox.innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">ابدأ المحادثة مع الموظف بخصوص الطلب (${order.id})...</p>`;
+                chatBox.innerHTML = `<p style="text-align: center; color: #888; font-size: 12px; margin-top: 50px;">ابدأ المحادثة بخصوص الطلب (${order.id})...</p>`;
             } else {
                 order.chat.forEach(msg => {
                     let bubbleClass = (msg.sender === 'employee') ? 'employee' : 'customer';
@@ -393,8 +407,9 @@
             if (!text) return;
 
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            const isOpenedByEmployee = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
             const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
-            let cIndex = employeeTargetIndex !== null ? parseInt(employeeTargetIndex) : -1;
+            let cIndex = (isOpenedByEmployee && employeeTargetIndex !== null) ? parseInt(employeeTargetIndex) : -1;
 
             if (cIndex === -1) {
                 const userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
@@ -423,8 +438,9 @@
         function cancelOrder(index) {
             if(confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
                 let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+                const isOpenedByEmployee = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
                 const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
-                let cIndex = employeeTargetIndex !== null ? parseInt(employeeTargetIndex) : -1;
+                let cIndex = (isOpenedByEmployee && employeeTargetIndex !== null) ? parseInt(employeeTargetIndex) : -1;
 
                 if (cIndex === -1) {
                     const userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
@@ -445,8 +461,9 @@
         function saveAddress() {
             let newAddress = document.getElementById('userAddress').value.trim();
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            const isOpenedByEmployee = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
             const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
-            let cIndex = employeeTargetIndex !== null ? parseInt(employeeTargetIndex) : -1;
+            let cIndex = (isOpenedByEmployee && employeeTargetIndex !== null) ? parseInt(employeeTargetIndex) : -1;
 
             if (cIndex === -1) {
                 let userData = JSON.parse(localStorage.getItem('loggedInUser')) || {};
