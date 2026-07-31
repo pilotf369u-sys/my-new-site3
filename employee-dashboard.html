@@ -253,12 +253,13 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
-                                        <a href="${waLink}" target="_blank" class="btn-whatsapp">واتساب</a>
-                                        <button class="btn-chat" onclick="openChatModal(${custIndex}, ${ordIndex})">الدردشة</button>
-                                        <button class="btn-details" onclick="openEmployeeOrderDetailsModal(${custIndex}, ${ordIndex})">التفاصيل</button>
-                                        <button class="btn-profile" onclick="openCustomerProfileModal(${custIndex})">ملف العميل</button>
-                                    </div>
+                                   <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+    <a href="${waLink}" target="_blank" class="btn-whatsapp">واتساب</a>
+    <button class="btn-chat" onclick="openChatModal(${custIndex}, ${ordIndex})">الدردشة</button>
+    <button class="btn-details" onclick="openEmployeeOrderDetailsModal(${custIndex}, ${ordIndex})">التفاصيل</button>
+    <button class="btn-profile" onclick="openCustomerProfileModal(${custIndex})">ملف العميل</button>
+    <button class="btn-purple" onclick="goToCustomerPortal(${custIndex})">صفحة العميل</button>
+</div>
                                 </td>
                                 <td>
                                     ${isTransferred ? 
@@ -357,16 +358,17 @@
             } else {
                 ordersHtml = `<tr><td colspan="4">لا توجد طلبات مسجلة لهذا العميل.</td></tr>`;
             }
-            // --- الانتقال المباشر إلى صفحة العميل وصلاحية الدردشة كعميل ---
-        function openCustomerProfileModal(custIndex) {
+           // --- ميزة الدخول المباشر لصفحة العميل للتحكم والدردشة ---
+        function goToCustomerPortal(custIndex) {
             let customers = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cust = customers[custIndex];
-            if(!cust) return;
-
+            if (!customers[custIndex]) {
+                alert('العميل غير موجود!');
+                return;
+            }
             // تخزين مؤشر العميل الحالي في localStorage ليتم فتحه في صفحة customer.html
             localStorage.setItem('viewingCustomerIndex', custIndex);
             
-            // التوجيه الفوري لصفحة العميل
+            // الانتقال الفوري لصفحة العميل
             window.location.href = 'customer.html';
         }
 
