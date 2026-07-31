@@ -165,34 +165,38 @@
         let viewingAsEmployee = false;
 
         window.onload = function() {
-            let userData = null;
-            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let currentCustomerIndex = -1;
+    let userData = null;
+    let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+    let currentCustomerIndex = -1;
 
-            // التحقق مما إذا كان الموظف قد فتح صفحة هذا العميل
-            const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
-            
-            if (employeeTargetIndex !== null && employeeTargetIndex !== undefined && adminCustomersList[employeeTargetIndex]) {
-                currentCustomerIndex = parseInt(employeeTargetIndex);
-                let targetCustomer = adminCustomersList[currentCustomerIndex];
-                userData = {
-                    name: targetCustomer.name,
-                    phone: targetCustomer.phone,
-                    address: targetCustomer.address || ''
-                };
-                viewingAsEmployee = true;
-                
-                // تعديل زر العودة ليعيد الموظف إلى لوحة تحكمه
-                const headerLink = document.querySelector('.dashboard-header a');
-                if(headerLink) {
-                    headerLink.href = 'employee_dashboard.html';
-                    headerLink.innerHTML = '<i class="fa-solid fa-arrow-right"></i> العودة لوحة الموظف';
-                }
-            } else {
-                userData = JSON.parse(localStorage.getItem('loggedInUser'));
-                if (!userData) { window.location.href = 'login.html'; return; }
-                currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
-            }
+    // --- (هنا الكود الجديد للتحقق من الموظف) ---
+    const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+    
+    if (employeeTargetIndex !== null && employeeTargetIndex !== undefined && employeeTargetIndex !== "" && adminCustomersList[parseInt(employeeTargetIndex)]) {
+        currentCustomerIndex = parseInt(employeeTargetIndex);
+        let targetCustomer = adminCustomersList[currentCustomerIndex];
+        userData = {
+            name: targetCustomer.name,
+            phone: targetCustomer.phone,
+            address: targetCustomer.address || ''
+        };
+        viewingAsEmployee = true;
+        
+        // تعديل زر العودة ليعيد الموظف إلى لوحة تحكمه
+        const headerLink = document.querySelector('.dashboard-header a');
+        if(headerLink) {
+            headerLink.href = 'employee-dashboard.html'; 
+            headerLink.innerHTML = '<i class="fa-solid fa-arrow-right"></i> العودة لوحة الموظف';
+        }
+    } else {
+        userData = JSON.parse(localStorage.getItem('loggedInUser'));
+        if (!userData) { window.location.href = 'login.html'; return; }
+        currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+    }
+
+    // --- (من هنا يبدأ باقي كود صفحة العميل القديم لديك الخاص بعرض البيانات والجدول) ---
+    // باقي الأكواد الخاصة بك ضعها هنا تحت هذا السطر...
+};
             
             document.getElementById('userName').innerText = userData.name || userData.username || 'عزيزي العميل';
             if(document.getElementById('userAddress')) {
