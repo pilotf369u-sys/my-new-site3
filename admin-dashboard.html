@@ -373,12 +373,19 @@ function loginAsCustomer(index) {
     let cust = customers[index];
     if (!cust) return alert('العميل غير موجود');
     
-    // تخزين بيانات الجلسة الحالية للعميل ليتم توجيهه وفتح حسابه مباشرة
-    localStorage.setItem('currentLoggedInCustomer', JSON.stringify(cust));
+    // 1. تخزين بيانات الجلسة ليتعرف عليها كود العميل مباشرة
+    localStorage.setItem('loggedInUser', JSON.stringify({
+        name: cust.name,
+        phone: cust.phone,
+        address: cust.address || ''
+    }));
     
-    // الانتقال إلى صفحة أو واجهة العميل (قم بتعديل الرابط أدناه بحسب اسم صفحة العميل لديك إن كانت منفصلة، أو توجيهه للقسم المخصص)
-    // مثال إذا كانت في نفس الملف أو صفحة مستقلة customer.html:
-    window.location.href = 'customer.html'; 
+    // 2. ضبط مفاتيح العرض المباشر (مثل الموظف تماماً ولكن للأدمن)
+    localStorage.setItem('isEmployeeViewing', 'true'); // تخدع الصفحة لتقرأ مباشرة من الفهرس
+    localStorage.setItem('viewingCustomerIndex', index);
+    
+    // 3. فتح صفحة لوحة تحكم العميل في نفس النافذة أو نافذة جديدة
+    window.location.href = 'customer-dashboard.html'; // (تأكد من اسم صفحة العميل لديك، مثل customer.html أو customer-dashboard.html)
 }
 
 // دالة فتح نافذة تفاصيل الطلب في لوحة الأدمن مطابقة تماماً للوحة العميل
