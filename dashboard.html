@@ -163,48 +163,48 @@
         let activeSelectedOrderIndex = 0;
         let currentCustomerOrdersGlobal = [];
 
-        window.onload = function() {
-            let userData = null;
-            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let currentCustomerIndex = -1;
+       window.onload = function() {
+    let userData = null;
+    let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+    let currentCustomerIndex = -1;
 
-            // --- التحقق المزدوج الذكي: هل تم فتح الصفحة خصيصاً بواسطة الموظف عبر زر الاستعراض؟ ---
-            // نتحقق من وجود إشارة واضحة تدل على أن الدخول تم من لوحة الموظف (مثل مفتاح قادم مع صفحة الموظف)
-            const isOpenedByEmployee = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
-            const employeeTargetIndex = localStorage.getItem('viewingCustomerIndex');
+    // التحقق من طريقة الدخول (سواء عبر الموظف أو عبر زر الأدمن الجديد)
+    const isOpenedByAdminOrEmployee = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+    const targetIndex = localStorage.getItem('viewingCustomerIndex');
 
-            if (isOpenedByEmployee && employeeTargetIndex !== null && employeeTargetIndex !== undefined && employeeTargetIndex !== "" && adminCustomersList[parseInt(employeeTargetIndex)]) {
-                currentCustomerIndex = parseInt(employeeTargetIndex);
-                let targetCustomer = adminCustomersList[currentCustomerIndex];
-                userData = {
-                    name: targetCustomer.name,
-                    phone: targetCustomer.phone,
-                    address: targetCustomer.address || ''
-                };
-                
-                // زر العودة يوجه الموظف إلى لوحة تحكمه
-                const backLink = document.getElementById('headerBackLink');
-                if (backLink) {
-                    backLink.href = 'employee-dashboard.html';
-                    backLink.innerHTML = '<i class="fa-solid fa-arrow-right"></i> العودة لوحة الموظف';
-                }
-            } else {
-                // إذا دخل العميل بنفسه (تسجيل دخول عادي)، نقوم بتنظيف أي آثار قديمة لكي لا تختلط الأمور
-                localStorage.removeItem('isEmployeeViewing');
-                sessionStorage.removeItem('openedByEmployee');
-                localStorage.removeItem('viewingCustomerIndex');
+    if (isOpenedByAdminOrEmployee && targetIndex !== null && targetIndex !== undefined && targetIndex !== "" && adminCustomersList[parseInt(targetIndex)]) {
+        currentCustomerIndex = parseInt(targetIndex);
+        let targetCustomer = adminCustomersList[currentCustomerIndex];
+        userData = {
+            name: targetCustomer.name,
+            phone: targetCustomer.phone,
+            address: targetCustomer.address || ''
+        };
+        
+        // زر العودة يوجه بحسب من قام بفتحه
+        const backLink = document.getElementById('headerBackLink');
+        if (backLink) {
+            // إذا كان الأدمن هو من ضغط دخول، يمكنك توجيهه للوحة الأدمن، أو إخفاء زر العودة / جعله يغلق النافذة
+            backLink.href = 'admin.html'; // أو employee-dashboard.html
+            backLink.innerHTML = '<i class="fa-solid fa-arrow-right"></i> العودة للوحة التحكم';
+        }
+    } else {
+        // تسجيل دخول العميل الطبيعي
+        localStorage.removeItem('isEmployeeViewing');
+        sessionStorage.removeItem('openedByEmployee');
+        localStorage.removeItem('viewingCustomerIndex');
 
-                userData = JSON.parse(localStorage.getItem('loggedInUser'));
-                if (!userData) { window.location.href = 'login.html'; return; }
-                currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
-                
-                // زر العودة يوجه العميل حصرياً إلى الصفحة الرئيسية
-                const backLink = document.getElementById('headerBackLink');
-                if (backLink) {
-                    backLink.href = 'index.html';
-                    backLink.innerHTML = 'العودة للرئيسية';
-                }
-            }
+        userData = JSON.parse(localStorage.getItem('loggedInUser'));
+        if (!userData) { window.location.href = 'login.html'; return; }
+        currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+        
+        const backLink = document.getElementById('headerBackLink');
+        if (backLink) {
+            backLink.href = 'index.html';
+            backLink.innerHTML = 'العودة للرئيسية';
+        }
+    }
+    
             
             document.getElementById('userName').innerText = userData.name || userData.username || 'عزيزي العميل';
             if(document.getElementById('userAddress')) {
