@@ -380,12 +380,12 @@ function loginAsCustomer(index) {
         address: cust.address || ''
     }));
     
-    // 2. ضبط مفاتيح العرض المباشر (مثل الموظف تماماً ولكن للأدمن)
-    localStorage.setItem('isEmployeeViewing', 'true'); // تخدع الصفحة لتقرأ مباشرة من الفهرس
-    localStorage.setItem('viewingCustomerIndex', index);
-    
-    // 3. فتح صفحة لوحة تحكم العميل في نفس النافذة أو نافذة جديدة
-    window.location.href = 'customer-dashboard.html'; // (تأكد من اسم صفحة العميل لديك، مثل customer.html أو customer-dashboard.html)
+    // 2. ضبط مفاتيح العرض المباشر (مثل الموظف تماماً)
+localStorage.setItem('isEmployeeViewing', 'true'); // هذه المفتاح ستجعل صفحة العميل تفتح بشكل طبيعي
+localStorage.setItem('viewingCustomerIndex', index);
+
+// 3. التوجيه إلى صفحة العميل الفعلي لديك وهي dashboard.html
+window.location.href = 'dashboard.html';
 }
 
 // دالة فتح نافذة تفاصيل الطلب في لوحة الأدمن مطابقة تماماً للوحة العميل
