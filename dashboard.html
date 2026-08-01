@@ -159,89 +159,36 @@
         </div>
     </div>
 
- <script>
-    let activeSelectedOrderIndex = 0;
-    let currentCustomerOrdersGlobal = [];
+    <script>
+        let activeSelectedOrderIndex = 0;
+        let currentCustomerOrdersGlobal = [];
 
-    window.onload = function() {
-        // 1. تحديد بيانات العميل فوراً وبدقة تامة
-        const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
-        let userData = null;
-
+     wiwindow.onload = function() {
+    // التحقق من حالة الموظف أولاً
+    const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+    const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+    const backBtn = document.getElementById('backBtn');
+    
+    if (backBtn) {
         if (isEmpView) {
-            let viewingIndex = localStorage.getItem('viewingCustomerIndex');
-            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            if (viewingIndex !== null && adminCustomersList[viewingIndex]) {
-                userData = adminCustomersList[viewingIndex];
-                localStorage.setItem('loggedInUser', JSON.stringify(userData));
-            }
-        }
-
-        if (!userData) {
-            userData = JSON.parse(localStorage.getItem('loggedInUser'));
-        }
-
-        // 2. إدارة زر العودة
-        const backBtn = document.getElementById('backBtn');
-        if (backBtn) {
-            if (isEmpView) {
-                const viewedBy = localStorage.getItem('viewedBy');
-                if (viewedBy === 'admin') {
-                    backBtn.innerText = "العودة لوحة الإدارة";
-                    backBtn.href = "admin-dashboard.html";
-                } else {
-                    backBtn.innerText = "العودة لصفحة الموظف";
-                    backBtn.href = "employee-dashboard.html";
-                }
-                
-                backBtn.onclick = function() {
-                    localStorage.removeItem('isEmployeeViewing');
-                    sessionStorage.removeItem('openedByEmployee');
-                    localStorage.removeItem('viewingCustomerIndex');
-                    localStorage.removeItem('viewedBy');
-                };
-            } else {
-                backBtn.innerText = "العودة للرئيسية";
-                backBtn.href = "index.html";
-            }
-        }
-
-        if (!userData && !isEmpView) { 
-            window.location.href = 'login.html'; 
-            return; 
-        }
-
-        // 3. حقن الاسم الحقيقي فوراً وإجبار الصفحة على عرضه
-        if (userData) {
-            const realName = userData.name || userData.username || userData.fullName || "عزيزي العميل";
+            // إذا كان الدخول من الموظف
+            backBtn.innerText = "العودة لصفحة الموظف";
+            backBtn.href = "employee-dashboard.html";
             
-            // محاولة التحديث عبر الـ ID المعتاد
-            const nameEl = document.getElementById('userName');
-            if (nameEl) {
-                nameEl.innerText = realName;
-            }
-
-            // محاولة البحث الاحتياطي في حال كان الـ ID مختلفاً لتغيير النص الافتراضي
-            setTimeout(() => {
-                const targetHeader = document.querySelector('h1, h2, h3, h4, span, div');
-                if (targetHeader && targetHeader.innerText.includes('عزيزي العميل')) {
-                    targetHeader.innerText = `أهلاً بك يا ${realName}`;
-                }
-            }, 100);
-
-            const addressElement = document.getElementById('userAddress');
-            if (addressElement) {
-                addressElement.value = userData.address || '';
-            }
+            // عند النقر للعودة، نقوم بتنظيف المتغيرات لكي تعود الأمور طبيعية للعميل لاحقاً
+            backBtn.onclick = function() {
+                localStorage.removeItem('isEmployeeViewing');
+                sessionStorage.removeItem('openedByEmployee');
+            };
+        } else {
+            // إذا كان دخول عادي من العميل
+            backBtn.innerText = "العودة للرئيسية";
+            backBtn.href = "index.html";
         }
+    }
 
-        let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-        let currentCustomerIndex = userData ? adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name) : -1;
-        
-        let currentCustomer = currentCustomerIndex !== -1 ? adminCustomersList[currentCustomerIndex] : null;
-        if (!currentCustomer && userData && typeof customersDB !== 'undefined') {
-            currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
-        }
+    if (!userData && !isEmpView) { window.location.href = 'login.html'; return; }
+    
     // ... باقي الكود الخاص بك ...
 
     const userData = JSON.parse(localStorage.getItem('loggedInUser'));
