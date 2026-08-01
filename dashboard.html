@@ -163,29 +163,25 @@
         let activeSelectedOrderIndex = 0;
         let currentCustomerOrdersGlobal = [];
 
-     window.onload = function() {
-    const userData = JSON.parse(localStorage.getItem('loggedInUser'));
-    
-    // إذا كان هناك عميل مسجل دخوله بشكل طبيعي وليس عبر الموظف، نقوم بمسح علامات الموظف فوراً
-    if (userData) {
-        localStorage.removeItem('isEmployeeViewing');
-        sessionStorage.removeItem('openedByEmployee');
-    }
-
+     wiwindow.onload = function() {
+    // التحقق من حالة الموظف أولاً
     const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+    const userData = JSON.parse(localStorage.getItem('loggedInUser'));
     const backBtn = document.getElementById('backBtn');
     
     if (backBtn) {
         if (isEmpView) {
+            // إذا كان الدخول من الموظف
             backBtn.innerText = "العودة لصفحة الموظف";
             backBtn.href = "employee-dashboard.html";
             
-            // عند النقر للعودة لصفحة الموظف، نقوم بتنظيف المتغيرات
+            // عند النقر للعودة، نقوم بتنظيف المتغيرات لكي تعود الأمور طبيعية للعميل لاحقاً
             backBtn.onclick = function() {
                 localStorage.removeItem('isEmployeeViewing');
                 sessionStorage.removeItem('openedByEmployee');
             };
         } else {
+            // إذا كان دخول عادي من العميل
             backBtn.innerText = "العودة للرئيسية";
             backBtn.href = "index.html";
         }
