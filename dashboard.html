@@ -159,12 +159,12 @@
         </div>
     </div>
 
-  <script>
+ <script>
     let activeSelectedOrderIndex = 0;
     let currentCustomerOrdersGlobal = [];
 
     window.onload = function() {
-        // --- 1. تحديد بيانات العميل بدقة بناءً على طريقة الدخول ---
+        // 1. تحديد بيانات العميل فوراً وبدقة تامة
         const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
         let userData = null;
 
@@ -173,7 +173,6 @@
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             if (viewingIndex !== null && adminCustomersList[viewingIndex]) {
                 userData = adminCustomersList[viewingIndex];
-                // نحدث الـ loggedInUser ليتطابق تماماً مع العميل المحدد
                 localStorage.setItem('loggedInUser', JSON.stringify(userData));
             }
         }
@@ -182,7 +181,7 @@
             userData = JSON.parse(localStorage.getItem('loggedInUser'));
         }
 
-        // --- 2. إدارة زر العودة الذكي ---
+        // 2. إدارة زر العودة
         const backBtn = document.getElementById('backBtn');
         if (backBtn) {
             if (isEmpView) {
@@ -207,19 +206,28 @@
             }
         }
 
-        // --- 3. التحقق من وجود المستخدم أو التوجيه لتسجيل الدخول ---
         if (!userData && !isEmpView) { 
             window.location.href = 'login.html'; 
             return; 
         }
 
-        // --- 4. عرض اسم العميل الحقيقي فوراً في الواجهة ---
+        // 3. حقن الاسم الحقيقي فوراً وإجبار الصفحة على عرضه
         if (userData) {
-            let realName = userData.name || userData.username || userData.fullName || "عزيزي العميل";
-            const nameElement = document.getElementById('userName');
-            if (nameElement) {
-                nameElement.innerText = realName;
+            const realName = userData.name || userData.username || userData.fullName || "عزيزي العميل";
+            
+            // محاولة التحديث عبر الـ ID المعتاد
+            const nameEl = document.getElementById('userName');
+            if (nameEl) {
+                nameEl.innerText = realName;
             }
+
+            // محاولة البحث الاحتياطي في حال كان الـ ID مختلفاً لتغيير النص الافتراضي
+            setTimeout(() => {
+                const targetHeader = document.querySelector('h1, h2, h3, h4, span, div');
+                if (targetHeader && targetHeader.innerText.includes('عزيزي العميل')) {
+                    targetHeader.innerText = `أهلاً بك يا ${realName}`;
+                }
+            }, 100);
 
             const addressElement = document.getElementById('userAddress');
             if (addressElement) {
