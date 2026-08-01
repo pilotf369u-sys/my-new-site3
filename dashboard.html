@@ -159,26 +159,30 @@
         </div>
     </div>
 
-   <script>
+  <script>
     let activeSelectedOrderIndex = 0;
     let currentCustomerOrdersGlobal = [];
 
     window.onload = function() {
-        // --- 1. التحقق من طريقة الدخول وجلب بيانات العميل المحدد بدقة ---
+        // --- 1. تحديد بيانات العميل بدقة بناءً على طريقة الدخول ---
         const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
-        
+        let userData = null;
+
         if (isEmpView) {
             let viewingIndex = localStorage.getItem('viewingCustomerIndex');
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             if (viewingIndex !== null && adminCustomersList[viewingIndex]) {
-                // فرض بيانات العميل المحدد ليتم عرضها في الصفحة
-                localStorage.setItem('loggedInUser', JSON.stringify(adminCustomersList[viewingIndex]));
+                userData = adminCustomersList[viewingIndex];
+                // نحدث الـ loggedInUser ليتطابق تماماً مع العميل المحدد
+                localStorage.setItem('loggedInUser', JSON.stringify(userData));
             }
         }
 
-        const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+        if (!userData) {
+            userData = JSON.parse(localStorage.getItem('loggedInUser'));
+        }
 
-        // --- 2. إدارة زر العودة الذكي حسب الجهة القادمة ---
+        // --- 2. إدارة زر العودة الذكي ---
         const backBtn = document.getElementById('backBtn');
         if (backBtn) {
             if (isEmpView) {
@@ -203,22 +207,24 @@
             }
         }
 
-        // --- 3. التحقق من صحة المستخدم والتوجيه في حال عدم وجوده ---
+        // --- 3. التحقق من وجود المستخدم أو التوجيه لتسجيل الدخول ---
         if (!userData && !isEmpView) { 
             window.location.href = 'login.html'; 
             return; 
         }
-        
-        // --- 4. عرض بيانات العميل في الواجهة بأمان تام ---
-        const customerName = userData ? (userData.name || userData.username || "عزيزي العميل") : "عزيزي العميل";
-        const nameElement = document.getElementById('userName');
-        if (nameElement) {
-            nameElement.innerText = customerName;
-        }
 
-        const addressElement = document.getElementById('userAddress');
-        if (addressElement && userData) {
-            addressElement.value = userData.address || '';
+        // --- 4. عرض اسم العميل الحقيقي فوراً في الواجهة ---
+        if (userData) {
+            let realName = userData.name || userData.username || userData.fullName || "عزيزي العميل";
+            const nameElement = document.getElementById('userName');
+            if (nameElement) {
+                nameElement.innerText = realName;
+            }
+
+            const addressElement = document.getElementById('userAddress');
+            if (addressElement) {
+                addressElement.value = userData.address || '';
+            }
         }
 
         let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
