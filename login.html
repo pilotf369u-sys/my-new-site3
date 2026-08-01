@@ -31,8 +31,8 @@
         let inputId = document.getElementById('phone').value.trim();
         const passwordInput = document.getElementById('password').value.trim();
 
-        if (!inputId) {
-            alert('الرجاء إدخال رقم الهاتف أو كود الدخول');
+        if (!inputId || !passwordInput) {
+            alert('الرجاء إدخال رقم الهاتف/الكود وكلمة المرور');
             return;
         }
 
@@ -46,7 +46,7 @@
 
         let cleanInput = inputId.replace(/[^0-9]/g, '');
 
-        // --- الحالة الثانية: دخول الموظف ---
+        // --- الحالة الثانية: دخول الموظف (من قاعدة بيانات الموظفين) ---
         const employeesList = JSON.parse(localStorage.getItem('employeesList')) || [];
         const employee = employeesList.find(emp => {
             let empPhone = (emp.phone || '').toString().replace(/[^0-9]/g, '');
@@ -60,7 +60,7 @@
             return;
         }
 
-        // --- الحالة الثالثة: دخول المندوب ---
+        // --- الحالة الثالثة: دخول المندوب (من قاعدة بيانات المندوبين) ---
         const deliveryList = JSON.parse(localStorage.getItem('deliveryList')) || [];
         const deliveryGuy = deliveryList.find(del => {
             let delPhone = (del.phone || '').toString().replace(/[^0-9]/g, '');
@@ -70,12 +70,12 @@
 
        if (deliveryGuy) {
             localStorage.setItem('loggedInDelivery', JSON.stringify(deliveryGuy));
-            localStorage.setItem('loggedDeliveryName', deliveryGuy.name);
+            localStorage.setItem('loggedDeliveryName', deliveryGuy.name); // <--- أضف هذا السطر فقط هنا
             window.location.href = 'delivery-dashboard.html';
             return;
         }
 
-        // --- الحالة الرابعة: دخول الفرع ---
+        // --- الحالة الرابعة: دخول الفرع (من قاعدة بيانات الفروع) ---
         const branchList = JSON.parse(localStorage.getItem('branchList')) || [];
         const branchUser = branchList.find(br => {
             let brPhone = (br.phone || '').toString().replace(/[^0-9]/g, '');
@@ -85,32 +85,19 @@
 
         if (branchUser) {
             localStorage.setItem('loggedBranchName', branchUser.name);
-            window.location.href = 'branch-dashboard.html';
+            window.location.href = 'branch-dashboard.html'; // توجيه الفرع إلى لوحة تحكمه الخاصة
             return;
         }
 
-        // --- الحالة الخامسة: دخول العميل (تعديل لضمان التطابق السلس) ---
+        // --- الحالة الخامسة: دخول العميل (من قاعدة بيانات العملاء) ---
         const customersDB = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
         const user = customersDB.find(c => {
             let custPhone = (c.phone || '').toString().replace(/[^0-9]/g, '');
             let custCode = (c.code || '').toString().trim();
-            
-            // مطابقة مرنة للرقم (سواء أدخل المستخدم الرقم كاملاً أو جزءاً منه) أو بالكود
-            let phoneMatch = (custPhone && cleanInput && (custPhone.includes(cleanInput) || cleanInput.includes(custPhone)));
-            let codeMatch = (custCode && custCode === inputId);
-            
-            // التحقق من كلمة المرور (إذا كانت مسجلة يتم مطابقته، وإذا لم تكن موجودة أو فارغة يتم السماح بالدخول لتسهيل الأمر)
-            let storedPass = c.password ? c.password.trim() : "";
-            let passMatch = (storedPass === "" || storedPass === passwordInput);
-
-            return (phoneMatch || codeMatch) && passMatch;
+            return (custPhone === cleanInput || custCode === inputId) && c.password.trim() === passwordInput;
         });
 
         if (user) {
-            // مسح أي علامات سابقة تخص الموظف لضمان ظهور زر "العودة للرئيسية" للعميل الطبيعي
-            localStorage.removeItem('isEmployeeViewing');
-            sessionStorage.removeItem('openedByEmployee');
-
             localStorage.setItem('loggedInUser', JSON.stringify(user));
             window.location.href = 'dashboard.html';
         } else {
