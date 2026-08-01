@@ -163,15 +163,24 @@
         let activeSelectedOrderIndex = 0;
         let currentCustomerOrdersGlobal = [];
 
-      window.onload = function() {
-    // --- التحقق مما إذا كان الدخول تم من طرف الموظف ---
+     window.onload = function() {
+    const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+    
+    // إذا كان هناك عميل مسجل دخوله بشكل طبيعي وليس عبر الموظف، نقوم بمسح علامات الموظف فوراً
+    if (userData) {
+        localStorage.removeItem('isEmployeeViewing');
+        sessionStorage.removeItem('openedByEmployee');
+    }
+
     const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
     const backBtn = document.getElementById('backBtn');
     
     if (backBtn) {
         if (isEmpView) {
             backBtn.innerText = "العودة لصفحة الموظف";
-            backBtn.href = "employee-dashboard.html"; // اسم صفحة الموظف الظاهر في مشروعك
+            backBtn.href = "employee-dashboard.html";
+            
+            // عند النقر للعودة لصفحة الموظف، نقوم بتنظيف المتغيرات
             backBtn.onclick = function() {
                 localStorage.removeItem('isEmployeeViewing');
                 sessionStorage.removeItem('openedByEmployee');
@@ -181,6 +190,10 @@
             backBtn.href = "index.html";
         }
     }
+
+    if (!userData && !isEmpView) { window.location.href = 'login.html'; return; }
+    
+    // ... باقي الكود الخاص بك ...
 
     const userData = JSON.parse(localStorage.getItem('loggedInUser'));
     if (!userData && !isEmpView) { window.location.href = 'login.html'; return; }
