@@ -70,7 +70,7 @@
 
        if (deliveryGuy) {
             localStorage.setItem('loggedInDelivery', JSON.stringify(deliveryGuy));
-            localStorage.setItem('loggedDeliveryName', deliveryGuy.name); // <--- أضف هذا السطر فقط هنا
+            localStorage.setItem('loggedDeliveryName', deliveryGuy.name);
             window.location.href = 'delivery-dashboard.html';
             return;
         }
@@ -85,7 +85,7 @@
 
         if (branchUser) {
             localStorage.setItem('loggedBranchName', branchUser.name);
-            window.location.href = 'branch-dashboard.html'; // توجيه الفرع إلى لوحة تحكمه الخاصة
+            window.location.href = 'branch-dashboard.html';
             return;
         }
 
@@ -98,6 +98,10 @@
         });
 
         if (user) {
+            // مسح أي علامات سابقة تخص الموظف لضمان ظهور زر "العودة للرئيسية" للعميل الطبيعي
+            localStorage.removeItem('isEmployeeViewing');
+            sessionStorage.removeItem('openedByEmployee');
+
             localStorage.setItem('loggedInUser', JSON.stringify(user));
             window.location.href = 'dashboard.html';
         } else {
