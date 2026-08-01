@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">a
+    <meta charset="UTF-8">
     <title>لوحة تحكم العميل - MeshWar</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="customers_db.js"></script>
@@ -163,46 +163,46 @@
         let activeSelectedOrderIndex = 0;
         let currentCustomerOrdersGlobal = [];
 
-     wiwindow.onload = function() {
-    // التحقق من حالة الموظف أولاً
-    const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
-    const userData = JSON.parse(localStorage.getItem('loggedInUser'));
-    const backBtn = document.getElementById('backBtn');
-    
-    if (backBtn) {
-        if (isEmpView) {
-            // إذا كان الدخول من الموظف
-            backBtn.innerText = "العودة لصفحة الموظف";
-            backBtn.href = "employee-dashboard.html";
+        window.onload = function() {
+            // التحقق من حالة الدخول بواسطة الأدمن أو الموظف
+            const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+            const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+            const backBtn = document.getElementById('backBtn');
             
-            // عند النقر للعودة، نقوم بتنظيف المتغيرات لكي تعود الأمور طبيعية للعميل لاحقاً
-            backBtn.onclick = function() {
-                localStorage.removeItem('isEmployeeViewing');
-                sessionStorage.removeItem('openedByEmployee');
-            };
-        } else {
-            // إذا كان دخول عادي من العميل
-            backBtn.innerText = "العودة للرئيسية";
-            backBtn.href = "index.html";
-        }
-    }
+            if (backBtn) {
+                if (isEmpView) {
+                    backBtn.innerText = "العودة لصفحة الموظف";
+                    backBtn.href = "employee-dashboard.html";
+                    
+                    backBtn.onclick = function() {
+                        localStorage.removeItem('isEmployeeViewing');
+                        sessionStorage.removeItem('openedByEmployee');
+                    };
+                } else {
+                    backBtn.innerText = "العودة للرئيسية";
+                    backBtn.href = "index.html";
+                }
+            }
 
-    if (!userData && !isEmpView) { window.location.href = 'login.html'; return; }
-    
-    // ... باقي الكود الخاص بك ...
-
-    const userData = JSON.parse(localStorage.getItem('loggedInUser'));
-    if (!userData && !isEmpView) { window.location.href = 'login.html'; return; }
-            document.getElementById('userName').innerText = userData.name || userData.username;
-            if(document.getElementById('userAddress')) {
+            if (!userData && !isEmpView) { 
+                window.location.href = 'login.html'; 
+                return; 
+            }
+            
+            document.getElementById('userName').innerText = userData ? (userData.name || userData.username) : 'عزيزي العميل';
+            if(document.getElementById('userAddress') && userData) {
                 document.getElementById('userAddress').value = userData.address || '';
             }
 
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            let currentCustomerIndex = -1;
+            
+            if (userData) {
+                currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+            }
             
             let currentCustomer = currentCustomerIndex !== -1 ? adminCustomersList[currentCustomerIndex] : null;
-            if (!currentCustomer && typeof customersDB !== 'undefined') {
+            if (!currentCustomer && userData && typeof customersDB !== 'undefined') {
                 currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
             }
 
