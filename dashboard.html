@@ -163,29 +163,71 @@
         let activeSelectedOrderIndex = 0;
         let currentCustomerOrdersGlobal = [];
 
-     wiwindow.onload = function() {
-    // التحقق من حالة الموظف أولاً
-    const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
-    const userData = JSON.parse(localStorage.getItem('loggedInUser'));
-    const backBtn = document.getElementById('backBtn');
-    
-    if (backBtn) {
+   <script>
+    let activeSelectedOrderIndex = 0;
+    let currentCustomerOrdersGlobal = [];
+
+    window.onload = function() {
+        // --- 1. جلب بيانات العميل المحدد فوراً إذا كان الدخول من الأدمن أو الموظف ---
+        const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+        
         if (isEmpView) {
-            // إذا كان الدخول من الموظف
-            backBtn.innerText = "العودة لصفحة الموظف";
-            backBtn.href = "employee-dashboard.html";
-            
-            // عند النقر للعودة، نقوم بتنظيف المتغيرات لكي تعود الأمور طبيعية للعميل لاحقاً
-            backBtn.onclick = function() {
-                localStorage.removeItem('isEmployeeViewing');
-                sessionStorage.removeItem('openedByEmployee');
-            };
-        } else {
-            // إذا كان دخول عادي من العميل
-            backBtn.innerText = "العودة للرئيسية";
-            backBtn.href = "index.html";
+            let viewingIndex = localStorage.getItem('viewingCustomerIndex');
+            let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            if (viewingIndex !== null && adminCustomersList[viewingIndex]) {
+                // فرض بيانات العميل المحدد ليتم عرضها في الصفحة بشكل دقيق
+                localStorage.setItem('loggedInUser', JSON.stringify(adminCustomersList[viewingIndex]));
+            }
         }
-    }
+
+        // --- 2. التحقق من زر العودة وحالته كما برمجناه سابقاً ---
+        const userData = JSON.parse(localStorage.getItem('loggedInUser'));
+        const backBtn = document.getElementById('backBtn');
+        
+       if (backBtn) {
+            if (isEmpView) {
+                // نتحقق ما إذا كان المستخدم الحالي مسجلاً كأدمن أو موظف لنعرف إلى أين يعود
+                const adminLoggedIn = localStorage.getItem('adminLoggedIn') === 'true'; // أو يمكنك تمييزها بمفتاح خاص
+                
+                // للتمييز بدقة، يمكننا وضع مفتاح عند دخول الأدمن: localStorage.setItem('viewedBy', 'admin');
+                const viewedBy = localStorage.getItem('viewedBy');
+
+                if (viewedBy === 'admin') {
+                    backBtn.innerText = "العودة لوحة الإدارة";
+                    backBtn.href = "admin-dashboard.html";
+                } else {
+                    backBtn.innerText = "العودة لصفحة الموظف";
+                    backBtn.href = "employee-dashboard.html";
+                }
+                
+                backBtn.onclick = function() {
+                    localStorage.removeItem('isEmployeeViewing');
+                    sessionStorage.removeItem('openedByEmployee');
+                    localStorage.removeItem('viewingCustomerIndex');
+                    localStorage.removeItem('viewedBy');
+                };
+            } else {
+                // دخول عادي للعميل
+                backBtn.innerText = "العودة للرئيسية";
+                backBtn.href = "index.html";
+            }
+        }
+
+        if (!userData && !isEmpView) { window.location.href = 'login.html'; return; }
+        
+        // --- 3. عرض بيانات العميل في الصفحة ---
+        document.getElementById('userName').innerText = userData.name || userData.username;
+        if(document.getElementById('userAddress')) {
+            document.getElementById('userAddress').value = userData.address || '';
+        }
+
+        let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+        let currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === userData.phone || c.name === userData.name);
+        
+        let currentCustomer = currentCustomerIndex !== -1 ? adminCustomersList[currentCustomerIndex] : null;
+        if (!currentCustomer && typeof customersDB !== 'undefined') {
+            currentCustomer = customersDB.find(c => c.name === userData.name || c.phone === userData.phone);
+        }
 
     if (!userData && !isEmpView) { window.location.href = 'login.html'; return; }
     
