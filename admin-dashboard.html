@@ -381,10 +381,9 @@ function loginAsCustomer(index) {
     }));
     
     // 2. ضبط مفاتيح العرض المباشر (مثل الموظف تماماً)
-localStorage.setItem('isEmployeeViewing', 'true'); // هذه المفتاح ستجعل صفحة العميل تفتح بشكل طبيعي
+localStorage.setItem('isEmployeeViewing', 'true');
 localStorage.setItem('viewingCustomerIndex', index);
-
-// 3. التوجيه إلى صفحة العميل الفعلي لديك وهي dashboard.html
+localStorage.setItem('viewedBy', 'admin'); // تمييز أن الدخول تم من الأدمن
 window.location.href = 'dashboard.html';
 }
 
