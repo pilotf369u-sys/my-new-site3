@@ -89,7 +89,7 @@
             return;
         }
 
-        // --- الحالة الخامسة: دخول العميل (من قاعدة بيانات العملاء) ---
+      // --- الحالة الخامسة: دخول العميل (من قاعدة بيانات العملاء) ---
         const customersDB = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
         const user = customersDB.find(c => {
             let custPhone = (c.phone || '').toString().replace(/[^0-9]/g, '');
@@ -98,6 +98,12 @@
         });
 
         if (user) {
+            // 1. مسح أي مخلفات أو اختيار قديم من لوحة الموظف أو جلسات سابقة فوراً
+            localStorage.removeItem('selectedCustomerPhone');
+            localStorage.removeItem('selectedCustomerName');
+            sessionStorage.removeItem('selectedCustomerPhone');
+            
+            // 2. حفظ العميل الجديد والتوجه للوحة
             localStorage.setItem('loggedInUser', JSON.stringify(user));
             window.location.href = 'dashboard.html';
         } else {
