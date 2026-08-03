@@ -157,47 +157,54 @@
         // دالة مساعدة لجلب مؤشر العميل بناءً على ما اختاره الموظف أو جلسة المستخدم
        
 function getTargetCustomerIndex(adminCustomersList) {
+    // 1. إذا كان الموظف أو الأدمن قد فتح عميلاً عبر الرابط أو الجلسة الخاصة باللوحة
     const urlParams = new URLSearchParams(window.location.search);
     const urlPhone = urlParams.get('phone') || urlParams.get('customer');
     const sessionPhone = sessionStorage.getItem('selectedCustomerPhone');
     const selectedPhone = localStorage.getItem('selectedCustomerPhone');
     const selectedName = localStorage.getItem('selectedCustomerName');
 
-    // 1. إذا كان هناك رابط محدد برقم الهاتف (غالباً من لوحة الموظف أو الأدمن)
     if (urlPhone) {
         let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(urlPhone).trim());
         if (idx !== -1) return idx;
     }
-
-    // 2. إذا كان عبر الـ sessionStorage الخاص بالموظف للتاب الحالي
     if (sessionPhone) {
         let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(sessionPhone).trim());
         if (idx !== -1) return idx;
     }
-
-    // 3. إذا كان العميل العادي هو من يسجل دخوله بنفسه (نتحقق من حساب دخوله)
-    const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
-    if (currentUserSession && !urlPhone && !sessionPhone) {
-        // تنظيف أي مخلفات قديمة لكي لا يحدث تباين
-        localStorage.removeItem('selectedCustomerPhone');
-        localStorage.removeItem('selectedCustomerName');
-
-        let idx = adminCustomersList.findIndex(c => 
-            (currentUserSession.phone && String(c.phone || '').trim() === String(currentUserSession.phone).trim()) || 
-            (currentUserSession.name && String(c.name || '').trim() === String(currentUserSession.name).trim()) ||
-            (currentUserSession.username && String(c.username || '').trim() === String(currentUserSession.username).trim())
-        );
-        if (idx !== -1) return idx;
-    }
-
-    // 4. الاحتياط عبر الـ localStorage القديم
     if (selectedPhone) {
         let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(selectedPhone).trim());
         if (idx !== -1) return idx;
     }
     if (selectedName) {
-        let idx = adminCustomersList.findIndex(c => (c.name && String(c.name || '').trim() === String(selectedName).trim()) || (c.username && String(c.username || '').trim() === String(selectedName).trim()));
+        let idx = adminCustomersList.findIndex(c => (c.name && String(c.name).trim() === String(selectedName).trim()) || (c.username && String(c.username).trim() === String(selectedName).trim()));
         if (idx !== -1) return idx;
+    }
+
+    // 2. إذا لم يكن موظفاً، نأخذ بيانات العميل المسجل دخوله (نفس طريقتك في صفحة index تماماً)
+    const userDataString = localStorage.getItem('loggedInUser');
+    if (userDataString && !urlPhone && !sessionPhone) {
+        let userData;
+        try {
+            userData = JSON.parse(userDataString);
+        } catch (e) {
+            userData = {};
+        }
+
+        const targetPhone = String(userData.phone || '').trim();
+        const targetName = String(userData.name || userData.username || '').trim();
+
+        if (targetPhone || targetName) {
+            let idx = adminCustomersList.findIndex(c => {
+                let cPhone = String(c.phone || '').trim();
+                let cName = String(c.name || c.username || '').trim();
+                
+                if (targetPhone && cPhone && targetPhone === cPhone) return true;
+                if (targetName && cName && targetName === cName) return true;
+                return false;
+            });
+            if (idx !== -1) return idx;
+        }
     }
 
     return -1;
