@@ -157,41 +157,51 @@
         // دالة مساعدة لجلب مؤشر العميل بناءً على ما اختاره الموظف أو جلسة المستخدم
        
 function getTargetCustomerIndex(adminCustomersList) {
-            // 1. التحقق أولاً: هل الصفحة مفتوحة لصالح الموظف أو الأدمن؟ (عبر الرابط أو الـ Session أو الـ LocalStorage الخاص بلوحة الموظف)
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlPhone = urlParams.get('phone') || urlParams.get('customer');
-            const sessionPhone = sessionStorage.getItem('selectedCustomerPhone');
-            const selectedPhone = localStorage.getItem('selectedCustomerPhone');
-            const selectedName = localStorage.getItem('selectedCustomerName');
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlPhone = urlParams.get('phone') || urlParams.get('customer');
+    const sessionPhone = sessionStorage.getItem('selectedCustomerPhone');
+    const selectedPhone = localStorage.getItem('selectedCustomerPhone');
+    const selectedName = localStorage.getItem('selectedCustomerName');
 
-            // إذا وجدنا مؤشر خاص بالموظف أو الأدمن، نعطيه الأولوية المطلقة لأنه يباشر عميلاً الآن
-            if (urlPhone) {
-                let idx = adminCustomersList.findIndex(c => String(c.phone).trim() === String(urlPhone).trim());
-                if (idx !== -1) return idx;
-            }
-            if (sessionPhone) {
-                let idx = adminCustomersList.findIndex(c => String(c.phone).trim() === String(sessionPhone).trim());
-                if (idx !== -1) return idx;
-            }
-            if (selectedPhone) {
-                let idx = adminCustomersList.findIndex(c => String(c.phone).trim() === String(selectedPhone).trim());
-                if (idx !== -1) return idx;
-            }
-            if (selectedName) {
-                let idx = adminCustomersList.findIndex(c => (c.name && String(c.name).trim() === String(selectedName).trim()) || (c.username && String(c.username).trim() === String(selectedName).trim()));
-                if (idx !== -1) return idx;
-            }
+    // 1. إذا كان هناك رابط محدد برقم الهاتف (غالباً من لوحة الموظف أو الأدمن)
+    if (urlPhone) {
+        let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(urlPhone).trim());
+        if (idx !== -1) return idx;
+    }
 
-            // 2. إذا لم يكن هناك أي عميل مفتوح من قِبل الموظف، إذن هو العميل العادي المسجل دخوله بنفسه
-            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (currentUserSession) {
-                let idx = adminCustomersList.findIndex(c => (currentUserSession.phone && c.phone === currentUserSession.phone) || (currentUserSession.name && c.name === currentUserSession.name));
-                if (idx !== -1) return idx;
-            }
+    // 2. إذا كان عبر الـ sessionStorage الخاص بالموظف للتاب الحالي
+    if (sessionPhone) {
+        let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(sessionPhone).trim());
+        if (idx !== -1) return idx;
+    }
 
-            return -1;
-        }
-        }
+    // 3. إذا كان العميل العادي هو من يسجل دخوله بنفسه (نتحقق من حساب دخوله)
+    const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
+    if (currentUserSession && !urlPhone && !sessionPhone) {
+        // تنظيف أي مخلفات قديمة لكي لا يحدث تباين
+        localStorage.removeItem('selectedCustomerPhone');
+        localStorage.removeItem('selectedCustomerName');
+
+        let idx = adminCustomersList.findIndex(c => 
+            (currentUserSession.phone && String(c.phone || '').trim() === String(currentUserSession.phone).trim()) || 
+            (currentUserSession.name && String(c.name || '').trim() === String(currentUserSession.name).trim()) ||
+            (currentUserSession.username && String(c.username || '').trim() === String(currentUserSession.username).trim())
+        );
+        if (idx !== -1) return idx;
+    }
+
+    // 4. الاحتياط عبر الـ localStorage القديم
+    if (selectedPhone) {
+        let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(selectedPhone).trim());
+        if (idx !== -1) return idx;
+    }
+    if (selectedName) {
+        let idx = adminCustomersList.findIndex(c => (c.name && String(c.name || '').trim() === String(selectedName).trim()) || (c.username && String(c.username || '').trim() === String(selectedName).trim()));
+        if (idx !== -1) return idx;
+    }
+
+    return -1;
+}
        window.onload = function() {
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let currentCustomerIndex = getTargetCustomerIndex(adminCustomersList);
