@@ -41,7 +41,7 @@
 
     <div class="dashboard-header">
         <div style="font-weight: 800; color: var(--primary-red); font-size: 20px;"><i class="fa-solid fa-gauge-high"></i> أهلاً بك يا <span id="userName">عزيزي العميل</span></div>
-       <a href="index.html" id="backBtn" style="color: #64748b; text-decoration: none;">العودة للرئيسية</a>
+       <a href="index.html" id="backBtn" style="color: #64748b; text-decoration: none; font-weight: bold;">العودة للرئيسية</a>
     </div>
 
     <div class="grid-layout">
@@ -154,107 +154,95 @@
         let activeSelectedOrderIndex = 0;
         let currentCustomerOrdersGlobal = [];
 
-        window.onload = function() {
-            const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+        // دالة مساعدة لجلب مؤشر العميل بناءً على ما اختاره الموظف أو جلسة المستخدم
+        function getTargetCustomerIndex(adminCustomersList) {
+            const selectedPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
+            const selectedName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
             const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
-            const backBtn = document.getElementById('backBtn');
-            
-            if (backBtn) {
-                if (isEmpView) {
-                    backBtn.innerText = "العودة لصفحة الموظف";
-                    backBtn.href = "employee-dashboard.html";
-                    backBtn.onclick = function() {
-                        localStorage.removeItem('isEmployeeViewing');
-                        sessionStorage.removeItem('openedByEmployee');
-                    };
-                } else {
-                    backBtn.innerText = "العودة للرئيسية";
-                    backBtn.href = "index.html";
-                }
+
+            // 1. البحث بالاعتماد على اختيار الموظف أولاً
+            if (selectedPhone) {
+                let idx = adminCustomersList.findIndex(c => String(c.phone).trim() === String(selectedPhone).trim());
+                if (idx !== -1) return idx;
+            }
+            if (selectedName) {
+                let idx = adminCustomersList.findIndex(c => (c.name && String(c.name).trim() === String(selectedName).trim()) || (c.username && String(c.username).trim() === String(selectedName).trim()));
+                if (idx !== -1) return idx;
             }
 
-            if (!currentUserSession && !isEmpView) { 
-                window.location.href = 'login.html'; 
-                return; 
+            // 2. البحث بالاعتماد على جلسة تسجيل الدخول العادية
+            if (currentUserSession) {
+                let idx = adminCustomersList.findIndex(c => (currentUserSession.phone && c.phone === currentUserSession.phone) || (currentUserSession.name && c.name === currentUserSession.name));
+                if (idx !== -1) return idx;
             }
-            
+
+            return -1;
+        }
+
+        window.onload = function() {
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let currentCustomerIndex = -1;
-            
-            // حل مشكلة ثبات نفس العميل وعدم تغيره عند اختيار الموظف لعميل مختلف
-            const selectedEmpCustomerPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
-            const selectedEmpCustomerName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
-
-            if (isEmpView && (selectedEmpCustomerPhone || selectedEmpCustomerName)) {
-                currentCustomerIndex = adminCustomersList.findIndex(c => 
-                    (selectedEmpCustomerPhone && c.phone === selectedEmpCustomerPhone) || 
-                    (selectedEmpCustomerName && c.name === selectedEmpCustomerName)
-                );
-            }
-
-            // إذا لم يتم العثور عليه عبر بيانات الموظف المعين، نلجأ لجلسة المستخدم العادي المسجل
-            if (currentCustomerIndex === -1 && currentUserSession) {
-                currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
-            }
+            let currentCustomerIndex = getTargetCustomerIndex(adminCustomersList);
             
             let currentCustomer = currentCustomerIndex !== -1 ? adminCustomersList[currentCustomerIndex] : null;
-            if (!currentCustomer && currentUserSession && typeof customersDB !== 'undefined') {
-                currentCustomer = customersDB.find(c => c.name === currentUserSession.name || c.phone === currentUserSession.phone);
+
+            // إذا لم يتم العثور على العميل (للتأكد من عدم ثبات عميل افتراضي قديم)
+            if (!currentCustomer) {
+                document.getElementById('userName').innerText = "خطأ في تحديد العميل";
+                document.getElementById('customerOrdersTableBody').innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: #cc0000;">لم يتم اختيار العميل بشكل صحيح أو أن بياناته غير موجودة. يرجى العودة للوحة الموظف وإعادة اختيار العميل.</td></tr>`;
+                return;
             }
 
-            document.getElementById('userName').innerText = currentCustomer ? (currentCustomer.name || currentCustomer.username) : (currentUserSession ? (currentUserSession.name || currentUserSession.username) : 'عزيزي العميل');
+            document.getElementById('userName').innerText = currentCustomer.name || currentCustomer.username || 'عزيزي العميل';
             
             if(document.getElementById('userAddress')) {
-                document.getElementById('userAddress').value = currentCustomer ? (currentCustomer.address || '') : (currentUserSession ? currentUserSession.address || '' : '');
+                document.getElementById('userAddress').value = currentCustomer.address || '';
             }
 
-            if (currentCustomer) {
-                let totalCompleted = currentCustomer.orders ? currentCustomer.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
-                let lastBaseline = currentCustomer.lastRewardAtCompletedCount || 0;
-                let currentCycleCount = totalCompleted - lastBaseline;
-                let usageCount = currentCustomer.usageCount || 0;
+            let totalCompleted = currentCustomer.orders ? currentCustomer.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
+            let lastBaseline = currentCustomer.lastRewardAtCompletedCount || 0;
+            let currentCycleCount = totalCompleted - lastBaseline;
+            let usageCount = currentCustomer.usageCount || 0;
 
-                document.getElementById('customerUsageCount').innerText = usageCount;
+            document.getElementById('customerUsageCount').innerText = usageCount;
 
-                let badgeEl = document.getElementById('rewardStatusBadge');
-                let barEl = document.getElementById('rewardProgressBar');
-                let progressPercent = Math.min((currentCycleCount / 5) * 100, 100);
-                barEl.style.width = progressPercent + '%';
+            let badgeEl = document.getElementById('rewardStatusBadge');
+            let barEl = document.getElementById('rewardProgressBar');
+            let progressPercent = Math.min((currentCycleCount / 5) * 100, 100);
+            barEl.style.width = progressPercent + '%';
 
-                if (currentCycleCount >= 5) {
-                    badgeEl.innerHTML = `<span style="background: #27ae60; color: white; padding: 4px 10px; border-radius: 4px;">🎉 مبروك! لقد استحققت مكافأة الخصم الذهبية (5/5 طلبات) ⭐</span>`;
-                    barEl.style.background = '#27ae60';
-                } else {
-                    badgeEl.innerHTML = `أنت على بعد <b>${5 - currentCycleCount} طلبات</b> من مكافأة الخصم الذهبية (${currentCycleCount}/5 طلبات مكتملة)`;
-                    barEl.style.background = '#25D366';
-                }
+            if (currentCycleCount >= 5) {
+                badgeEl.innerHTML = `<span style="background: #27ae60; color: white; padding: 4px 10px; border-radius: 4px;">🎉 مبروك! لقد استحققت مكافأة الخصم الذهبية (5/5 طلبات) ⭐</span>`;
+                barEl.style.background = '#27ae60';
+            } else {
+                badgeEl.innerHTML = `أنت على بعد <b>${5 - currentCycleCount} طلبات</b> من مكافأة الخصم الذهبية (${currentCycleCount}/5 طلبات مكتملة)`;
+                barEl.style.background = '#25D366';
+            }
 
-                let historyContainer = document.getElementById('rewardsHistoryList');
-                historyContainer.innerHTML = '';
-                if (currentCustomer.rewardsLog && currentCustomer.rewardsLog.length > 0) {
-                    currentCustomer.rewardsLog.forEach((rev, idx) => {
-                        historyContainer.innerHTML += `
-                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; margin-bottom: 8px;">
-                                <div style="display: flex; justify-content: space-between; font-weight: bold; color: #1e293b;">
-                                    <span>المكافأة رقم (${idx + 1})</span>
-                                    <span style="color: #27ae60;">المبلغ/القيمـة: ${rev.amount || '$0.00'}</span>
-                                </div>
-                                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
-                                    تاريخ الصرف: ${rev.date || 'غير محدد'} | بواسطة الموظف: ${rev.employeeName || 'الإدارة'}
-                                </div>
+            let historyContainer = document.getElementById('rewardsHistoryList');
+            historyContainer.innerHTML = '';
+            if (currentCustomer.rewardsLog && currentCustomer.rewardsLog.length > 0) {
+                currentCustomer.rewardsLog.forEach((rev, idx) => {
+                    historyContainer.innerHTML += `
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; font-weight: bold; color: #1e293b;">
+                                <span>المكافأة رقم (${idx + 1})</span>
+                                <span style="color: #27ae60;">المبلغ/القيمـة: ${rev.amount || '$0.00'}</span>
                             </div>
-                        `;
-                    });
-                } else {
-                    historyContainer.innerHTML = `<p style="text-align: center; color: #777; padding: 20px;">لا توجد مكافآت مسجلة في رصيدك حتى الآن.</p>`;
-                }
+                            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                                تاريخ الصرف: ${rev.date || 'غير محدد'} | بواسطة الموظف: ${rev.employeeName || 'الإدارة'}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                historyContainer.innerHTML = `<p style="text-align: center; color: #777; padding: 20px;">لا توجد مكافآت مسجلة في رصيدك حتى الآن.</p>`;
             }
 
             const tbody = document.getElementById('customerOrdersTableBody');
             tbody.innerHTML = '';
             
             let total = 0;
-            if (currentCustomer && currentCustomer.orders && currentCustomer.orders.length > 0) {
+            if (currentCustomer.orders && currentCustomer.orders.length > 0) {
                 currentCustomerOrdersGlobal = currentCustomer.orders;
                 currentCustomer.orders.forEach((order, index) => {
                     let priceStr = order.price || '$0.00';
@@ -276,7 +264,7 @@
 
                     const orderId = order.id || order.productCode || 'طلب';
                     const orderDate = order.date || 'غير محدد';
-                    const phoneClean = currentCustomer.phone ? currentCustomer.phone.replace(/[^0-9]/g, '') : '905521855554';
+                    const phoneClean = currentCustomer.phone ? String(currentCustomer.phone).replace(/[^0-9]/g, '') : '905521855554';
                     const waLink = "https://wa.me/" + phoneClean + "?text=" + encodeURIComponent("مرحبا بخصوص الطلب " + orderId);
                     
                     tbody.innerHTML += `<tr>
@@ -343,21 +331,7 @@
         function selectOrderForChat(ordIndex) {
             activeSelectedOrderIndex = ordIndex;
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
-            const selectedEmpCustomerPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
-            const selectedEmpCustomerName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
-            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
-
-            let cIndex = -1;
-            if (isEmpView && (selectedEmpCustomerPhone || selectedEmpCustomerName)) {
-                cIndex = adminCustomersList.findIndex(c => 
-                    (selectedEmpCustomerPhone && c.phone === selectedEmpCustomerPhone) || 
-                    (selectedEmpCustomerName && c.name === selectedEmpCustomerName)
-                );
-            }
-            if (cIndex === -1 && currentUserSession) {
-                cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
-            }
+            let cIndex = getTargetCustomerIndex(adminCustomersList);
 
             if (cIndex !== -1) {
                 loadCustomerChatAndNotifications(cIndex, ordIndex);
@@ -368,7 +342,7 @@
         function loadCustomerChatAndNotifications(cIndex, ordIndex) {
             activeSelectedOrderIndex = ordIndex;
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            if (cIndex === -1 || !adminCustomersList[cIndex] || !adminCustomersList[cIndex].orders[ordIndex]) return;
+            if (cIndex === -1 || !adminCustomersList[cIndex] || !adminCustomersList[cIndex].orders || !adminCustomersList[cIndex].orders[ordIndex]) return;
 
             let order = adminCustomersList[cIndex].orders[ordIndex];
 
@@ -402,28 +376,14 @@
             if (!text) return;
 
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
+            let cIndex = getTargetCustomerIndex(adminCustomersList);
             const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
-            const selectedEmpCustomerPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
-            const selectedEmpCustomerName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
-            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
-
-            let cIndex = -1;
-            if (isEmpView && (selectedEmpCustomerPhone || selectedEmpCustomerName)) {
-                cIndex = adminCustomersList.findIndex(c => 
-                    (selectedEmpCustomerPhone && c.phone === selectedEmpCustomerPhone) || 
-                    (selectedEmpCustomerName && c.name === selectedEmpCustomerName)
-                );
-            }
-            if (cIndex === -1 && currentUserSession) {
-                cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
-            }
 
             if (cIndex !== -1 && adminCustomersList[cIndex].orders && adminCustomersList[cIndex].orders[activeSelectedOrderIndex]) {
                 let order = adminCustomersList[cIndex].orders[activeSelectedOrderIndex];
                 if (!order.chat) order.chat = [];
                 
                 let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                // تحديد المرسل بناءً على من قام بالدخول (إذا كان موظفاً يعاين أو عميل)
                 let senderType = isEmpView ? 'employee' : 'customer';
                 order.chat.push({ sender: senderType, text: text, time: timeStr });
                 
@@ -442,21 +402,7 @@
         function cancelOrder(index) {
             if(confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
                 let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-                const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
-                const selectedEmpCustomerPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
-                const selectedEmpCustomerName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
-                const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
-
-                let cIndex = -1;
-                if (isEmpView && (selectedEmpCustomerPhone || selectedEmpCustomerName)) {
-                    cIndex = adminCustomersList.findIndex(c => 
-                        (selectedEmpCustomerPhone && c.phone === selectedEmpCustomerPhone) || 
-                        (selectedEmpCustomerName && c.name === selectedEmpCustomerName)
-                    );
-                }
-                if (cIndex === -1 && currentUserSession) {
-                    cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
-                }
+                let cIndex = getTargetCustomerIndex(adminCustomersList);
                 
                 if(cIndex !== -1 && adminCustomersList[cIndex].orders) {
                     adminCustomersList[cIndex].orders[index].status = "لم يتم الاتفاق - ملغي من الزبون";
@@ -472,31 +418,15 @@
         function saveAddress() {
             let newAddress = document.getElementById('userAddress').value.trim();
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
-            const selectedEmpCustomerPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
-            const selectedEmpCustomerName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
-            let currentUserSession = JSON.parse(localStorage.getItem('loggedInUser')) || {};
-
-            let cIndex = -1;
-            if (isEmpView && (selectedEmpCustomerPhone || selectedEmpCustomerName)) {
-                cIndex = adminCustomersList.findIndex(c => 
-                    (selectedEmpCustomerPhone && c.phone === selectedEmpCustomerPhone) || 
-                    (selectedEmpCustomerName && c.name === selectedEmpCustomerName)
-                );
-            }
-            if (cIndex === -1) {
-                cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
-            }
+            let cIndex = getTargetCustomerIndex(adminCustomersList);
 
             if(cIndex !== -1) {
                 adminCustomersList[cIndex].address = newAddress;
                 localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
+                alert('تم حفظ العنوان بنجاح وتحديثه في النظام!');
+            } else {
+                alert('خطأ: لم يتم التعرف على العميل لحفظ العنوان.');
             }
-
-            currentUserSession.address = newAddress;
-            localStorage.setItem('loggedInUser', JSON.stringify(currentUserSession));
-
-            alert('تم حفظ العنوان بنجاح وتحديثه في النظام!');
         }
 
         function toggleArchive() {
