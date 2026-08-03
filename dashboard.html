@@ -161,7 +161,7 @@ function getTargetCustomerIndex(adminCustomersList) {
     const urlPhone = urlParams.get('phone') || urlParams.get('customer');
     const sessionPhone = sessionStorage.getItem('selectedCustomerPhone');
 
-    // 1. إذا كان الموظف قد فتح عميلاً عبر الرابط المباشر أو الـ Session المؤقت للتاب الحالي، نعتمده فوراً
+    // 1. إذا كان الموظف أو الأدمن هو من فتح الصفحة، نعمل بلوحة الموظف حصراً
     if (urlPhone) {
         let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(urlPhone).trim());
         if (idx !== -1) return idx;
@@ -171,7 +171,7 @@ function getTargetCustomerIndex(adminCustomersList) {
         if (idx !== -1) return idx;
     }
 
-    // 2. إذا لم يكن هناك تدخل مباشر من الموظف، الأولوية المطلقة للعميل العادي المسجل دخوله حالياً
+    // 2. للعميل العادي: نأخذ الحساب المسجل حالياً بدقة ونطابقه مع القائمة
     const userDataString = localStorage.getItem('loggedInUser');
     if (userDataString) {
         let userData;
@@ -193,8 +193,9 @@ function getTargetCustomerIndex(adminCustomersList) {
                 if (targetName && cName && targetName === cName) return true;
                 return false;
             });
+
             if (idx !== -1) {
-                // تنظيف أي مخلفات قديمة للموظف لكي لا تتثبت الصفحة مستقبلاً
+                // مسح أي مخلفات قديمة للموظف لضمان عدم التداخل
                 localStorage.removeItem('selectedCustomerPhone');
                 localStorage.removeItem('selectedCustomerName');
                 return idx;
@@ -202,7 +203,7 @@ function getTargetCustomerIndex(adminCustomersList) {
         }
     }
 
-    // 3. الاحتياط الأخير للـ localStorage القديم الخاص بالمطولات
+    // 3. الاحتياط الأخير للـ localStorage القديم
     const selectedPhone = localStorage.getItem('selectedCustomerPhone');
     const selectedName = localStorage.getItem('selectedCustomerName');
     
