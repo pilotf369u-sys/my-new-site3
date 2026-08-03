@@ -157,39 +157,28 @@
         // دالة مساعدة لجلب مؤشر العميل بناءً على ما اختاره الموظف أو جلسة المستخدم
        
 function getTargetCustomerIndex(adminCustomersList) {
-            // 0. الأولوية القصوى: إذا كان هناك عميل عادل مسجل دخوله حالياً، نتحقق منه أولاً لكي لا يطغى عليه أي مؤشر موظف قديم مخزن في المتصفح
-            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (currentUserSession) {
-                let idx = adminCustomersList.findIndex(c => 
-                    (currentUserSession.phone && String(c.phone || '').trim() === String(currentUserSession.phone).trim()) || 
-                    (currentUserSession.name && String(c.name || '').trim() === String(currentUserSession.name).trim()) ||
-                    (currentUserSession.username && String(c.username || '').trim() === String(currentUserSession.username).trim())
-                );
-                if (idx !== -1) return idx;
-            }
-
             // 1. فحص رابط الصفحة أولاً (الطريقة الأدق والأحدث لمنع التداخل عند فتح عدة عملاء من لوحة الموظف)
             const urlParams = new URLSearchParams(window.location.search);
             const urlPhone = urlParams.get('phone') || urlParams.get('customer');
             
             if (urlPhone) {
-                let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(urlPhone).trim());
+                let idx = adminCustomersList.findIndex(c => String(c.phone).trim() === String(urlPhone).trim());
                 if (idx !== -1) return idx;
             }
 
             // 2. الفحص عبر sessionStorage (خاص بالتاب الحالي ولا يتداخل مع التابات الأخرى)
             const sessionPhone = sessionStorage.getItem('selectedCustomerPhone');
             if (sessionPhone) {
-                let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(sessionPhone).trim());
+                let idx = adminCustomersList.findIndex(c => String(c.phone).trim() === String(sessionPhone).trim());
                 if (idx !== -1) return idx;
             }
 
             // 3. الاحتياط: localStorage القديم
-            const selectedPhone = localStorage.getItem('selectedPhone') || localStorage.getItem('selectedCustomerPhone');
+            const selectedPhone = localStorage.getItem('selectedCustomerPhone');
             const selectedName = localStorage.getItem('selectedCustomerName');
             
             if (selectedPhone) {
-                let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(selectedPhone).trim());
+                let idx = adminCustomersList.findIndex(c => String(c.phone).trim() === String(selectedPhone).trim());
                 if (idx !== -1) return idx;
             }
             if (selectedName) {
@@ -197,10 +186,16 @@ function getTargetCustomerIndex(adminCustomersList) {
                 if (idx !== -1) return idx;
             }
 
+            // 4. جلسة المستخدم العادي المسجل دخوله
+            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (currentUserSession) {
+                let idx = adminCustomersList.findIndex(c => (currentUserSession.phone && c.phone === currentUserSession.phone) || (currentUserSession.name && c.name === currentUserSession.name));
+                if (idx !== -1) return idx;
+            }
+
             return -1;
-}
         }
-       window.onload = function() {
+        window.onload = function() {
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let currentCustomerIndex = getTargetCustomerIndex(adminCustomersList);
             
@@ -219,27 +214,6 @@ function getTargetCustomerIndex(adminCustomersList) {
                 document.getElementById('userAddress').value = currentCustomer.address || '';
             }
 
-            // --- تفعيل زر العودة الذكي (للأدمن، الموظف، والعميل العادي) ---
-            const backBtn = document.getElementById('backBtn');
-            if (backBtn) {
-                const isEmpView = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
-                const isAdminView = localStorage.getItem('isAdminViewing') === 'true';
-
-                if (isAdminView) {
-                    backBtn.innerText = "العودة لوحة التحكم";
-                    backBtn.href = "admin-dashboard.html";
-                } else if (isEmpView) {
-                    backBtn.innerText = "العودة للخلف";
-                    backBtn.href = "#";
-                    backBtn.onclick = function(e) {
-                        e.preventDefault();
-                        history.back(); // يرجع الموظف للصفحة السابقة فوراً بدون مشاكل في السهم
-                    };
-                } else {
-                    backBtn.innerText = "العودة للرئيسية";
-                    backBtn.href = "index.html";
-                }
-            }
             let totalCompleted = currentCustomer.orders ? currentCustomer.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
             let lastBaseline = currentCustomer.lastRewardAtCompletedCount || 0;
             let currentCycleCount = totalCompleted - lastBaseline;
