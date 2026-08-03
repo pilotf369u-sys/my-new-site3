@@ -178,21 +178,34 @@
                 return; 
             }
             
-            document.getElementById('userName').innerText = currentUserSession ? (currentUserSession.name || currentUserSession.username) : 'عزيزي العميل';
-            if(document.getElementById('userAddress') && currentUserSession) {
-                document.getElementById('userAddress').value = currentUserSession.address || '';
-            }
-
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let currentCustomerIndex = -1;
             
-            if (currentUserSession) {
+            // حل مشكلة ثبات نفس العميل وعدم تغيره عند اختيار الموظف لعميل مختلف
+            const selectedEmpCustomerPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
+            const selectedEmpCustomerName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
+
+            if (isEmpView && (selectedEmpCustomerPhone || selectedEmpCustomerName)) {
+                currentCustomerIndex = adminCustomersList.findIndex(c => 
+                    (selectedEmpCustomerPhone && c.phone === selectedEmpCustomerPhone) || 
+                    (selectedEmpCustomerName && c.name === selectedEmpCustomerName)
+                );
+            }
+
+            // إذا لم يتم العثور عليه عبر بيانات الموظف المعين، نلجأ لجلسة المستخدم العادي المسجل
+            if (currentCustomerIndex === -1 && currentUserSession) {
                 currentCustomerIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
             }
             
             let currentCustomer = currentCustomerIndex !== -1 ? adminCustomersList[currentCustomerIndex] : null;
             if (!currentCustomer && currentUserSession && typeof customersDB !== 'undefined') {
                 currentCustomer = customersDB.find(c => c.name === currentUserSession.name || c.phone === currentUserSession.phone);
+            }
+
+            document.getElementById('userName').innerText = currentCustomer ? (currentCustomer.name || currentCustomer.username) : (currentUserSession ? (currentUserSession.name || currentUserSession.username) : 'عزيزي العميل');
+            
+            if(document.getElementById('userAddress')) {
+                document.getElementById('userAddress').value = currentCustomer ? (currentCustomer.address || '') : (currentUserSession ? currentUserSession.address || '' : '');
             }
 
             if (currentCustomer) {
@@ -329,9 +342,23 @@
 
         function selectOrderForChat(ordIndex) {
             activeSelectedOrderIndex = ordIndex;
-            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
+            const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+            const selectedEmpCustomerPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
+            const selectedEmpCustomerName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
+            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
+
+            let cIndex = -1;
+            if (isEmpView && (selectedEmpCustomerPhone || selectedEmpCustomerName)) {
+                cIndex = adminCustomersList.findIndex(c => 
+                    (selectedEmpCustomerPhone && c.phone === selectedEmpCustomerPhone) || 
+                    (selectedEmpCustomerName && c.name === selectedEmpCustomerName)
+                );
+            }
+            if (cIndex === -1 && currentUserSession) {
+                cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
+            }
+
             if (cIndex !== -1) {
                 loadCustomerChatAndNotifications(cIndex, ordIndex);
                 alert('تم تحديد الطلب للدردشة، يمكنك متابعة الرسائل في الأسفل.');
@@ -374,16 +401,31 @@
             let text = input.value.trim();
             if (!text) return;
 
-            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
+            const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+            const selectedEmpCustomerPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
+            const selectedEmpCustomerName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
+            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
+
+            let cIndex = -1;
+            if (isEmpView && (selectedEmpCustomerPhone || selectedEmpCustomerName)) {
+                cIndex = adminCustomersList.findIndex(c => 
+                    (selectedEmpCustomerPhone && c.phone === selectedEmpCustomerPhone) || 
+                    (selectedEmpCustomerName && c.name === selectedEmpCustomerName)
+                );
+            }
+            if (cIndex === -1 && currentUserSession) {
+                cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
+            }
 
             if (cIndex !== -1 && adminCustomersList[cIndex].orders && adminCustomersList[cIndex].orders[activeSelectedOrderIndex]) {
                 let order = adminCustomersList[cIndex].orders[activeSelectedOrderIndex];
                 if (!order.chat) order.chat = [];
                 
                 let timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                order.chat.push({ sender: 'customer', text: text, time: timeStr });
+                // تحديد المرسل بناءً على من قام بالدخول (إذا كان موظفاً يعاين أو عميل)
+                let senderType = isEmpView ? 'employee' : 'customer';
+                order.chat.push({ sender: senderType, text: text, time: timeStr });
                 
                 localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
                 input.value = '';
@@ -399,9 +441,22 @@
 
         function cancelOrder(index) {
             if(confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
-                const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
                 let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-                let cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
+                const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+                const selectedEmpCustomerPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
+                const selectedEmpCustomerName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
+                const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
+
+                let cIndex = -1;
+                if (isEmpView && (selectedEmpCustomerPhone || selectedEmpCustomerName)) {
+                    cIndex = adminCustomersList.findIndex(c => 
+                        (selectedEmpCustomerPhone && c.phone === selectedEmpCustomerPhone) || 
+                        (selectedEmpCustomerName && c.name === selectedEmpCustomerName)
+                    );
+                }
+                if (cIndex === -1 && currentUserSession) {
+                    cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
+                }
                 
                 if(cIndex !== -1 && adminCustomersList[cIndex].orders) {
                     adminCustomersList[cIndex].orders[index].status = "لم يتم الاتفاق - ملغي من الزبون";
@@ -416,16 +471,30 @@
 
         function saveAddress() {
             let newAddress = document.getElementById('userAddress').value.trim();
-            let currentUserSession = JSON.parse(localStorage.getItem('loggedInUser')) || {};
-            currentUserSession.address = newAddress;
-            localStorage.setItem('loggedInUser', JSON.stringify(currentUserSession));
-
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
-            let cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
+            const isEmpView = localStorage.getItem('isEmployeeViewing') === 'true' || sessionStorage.getItem('openedByEmployee') === 'true';
+            const selectedEmpCustomerPhone = localStorage.getItem('selectedCustomerPhone') || sessionStorage.getItem('selectedCustomerPhone');
+            const selectedEmpCustomerName = localStorage.getItem('selectedCustomerName') || sessionStorage.getItem('selectedCustomerName');
+            let currentUserSession = JSON.parse(localStorage.getItem('loggedInUser')) || {};
+
+            let cIndex = -1;
+            if (isEmpView && (selectedEmpCustomerPhone || selectedEmpCustomerName)) {
+                cIndex = adminCustomersList.findIndex(c => 
+                    (selectedEmpCustomerPhone && c.phone === selectedEmpCustomerPhone) || 
+                    (selectedEmpCustomerName && c.name === selectedEmpCustomerName)
+                );
+            }
+            if (cIndex === -1) {
+                cIndex = adminCustomersList.findIndex(c => c.phone === currentUserSession.phone || c.name === currentUserSession.name);
+            }
+
             if(cIndex !== -1) {
                 adminCustomersList[cIndex].address = newAddress;
                 localStorage.setItem('adminCustomersList', JSON.stringify(adminCustomersList));
             }
+
+            currentUserSession.address = newAddress;
+            localStorage.setItem('loggedInUser', JSON.stringify(currentUserSession));
 
             alert('تم حفظ العنوان بنجاح وتحديثه في النظام!');
         }
