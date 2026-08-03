@@ -157,13 +157,11 @@
         // دالة مساعدة لجلب مؤشر العميل بناءً على ما اختاره الموظف أو جلسة المستخدم
        
 function getTargetCustomerIndex(adminCustomersList) {
-    // 1. إذا كان الموظف أو الأدمن قد فتح عميلاً عبر الرابط أو الجلسة الخاصة باللوحة
     const urlParams = new URLSearchParams(window.location.search);
     const urlPhone = urlParams.get('phone') || urlParams.get('customer');
     const sessionPhone = sessionStorage.getItem('selectedCustomerPhone');
-    const selectedPhone = localStorage.getItem('selectedCustomerPhone');
-    const selectedName = localStorage.getItem('selectedCustomerName');
 
+    // 1. إذا كان الموظف قد فتح عميلاً عبر الرابط المباشر أو الـ Session المؤقت للتاب الحالي، نعتمده فوراً
     if (urlPhone) {
         let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(urlPhone).trim());
         if (idx !== -1) return idx;
@@ -172,18 +170,10 @@ function getTargetCustomerIndex(adminCustomersList) {
         let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(sessionPhone).trim());
         if (idx !== -1) return idx;
     }
-    if (selectedPhone) {
-        let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(selectedPhone).trim());
-        if (idx !== -1) return idx;
-    }
-    if (selectedName) {
-        let idx = adminCustomersList.findIndex(c => (c.name && String(c.name).trim() === String(selectedName).trim()) || (c.username && String(c.username).trim() === String(selectedName).trim()));
-        if (idx !== -1) return idx;
-    }
 
-    // 2. إذا لم يكن موظفاً، نأخذ بيانات العميل المسجل دخوله (نفس طريقتك في صفحة index تماماً)
+    // 2. إذا لم يكن هناك تدخل مباشر من الموظف، الأولوية المطلقة للعميل العادي المسجل دخوله حالياً
     const userDataString = localStorage.getItem('loggedInUser');
-    if (userDataString && !urlPhone && !sessionPhone) {
+    if (userDataString) {
         let userData;
         try {
             userData = JSON.parse(userDataString);
@@ -203,8 +193,26 @@ function getTargetCustomerIndex(adminCustomersList) {
                 if (targetName && cName && targetName === cName) return true;
                 return false;
             });
-            if (idx !== -1) return idx;
+            if (idx !== -1) {
+                // تنظيف أي مخلفات قديمة للموظف لكي لا تتثبت الصفحة مستقبلاً
+                localStorage.removeItem('selectedCustomerPhone');
+                localStorage.removeItem('selectedCustomerName');
+                return idx;
+            }
         }
+    }
+
+    // 3. الاحتياط الأخير للـ localStorage القديم الخاص بالمطولات
+    const selectedPhone = localStorage.getItem('selectedCustomerPhone');
+    const selectedName = localStorage.getItem('selectedCustomerName');
+    
+    if (selectedPhone) {
+        let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(selectedPhone).trim());
+        if (idx !== -1) return idx;
+    }
+    if (selectedName) {
+        let idx = adminCustomersList.findIndex(c => (c.name && String(c.name).trim() === String(selectedName).trim()) || (c.username && String(c.username).trim() === String(selectedName).trim()));
+        if (idx !== -1) return idx;
     }
 
     return -1;
