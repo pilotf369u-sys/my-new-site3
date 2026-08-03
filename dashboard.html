@@ -195,7 +195,7 @@ function getTargetCustomerIndex(adminCustomersList) {
 
             return -1;
         }
-        window.onload = function() {
+       window.onload = function() {
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
             let currentCustomerIndex = getTargetCustomerIndex(adminCustomersList);
             
@@ -214,24 +214,26 @@ function getTargetCustomerIndex(adminCustomersList) {
                 document.getElementById('userAddress').value = currentCustomer.address || '';
             }
 
-            let totalCompleted = currentCustomer.orders ? currentCustomer.orders.filter(o => o.status === "تم التسليم" || o.status === "تم التوصيل").length : 0;
-            let lastBaseline = currentCustomer.lastRewardAtCompletedCount || 0;
-            let currentCycleCount = totalCompleted - lastBaseline;
-            let usageCount = currentCustomer.usageCount || 0;
+            // --- تفعيل زر العودة الذكي (للأدمن، الموظف، والعميل العادي) ---
+            const backBtn = document.getElementById('backBtn');
+            if (backBtn) {
+                const isEmpView = sessionStorage.getItem('openedByEmployee') === 'true' || localStorage.getItem('isEmployeeViewing') === 'true';
+                const isAdminView = localStorage.getItem('isAdminViewing') === 'true';
 
-            document.getElementById('customerUsageCount').innerText = usageCount;
-
-            let badgeEl = document.getElementById('rewardStatusBadge');
-            let barEl = document.getElementById('rewardProgressBar');
-            let progressPercent = Math.min((currentCycleCount / 5) * 100, 100);
-            barEl.style.width = progressPercent + '%';
-
-            if (currentCycleCount >= 5) {
-                badgeEl.innerHTML = `<span style="background: #27ae60; color: white; padding: 4px 10px; border-radius: 4px;">🎉 مبروك! لقد استحققت مكافأة الخصم الذهبية (5/5 طلبات) ⭐</span>`;
-                barEl.style.background = '#27ae60';
-            } else {
-                badgeEl.innerHTML = `أنت على بعد <b>${5 - currentCycleCount} طلبات</b> من مكافأة الخصم الذهبية (${currentCycleCount}/5 طلبات مكتملة)`;
-                barEl.style.background = '#25D366';
+                if (isAdminView) {
+                    backBtn.innerText = "العودة لوحة التحكم";
+                    backBtn.href = "admin-dashboard.html";
+                } else if (isEmpView) {
+                    backBtn.innerText = "العودة للخلف";
+                    backBtn.href = "#";
+                    backBtn.onclick = function(e) {
+                        e.preventDefault();
+                        history.back(); // يرجع الموظف للصفحة السابقة فوراً بدون مشاكل في السهم
+                    };
+                } else {
+                    backBtn.innerText = "العودة للرئيسية";
+                    backBtn.href = "index.html";
+                }
             }
 
             let historyContainer = document.getElementById('rewardsHistoryList');
