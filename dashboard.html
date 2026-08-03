@@ -157,28 +157,39 @@
         // دالة مساعدة لجلب مؤشر العميل بناءً على ما اختاره الموظف أو جلسة المستخدم
        
 function getTargetCustomerIndex(adminCustomersList) {
+            // 0. الأولوية القصوى: إذا كان هناك عميل عادل مسجل دخوله حالياً، نتحقق منه أولاً لكي لا يطغى عليه أي مؤشر موظف قديم مخزن في المتصفح
+            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (currentUserSession) {
+                let idx = adminCustomersList.findIndex(c => 
+                    (currentUserSession.phone && String(c.phone || '').trim() === String(currentUserSession.phone).trim()) || 
+                    (currentUserSession.name && String(c.name || '').trim() === String(currentUserSession.name).trim()) ||
+                    (currentUserSession.username && String(c.username || '').trim() === String(currentUserSession.username).trim())
+                );
+                if (idx !== -1) return idx;
+            }
+
             // 1. فحص رابط الصفحة أولاً (الطريقة الأدق والأحدث لمنع التداخل عند فتح عدة عملاء من لوحة الموظف)
             const urlParams = new URLSearchParams(window.location.search);
             const urlPhone = urlParams.get('phone') || urlParams.get('customer');
             
             if (urlPhone) {
-                let idx = adminCustomersList.findIndex(c => String(c.phone).trim() === String(urlPhone).trim());
+                let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(urlPhone).trim());
                 if (idx !== -1) return idx;
             }
 
             // 2. الفحص عبر sessionStorage (خاص بالتاب الحالي ولا يتداخل مع التابات الأخرى)
             const sessionPhone = sessionStorage.getItem('selectedCustomerPhone');
             if (sessionPhone) {
-                let idx = adminCustomersList.findIndex(c => String(c.phone).trim() === String(sessionPhone).trim());
+                let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(sessionPhone).trim());
                 if (idx !== -1) return idx;
             }
 
             // 3. الاحتياط: localStorage القديم
-            const selectedPhone = localStorage.getItem('selectedCustomerPhone');
+            const selectedPhone = localStorage.getItem('selectedPhone') || localStorage.getItem('selectedCustomerPhone');
             const selectedName = localStorage.getItem('selectedCustomerName');
             
             if (selectedPhone) {
-                let idx = adminCustomersList.findIndex(c => String(c.phone).trim() === String(selectedPhone).trim());
+                let idx = adminCustomersList.findIndex(c => String(c.phone || '').trim() === String(selectedPhone).trim());
                 if (idx !== -1) return idx;
             }
             if (selectedName) {
@@ -186,14 +197,8 @@ function getTargetCustomerIndex(adminCustomersList) {
                 if (idx !== -1) return idx;
             }
 
-            // 4. جلسة المستخدم العادي المسجل دخوله
-            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (currentUserSession) {
-                let idx = adminCustomersList.findIndex(c => (currentUserSession.phone && c.phone === currentUserSession.phone) || (currentUserSession.name && c.name === currentUserSession.name));
-                if (idx !== -1) return idx;
-            }
-
             return -1;
+}
         }
        window.onload = function() {
             let adminCustomersList = JSON.parse(localStorage.getItem('adminCustomersList')) || [];
