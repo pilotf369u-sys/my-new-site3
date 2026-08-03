@@ -157,6 +157,13 @@
         // دالة مساعدة لجلب مؤشر العميل بناءً على ما اختاره الموظف أو جلسة المستخدم
        
 function getTargetCustomerIndex(adminCustomersList) {
+            // 0. التحقق من جلسة المستخدم العادي المسجل دخوله أولاً (لكي لا تسيطر بيانات الموظف القديمة على صفحة العميل)
+            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (currentUserSession) {
+                let idx = adminCustomersList.findIndex(c => (currentUserSession.phone && c.phone === currentUserSession.phone) || (currentUserSession.name && c.name === currentUserSession.name));
+                if (idx !== -1) return idx;
+            }
+
             // 1. فحص رابط الصفحة أولاً (الطريقة الأدق والأحدث لمنع التداخل عند فتح عدة عملاء من لوحة الموظف)
             const urlParams = new URLSearchParams(window.location.search);
             const urlPhone = urlParams.get('phone') || urlParams.get('customer');
@@ -183,13 +190,6 @@ function getTargetCustomerIndex(adminCustomersList) {
             }
             if (selectedName) {
                 let idx = adminCustomersList.findIndex(c => (c.name && String(c.name).trim() === String(selectedName).trim()) || (c.username && String(c.username).trim() === String(selectedName).trim()));
-                if (idx !== -1) return idx;
-            }
-
-            // 4. جلسة المستخدم العادي المسجل دخوله
-            const currentUserSession = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (currentUserSession) {
-                let idx = adminCustomersList.findIndex(c => (currentUserSession.phone && c.phone === currentUserSession.phone) || (currentUserSession.name && c.name === currentUserSession.name));
                 if (idx !== -1) return idx;
             }
 
